@@ -135,9 +135,15 @@ Facts must list:
 - resolved ET as-of timestamp
 - expiry dates selected and the phrase that produced them (e.g., “front week” -> 2025-12-26)
 
+- **Spot price (“spot”)**:
+  - Preferred: underlying price included in the Options Chain/Contract Snapshot response used for the answer.
+  - Fallback: Stocks Single Ticker Snapshot last trade price.
+  - Fallback: Stocks Last Trade (`/v2/last/trade/{stocksTicker}`).
+  - Fallback: Stocks Last Quote (NBBO) mid (`/v2/last/nbbo/{stocksTicker}`).
+  - Facts must include the spot price, its timestamp, and which endpoint provided it.
+
 - **ATM strike**: nearest strike to spot; ties -> lower strike (or document tie-break rule)
 - **Mid price**: (bid + ask)/2 when both exist; otherwise last; otherwise null
-- **Front week / next week**: nearest expiry >= as-of date; then the next expiry after that
 - **Strike window**: if user says “around ATM” with no size, default to ±5 strikes
 
 - **Delta bucket selection (when requested)**:
