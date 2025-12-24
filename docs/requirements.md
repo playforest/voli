@@ -20,9 +20,22 @@ It does **not** provide trade instructions, recommendations, or personalized adv
   - Right: call/put/both
   - Moneyness window: e.g., +/- 10% around spot
   - Delta bucket (optional if greeks/IV allows it): e.g., 25d
-- As-of timestamp (optional): best-effort snapshot/replay
+- As-of timestamp (optional): best-effort replay for time-indexed fields (quotes/trades); snapshots may be “latest only”.
+  - Accepted: ISO-8601 with offset (`2025-12-20T10:30:00-05:00`) or `YYYY-MM-DD HH:MM ET`.
+  - If timezone is omitted, assume ET (America/New_York) and disclose.
 
 If a required constraint is missing, the agent will choose a deterministic default and disclose it.
+
+### Missing ticker behavior (v1)
+- If the user does **not** provide a ticker and there is **no** existing session/UI context ticker: the agent asks a single follow-up: “Which ticker?”
+- If a ticker exists in session/use it and disclose “ticker inferred from context” in **Facts**.
+
+### As-of timestamp & timezone behavior (v1)
+- **Default**: use the latest available snapshot/quote at request time.
+- If the user provides an **as-of** timestamp:
+  - For **bid/ask** on a specific contract: prefer historical quotes endpoints when available (time-range queries).  
+  - For **chain-wide snapshots / IV / greeks**: if historical snapshots are not available, return latest snapshot fields **with their actual timestamps** and disclose that as-of replay isn’t supported for those fields.
+- Facts must include: the user-supplied as-of, the resolved timezone/UTC, and the actual timestamps of returned fields.
 
 ---
 

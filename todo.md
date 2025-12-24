@@ -44,6 +44,7 @@ Also: make the repo and docs **friendly for learning agents/LLMs**—briefly exp
 **Deliverables**
 - [*] `docs/requirements.md` (supported question types + examples)
 - [*] `docs/v1_contract.md` (what the agent guarantees to return)
+- [ ] `prompt_corpus_v1.jsonl` (extract examples into prompt corpus file for later test)
 
 **Done when**
 - You can point at a prompt and say “supported” or “not supported” without debate.
