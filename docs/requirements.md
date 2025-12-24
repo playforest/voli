@@ -28,7 +28,7 @@ If a required constraint is missing, the agent will choose a deterministic defau
 
 ### Missing ticker behavior (v1)
 - If the user does **not** provide a ticker and there is **no** existing session/UI context ticker: the agent asks a single follow-up: “Which ticker?”
-- If a ticker exists in session/use it and disclose “ticker inferred from context” in **Facts**.
+- If a ticker exists in session/UI context: use it and disclose “ticker inferred from context” in **Facts**.
 
 ### As-of timestamp & timezone behavior (v1)
 - **Default**: use the latest available snapshot/quote at request time.
@@ -123,6 +123,13 @@ Expected output:
 - **Mid price**: (bid + ask)/2 when both exist; otherwise last; otherwise null
 - **Front week / next week**: nearest expiry >= as-of date; then the next expiry after that
 - **Strike window**: if user says “around ATM” with no size, default to ±5 strikes
+
+- **Delta bucket selection (when requested)**:
+  - Universe: contracts matching the chosen expiry + right (call/put), excluding rows with missing `greeks.delta`.
+  - Target: calls use +0.25 for 25Δ, puts use −0.25 for 25Δ (general: calls +X, puts −X).
+  - Pick: contract with delta closest to target.
+  - Tie-breakers (deterministic): higher open interest, then strike closest to ATM, then lower strike.
+- If no contracts in the universe have `greeks.delta`, return **Not supported for delta buckets** for that request and suggest a strike-based skew alternative.
 
 ---
 
