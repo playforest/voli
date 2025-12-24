@@ -18,7 +18,9 @@
             "title": "Asof"
           },
           "option_symbols": {
+            "description": "List of option symbols (non-empty)",
             "items": {
+              "minLength": 1,
               "type": "string"
             },
             "minItems": 1,
@@ -170,7 +172,9 @@
         "additionalProperties": false,
         "properties": {
           "option_symbols": {
+            "description": "List of option symbols (non-empty)",
             "items": {
+              "minLength": 1,
               "type": "string"
             },
             "minItems": 1,
@@ -272,7 +276,9 @@
             "title": "Asof"
           },
           "option_symbols": {
+            "description": "List of option symbols (non-empty)",
             "items": {
+              "minLength": 1,
               "type": "string"
             },
             "minItems": 1,
