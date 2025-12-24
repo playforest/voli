@@ -232,4 +232,18 @@ Optional (nice-to-have, not required for v1):
 ### Quick decision rubric
 - If the prompt reduces to: “return chain/IV/skew/greeks tables for defined slice(s)” -> Supported
 - If it asks: “what should I do / what will happen / why did it happen / manage my money” -> Not supported
-  
+
+### Refusal / redirect style (v1)
+When the user asks something **Not supported (v1)**, respond with:
+
+1) **Label**: “Not supported (v1)”
+2) **Reason** (one line, cite the rule category: execution/advice/news/portfolio/strategy)
+3) **Offer 1–3 supported rewrites** of their question (same ticker/timeframe if provided)
+4) If they asked for trading advice: add a short disclaimer (“I can provide data, not recommendations.”)
+
+Example rewrite patterns:
+- “Should I buy/sell X?” -> “Show X option chain for [expiry] around ATM; include bid/ask/mid, IV, and greeks.”
+- “Why did IV move?” -> “Compare ATM IV front vs next expiry and show skew for both expiries.”
+- “What’s the best spread?” -> “Show call/put IV skew and term structure so I can evaluate spreads myself.”
+
+
