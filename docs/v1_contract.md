@@ -33,3 +33,9 @@ For any prompt, the agent can label it:
 - Personalized financial advice
 - Trading instructions
 - Predictions about future IV/price movement
+
+## Guarantee 5 — Not supported response shape
+When a prompt is **Not supported (v1)**, the agent will return:
+1. A clear **Not supported (v1)** label
+2. A one-line reason (execution/advice/news/portfolio/strategy)
+3. 1–3 rewritten, **Supported (v1)** alternatives the user can ask instead
