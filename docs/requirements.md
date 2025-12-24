@@ -1,0 +1,150 @@
+# Requirements — v1 question taxonomy
+
+## Scope: what this agent answers (v1)
+This agent answers **descriptive/analytic** questions about listed equity/ETF options using Polygon data:
+- Options chain slices (by expiry/right/strike/moneyness/ATM)
+- Implied volatility (ATM IV, term structure comparisons)
+- Skew (IV vs strike or delta buckets)
+- Basic Greeks (delta/gamma/theta/vega) for contracts or slices
+
+It does **not** provide trade instructions, recommendations, or personalized advice.
+
+---
+
+## Inputs the user may provide (v1)
+- Ticker (required unless already set via CLI/UI context)
+- Expiry selection: exact date (`2026-01-16`) or relative (`front week`, `next week`, `nearest monthly`)
+- Contract selection:
+  - ATM (spot-nearest strike)
+  - Strike(s): exact or range
+  - Right: call/put/both
+  - Moneyness window: e.g., +/- 10% around spot
+  - Delta bucket (optional if greeks/IV allows it): e.g., 25d
+- As-of timestamp (optional): best-effort snapshot/replay
+
+If a required constraint is missing, the agent will choose a deterministic default and disclose it.
+
+---
+
+## Supported question categories (v1)
+
+### A) Chain lookup
+**Intent:** “Show me contracts/quotes for X slice of the chain.”
+
+Supported examples:
+1. "Show NVDA options expiring this Friday, strikes within ±5% of spot."
+2. "List NVDA calls for 2026-01-16 between 120 and 150."
+3. "What’s the ATM strike for QQQ next week and what are the bid/ask?"
+4. "Show me the 10 closest strikes to ATM for SPY front expiry."
+5. “List SPY puts for the next monthly expiry, 0.9–1.1 moneyness.”
+6. “What’s the ATM call and put for QQQ next week? Include bid/ask.”
+7. “Give me the 10 closest strikes to ATM for AAPL front expiry.”
+8. “Show TSLA calls for 2026-01-16 between 200 and 260.”
+9. “List IWM options for the nearest expiry only, both rights, ±3 strikes around ATM.”
+10. “Show NVDA chain for next week, calls only, top 20 by volume.”
+11. “What contracts exist for MSFT on 2026-03-20 at strike 400?”
+
+Expected output:
+- Table: contracts in slice (symbol, expiry, strike, right, bid, ask, mid, last, volume/oi if available, timestamp)
+
+---
+
+### B) IV / term structure
+**Intent:** “Compare IV across expiries (front vs back), usually at comparable moneyness (ATM).”
+
+Supported examples:
+1. "NVDA ATM IV this week vs next week."
+2. "Compare ATM IV for SPY front week, next week, and next month."
+3. "Show IV term structure (ATM) for the next 6 expiries for QQQ."
+4. “What’s the difference in ATM IV between nearest weekly and nearest monthly for AAPL?”
+5. “Plot (or tabulate) ATM IV by expiry for TSLA out 90 days.”
+6. “ATM IV for IWM: next 3 expiries, include ATM strike used.”
+7. “Which expiry has the highest ATM IV for NVDA in the next month?”
+8. “Front-month vs back-month ATM IV for SPY (nearest monthly vs next monthly).”
+
+Expected output:
+- Table: expiry vs ATM strike vs ATM IV (and delta/vega optional)
+- Clear definition of ATM selection & as-of timestamp
+
+---
+
+### C) Skew
+**Intent:** “How does IV vary across strikes/deltas (puts vs calls, 25d risk reversal, slope).”
+
+Supported examples:
+1. "Show NVDA IV skew for next Friday, ±10 strikes around ATM."
+2. "Compute 25d put IV vs 25d call IV for SPY next month."
+3. "What’s the steepest part of the skew for QQQ front expiry?"
+4. “Compute risk reversal (25d put IV − 25d call IV) for QQQ nearest monthly.”
+5. “What’s the skew slope across strikes for TSLA next week?”
+6. “Show put vs call IV at same delta buckets for AAPL next monthly.”
+7. “Identify steepest skew points (highest IV jump) around ATM for NVDA front expiry.”
+8. “Tabulate IV by strike for SPY next Friday, puts and calls.”
+9. “Compare skew for NVDA this week vs next week (same strike window).”
+
+Expected output:
+- Table: strike (or delta bucket) vs IV for puts/calls
+- Optional derived metrics: 25d risk reversal, slope across strikes (with definition)
+
+---
+
+### D) Greeks
+**Intent:** “Return greeks for a contract or slice; aggregate/summarize where sensible.”
+
+Supported examples:
+1. "What are the greeks of the NVDA 2026-01-16 130C?"
+2. "Show delta/gamma/theta/vega for the 5 strikes around ATM for SPY this Friday."
+3. "Compare ATM vega front week vs next week for QQQ."
+4. “Which contract has the highest gamma near ATM for TSLA front expiry?”
+5. “Delta for the 25d put and 25d call for AAPL next monthly.”
+6. “Theta per day for ATM straddle SPY front week (just return component legs + totals if available).”
+
+Expected output:
+- Table: contract(s) with greeks + IV + as-of timestamp
+- If aggregation used, define it (e.g., mean across slice)
+
+---
+
+## Defaults (must be deterministic)
+- **ATM strike**: nearest strike to spot; ties -> lower strike (or document tie-break rule)
+- **Mid price**: (bid + ask)/2 when both exist; otherwise last; otherwise null
+- **Front week / next week**: nearest expiry >= as-of date; then the next expiry after that
+- **Strike window**: if user says “around ATM” with no size, default to ±5 strikes
+
+---
+
+## V1 outputs (minimum)
+Every supported answer must include:
+
+1) **Answer summary** (1–6 lines)
+2) **One primary table** relevant to the request (chain slice / term structure / skew / greeks)
+3) **Facts section** containing:
+   - Spot price + timestamp + source
+   - Expiry dates actually used
+   - Any filters/defaults chosen
+   - For every numeric claim: the raw fields used (bid/ask/mid/iv/greeks) + timestamps
+
+Optional (nice-to-have, not required for v1):
+- Simple plots (term structure line, skew curve)
+
+---
+
+## Out of scope (v1)
+- Trade execution, order placement, “what should I buy/sell”
+- Portfolio/account questions, P&L, sizing, risk management
+- News/earnings/event-driven forecasting or “why did IV move”
+- Strategy recommendations (“best spread”, “should I hedge”, “expected move trade”)
+- Backtesting or performance claims without an explicit dataset/harness
+- Complex exotics, non-listed derivatives
+
+---
+
+## Edge-case policy (v1)
+- If Polygon lacks greeks/IV for a requested contract, agent returns:
+  - the closest available fields + a clear “missing data” note
+  - and does NOT invent computed greeks unless computation is explicitly implemented and shown.
+
+### Quick decision rubric
+- If the prompt reduces to: “return chain/IV/skew/greeks tables for defined slice(s)” -> Supported
+- If it asks: “what should I do / what will happen / why did it happen / manage my money” -> Not supported
+  
