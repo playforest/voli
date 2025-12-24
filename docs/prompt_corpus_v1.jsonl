@@ -1,0 +1,39 @@
+{"id": "v1_001", "category": "A", "category_name": "Chain lookup", "prompt": "Show NVDA options expiring this Friday, strikes within ±5% of spot.", "priority": "core", "notes": ""}
+{"id": "v1_002", "category": "A", "category_name": "Chain lookup", "prompt": "List NVDA calls for 2026-01-16 between 120 and 150.", "priority": "core", "notes": ""}
+{"id": "v1_003", "category": "A", "category_name": "Chain lookup", "prompt": "What’s the ATM strike for QQQ next week and what are the bid/ask?", "priority": "core", "notes": ""}
+{"id": "v1_004", "category": "A", "category_name": "Chain lookup", "prompt": "Show me the 10 closest strikes to ATM for SPY front expiry.", "priority": "core", "notes": ""}
+{"id": "v1_005", "category": "A", "category_name": "Chain lookup", "prompt": "List SPY puts for the next monthly expiry, 0.9–1.1 moneyness.", "priority": "core", "notes": ""}
+{"id": "v1_006", "category": "A", "category_name": "Chain lookup", "prompt": "What’s the ATM call and put for QQQ next week? Include bid/ask.", "priority": "core", "notes": ""}
+{"id": "v1_007", "category": "A", "category_name": "Chain lookup", "prompt": "Give me the 10 closest strikes to ATM for AAPL front expiry.", "priority": "core", "notes": ""}
+{"id": "v1_008", "category": "A", "category_name": "Chain lookup", "prompt": "Show TSLA calls for 2026-01-16 between 200 and 260.", "priority": "core", "notes": ""}
+{"id": "v1_009", "category": "A", "category_name": "Chain lookup", "prompt": "List IWM options for the nearest expiry only, both rights, ±3 strikes around ATM.", "priority": "core", "notes": ""}
+{"id": "v1_010", "category": "A", "category_name": "Chain lookup", "prompt": "Show NVDA chain for next week, calls only, top 20 by volume.", "priority": "core", "notes": ""}
+{"id": "v1_011", "category": "A", "category_name": "Chain lookup", "prompt": "What contracts exist for MSFT on 2026-03-20 at strike 400?", "priority": "core", "notes": ""}
+{"id": "v1_012", "category": "B", "category_name": "IV / term structure", "prompt": "NVDA ATM IV this week vs next week.", "priority": "core", "notes": ""}
+{"id": "v1_013", "category": "B", "category_name": "IV / term structure", "prompt": "Compare ATM IV for SPY front week, next week, and next month.", "priority": "core", "notes": ""}
+{"id": "v1_014", "category": "B", "category_name": "IV / term structure", "prompt": "Show IV term structure (ATM) for the next 6 expiries for QQQ.", "priority": "core", "notes": ""}
+{"id": "v1_015", "category": "B", "category_name": "IV / term structure", "prompt": "What’s the difference in ATM IV between nearest weekly and nearest monthly for AAPL?", "priority": "core", "notes": ""}
+{"id": "v1_016", "category": "B", "category_name": "IV / term structure", "prompt": "Plot (or tabulate) ATM IV by expiry for TSLA out 90 days.", "priority": "core", "notes": ""}
+{"id": "v1_017", "category": "B", "category_name": "IV / term structure", "prompt": "ATM IV for IWM: next 3 expiries, include ATM strike used.", "priority": "core", "notes": ""}
+{"id": "v1_018", "category": "B", "category_name": "IV / term structure", "prompt": "Which expiry has the highest ATM IV for NVDA in the next month?", "priority": "core", "notes": ""}
+{"id": "v1_019", "category": "B", "category_name": "IV / term structure", "prompt": "Front-month vs back-month ATM IV for SPY (nearest monthly vs next monthly).", "priority": "core", "notes": ""}
+{"id": "v1_020", "category": "C", "category_name": "Skew", "prompt": "Show NVDA IV skew for next Friday, ±10 strikes around ATM.", "priority": "core", "notes": ""}
+{"id": "v1_021", "category": "C", "category_name": "Skew", "prompt": "Compute 25d put IV vs 25d call IV for SPY next month.", "priority": "core", "notes": ""}
+{"id": "v1_022", "category": "C", "category_name": "Skew", "prompt": "What’s the steepest part of the skew for QQQ front expiry?", "priority": "core", "notes": ""}
+{"id": "v1_023", "category": "C", "category_name": "Skew", "prompt": "Compute risk reversal (25d put IV − 25d call IV) for QQQ nearest monthly.", "priority": "core", "notes": ""}
+{"id": "v1_024", "category": "C", "category_name": "Skew", "prompt": "What’s the skew slope across strikes for TSLA next week?", "priority": "core", "notes": ""}
+{"id": "v1_025", "category": "C", "category_name": "Skew", "prompt": "Show put vs call IV at same delta buckets for AAPL next monthly.", "priority": "core", "notes": ""}
+{"id": "v1_026", "category": "C", "category_name": "Skew", "prompt": "Identify steepest skew points (highest IV jump) around ATM for NVDA front expiry.", "priority": "core", "notes": ""}
+{"id": "v1_027", "category": "C", "category_name": "Skew", "prompt": "Tabulate IV by strike for SPY next Friday, puts and calls.", "priority": "core", "notes": ""}
+{"id": "v1_028", "category": "C", "category_name": "Skew", "prompt": "Compare skew for NVDA this week vs next week (same strike window).", "priority": "core", "notes": ""}
+{"id": "v1_029", "category": "D", "category_name": "Greeks", "prompt": "What are the greeks of the NVDA 2026-01-16 130C?", "priority": "core", "notes": ""}
+{"id": "v1_030", "category": "D", "category_name": "Greeks", "prompt": "Show delta/gamma/theta/vega for the 5 strikes around ATM for SPY this Friday.", "priority": "core", "notes": ""}
+{"id": "v1_031", "category": "D", "category_name": "Greeks", "prompt": "Compare ATM vega front week vs next week for QQQ.", "priority": "stretch", "notes": ""}
+{"id": "v1_032", "category": "D", "category_name": "Greeks", "prompt": "Which contract has the highest gamma near ATM for TSLA front expiry?", "priority": "stretch", "notes": ""}
+{"id": "v1_033", "category": "D", "category_name": "Greeks", "prompt": "Delta for the 25d put and 25d call for AAPL next monthly.", "priority": "stretch", "notes": ""}
+{"id": "v1_034", "category": "D", "category_name": "Greeks", "prompt": "Theta per day for ATM straddle SPY front week (just return component legs + totals if available).", "priority": "stretch", "notes": ""}
+{"id": "v1_035", "category": "A", "category_name": "Chain lookup", "prompt": "Show the front-week chain ±5 strikes around ATM, calls+puts. (Ticker not provided.)", "priority": "core", "notes": "Missing required ticker -> must ask OR use existing context if set; disclose."}
+{"id": "v1_036", "category": "B", "category_name": "IV / term structure", "prompt": "NVDA ATM IV 'this week vs next week' as of 2025-12-20 10:30am ET.", "priority": "core", "notes": "As-of timestamp parsing; timezone handling; replay/snapshot best-effort; disclose if not supported."}
+{"id": "v1_037", "category": "C", "category_name": "Skew", "prompt": "Compute 25d risk reversal for SPY next monthly using delta buckets (25Δ put IV − 25Δ call IV).", "priority": "core", "notes": "Delta-bucket selection; if Polygon lacks greeks/delta per strike, define fallback or mark unsupported."}
+{"id": "v1_038", "category": "D", "category_name": "Greeks", "prompt": "Show greeks for SPY front expiry ±5 strikes around ATM; if bid/ask missing, still return greeks/IV with null mid.", "priority": "core", "notes": "Missing quote fields; mid rule; table still returns contracts; Facts must mention missing data."}
+{"id": "v1_039", "category": "B", "category_name": "IV / term structure", "prompt": "Plot ATM IV term structure for QQQ next 10 expiries; if plotting not supported, return table only.", "priority": "core", "notes": "Plot optional; v1 requires table; disclose plot omission."}
