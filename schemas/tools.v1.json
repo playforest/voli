@@ -1,0 +1,663 @@
+{
+  "tools": {
+    "get_option_greeks": {
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asof": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Asof"
+          },
+          "option_symbols": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Option Symbols",
+            "type": "array"
+          }
+        },
+        "required": [
+          "option_symbols"
+        ],
+        "title": "GetOptionGreeksInput",
+        "type": "object"
+      },
+      "output_schema": {
+        "$defs": {
+          "OptionGreeks": {
+            "additionalProperties": false,
+            "properties": {
+              "delta": {
+                "anyOf": [
+                  {
+                    "maximum": 1,
+                    "minimum": -1,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Delta"
+              },
+              "gamma": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Gamma"
+              },
+              "iv": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Implied vol as DECIMAL, e.g. 0.42",
+                "title": "Iv"
+              },
+              "model": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "vendor",
+                      "black_scholes"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Model"
+              },
+              "option_symbol": {
+                "minLength": 1,
+                "title": "Option Symbol",
+                "type": "string"
+              },
+              "source": {
+                "enum": [
+                  "polygon",
+                  "cache",
+                  "synthetic"
+                ],
+                "title": "Source",
+                "type": "string"
+              },
+              "theta": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Theta"
+              },
+              "ts": {
+                "format": "date-time",
+                "title": "Ts",
+                "type": "string"
+              },
+              "vega": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Vega"
+              }
+            },
+            "required": [
+              "option_symbol",
+              "ts",
+              "source"
+            ],
+            "title": "OptionGreeks",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "greeks": {
+            "items": {
+              "$ref": "#/$defs/OptionGreeks"
+            },
+            "title": "Greeks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "greeks"
+        ],
+        "title": "GetOptionGreeksOutput",
+        "type": "object"
+      }
+    },
+    "get_option_oi": {
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "option_symbols": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Option Symbols",
+            "type": "array"
+          }
+        },
+        "required": [
+          "option_symbols"
+        ],
+        "title": "GetOptionOIInput",
+        "type": "object"
+      },
+      "output_schema": {
+        "$defs": {
+          "OptionOI": {
+            "additionalProperties": false,
+            "properties": {
+              "open_interest": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Open Interest"
+              },
+              "option_symbol": {
+                "title": "Option Symbol",
+                "type": "string"
+              },
+              "source": {
+                "default": "polygon",
+                "enum": [
+                  "polygon",
+                  "cache",
+                  "synthetic"
+                ],
+                "title": "Source",
+                "type": "string"
+              },
+              "ts": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Ts"
+              }
+            },
+            "required": [
+              "option_symbol"
+            ],
+            "title": "OptionOI",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "oi": {
+            "items": {
+              "$ref": "#/$defs/OptionOI"
+            },
+            "title": "Oi",
+            "type": "array"
+          }
+        },
+        "required": [
+          "oi"
+        ],
+        "title": "GetOptionOIOutput",
+        "type": "object"
+      }
+    },
+    "get_option_quotes": {
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asof": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Asof"
+          },
+          "option_symbols": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Option Symbols",
+            "type": "array"
+          }
+        },
+        "required": [
+          "option_symbols"
+        ],
+        "title": "GetOptionQuotesInput",
+        "type": "object"
+      },
+      "output_schema": {
+        "$defs": {
+          "OptionQuote": {
+            "additionalProperties": false,
+            "properties": {
+              "ask": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Ask"
+              },
+              "bid": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Bid"
+              },
+              "last": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Last"
+              },
+              "mid": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "(bid+ask)/2 when both present",
+                "title": "Mid"
+              },
+              "option_symbol": {
+                "minLength": 1,
+                "title": "Option Symbol",
+                "type": "string"
+              },
+              "source": {
+                "enum": [
+                  "polygon",
+                  "cache",
+                  "synthetic"
+                ],
+                "title": "Source",
+                "type": "string"
+              },
+              "ts": {
+                "format": "date-time",
+                "title": "Ts",
+                "type": "string"
+              }
+            },
+            "required": [
+              "option_symbol",
+              "ts",
+              "source"
+            ],
+            "title": "OptionQuote",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "quotes": {
+            "items": {
+              "$ref": "#/$defs/OptionQuote"
+            },
+            "title": "Quotes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "quotes"
+        ],
+        "title": "GetOptionQuotesOutput",
+        "type": "object"
+      }
+    },
+    "get_underlying_snapshot": {
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asof": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "UTC timestamp; if None, use latest available",
+            "title": "Asof"
+          },
+          "ticker": {
+            "minLength": 1,
+            "title": "Ticker",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticker"
+        ],
+        "title": "GetUnderlyingSnapshotInput",
+        "type": "object"
+      },
+      "output_schema": {
+        "$defs": {
+          "UnderlyingSnapshot": {
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "enum": [
+                  "polygon",
+                  "cache",
+                  "synthetic"
+                ],
+                "title": "Source",
+                "type": "string"
+              },
+              "spot": {
+                "description": "Underlying last/spot price",
+                "exclusiveMinimum": 0,
+                "title": "Spot",
+                "type": "number"
+              },
+              "ticker": {
+                "description": "Underlying ticker, e.g. NVDA",
+                "minLength": 1,
+                "title": "Ticker",
+                "type": "string"
+              },
+              "ts": {
+                "description": "Timestamp of snapshot (UTC)",
+                "format": "date-time",
+                "title": "Ts",
+                "type": "string"
+              }
+            },
+            "required": [
+              "ticker",
+              "spot",
+              "ts",
+              "source"
+            ],
+            "title": "UnderlyingSnapshot",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "snapshopt": {
+            "$ref": "#/$defs/UnderlyingSnapshot"
+          }
+        },
+        "required": [
+          "snapshopt"
+        ],
+        "title": "GetUnderlyingSnapshotOutput",
+        "type": "object"
+      }
+    },
+    "list_option_contracts": {
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "expiry": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expiry"
+          },
+          "limit": {
+            "default": 500,
+            "maximum": 5000,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "right": {
+            "anyOf": [
+              {
+                "enum": [
+                  "C",
+                  "P"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Right"
+          },
+          "strike_max": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Strike Max"
+          },
+          "strike_min": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Strike Min"
+          },
+          "ticker": {
+            "minLength": 1,
+            "title": "Ticker",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticker"
+        ],
+        "title": "ListOptionContractsInput",
+        "type": "object"
+      },
+      "output_schema": {
+        "$defs": {
+          "OptionContract": {
+            "additionalProperties": false,
+            "properties": {
+              "currency": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": "USD",
+                "description": "Quote currency if known",
+                "title": "Currency"
+              },
+              "exercise_style": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "american",
+                      "european"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Exercise style if known",
+                "title": "Exercise Style"
+              },
+              "expiry": {
+                "description": "Expiration date (YYYY-MM-DD)",
+                "format": "date",
+                "title": "Expiry",
+                "type": "string"
+              },
+              "multiplier": {
+                "default": 100,
+                "description": "Contract multiplier, typically 100",
+                "exclusiveMinimum": 0,
+                "title": "Multiplier",
+                "type": "integer"
+              },
+              "option_symbol": {
+                "description": "Vendor option symbol (Polygon)",
+                "minLength": 1,
+                "title": "Option Symbol",
+                "type": "string"
+              },
+              "right": {
+                "description": "'C' for call, 'P' for put",
+                "enum": [
+                  "C",
+                  "P"
+                ],
+                "title": "Right",
+                "type": "string"
+              },
+              "strike": {
+                "description": "Strike price",
+                "exclusiveMinimum": 0,
+                "title": "Strike",
+                "type": "number"
+              },
+              "underlying": {
+                "description": "Underlying ticker, e.g. NVDA",
+                "minLength": 1,
+                "title": "Underlying",
+                "type": "string"
+              }
+            },
+            "required": [
+              "option_symbol",
+              "underlying",
+              "expiry",
+              "strike",
+              "right"
+            ],
+            "title": "OptionContract",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "contracts": {
+            "items": {
+              "$ref": "#/$defs/OptionContract"
+            },
+            "title": "Contracts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "contracts"
+        ],
+        "title": "ListOptionContractsOutput",
+        "type": "object"
+      }
+    }
+  },
+  "version": "v1"
+}
