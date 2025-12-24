@@ -119,6 +119,22 @@ Expected output:
 ---
 
 ## Defaults (must be deterministic)
+### Expiry resolution rules (v1)
+All relative expiry phrases resolve using **America/New_York (ET)** time.
+
+- **Explicit date** (`YYYY-MM-DD`): use it if that expiry exists for the ticker; otherwise return the nearest available expiries and ask the user to choose (no guessing).
+- **Front expiry / front week**: the earliest listed expiry with expiry **date > as-of date**, or **date == as-of date** only if as-of time is **before 16:00 ET**.
+- **Next expiry / next week**: the next listed expiry after front expiry.
+- **This Friday**: the first listed expiry that falls on a Friday on/after as-of (subject to the 16:00 ET rule above).
+- **Next N expiries**: take the next N listed expiries strictly after as-of, sorted ascending.
+- **Nearest monthly**: the earliest expiry that is the **third Friday** of its month.
+- **Next monthly**: the monthly expiry after nearest monthly.
+- **Out X days** (e.g., “out 90 days”): include expiries with expiry_date <= (as-of date + X days).
+
+Facts must list:
+- resolved ET as-of timestamp
+- expiry dates selected and the phrase that produced them (e.g., “front week” -> 2025-12-26)
+
 - **ATM strike**: nearest strike to spot; ties -> lower strike (or document tie-break rule)
 - **Mid price**: (bid + ask)/2 when both exist; otherwise last; otherwise null
 - **Front week / next week**: nearest expiry >= as-of date; then the next expiry after that
