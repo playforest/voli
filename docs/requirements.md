@@ -156,6 +156,49 @@ Facts must list:
 ---
 
 ## V1 outputs (minimum)
+### Table schemas (v1)
+
+**A) Chain slice table**
+Required columns:
+- options_symbol, expiry, strike, right
+- bid, ask, mid
+- last (if available), volume (if available), open_interest (if available)
+- quote_timestamp (or snapshot_timestamp)
+
+Optional columns:
+- implied_volatility (if available)
+- delta, gamma, theta, vega (if available)
+
+**B) Term structure table (ATM)**
+Required columns:
+- expiry
+- atm_strike_used
+- atm_iv
+
+Optional columns:
+- atm_options_symbol_call, atm_options_symbol_put
+- atm_delta_call, atm_delta_put
+- atm_vega_call, atm_vega_put
+- source_timestamp_per_row (if expiries come from different snapshots)
+
+**C) Skew table**
+Required columns (strike-based skew):
+- expiry, right, strike
+- implied_volatility
+- delta (if available)
+- quote/snapshot timestamp
+
+Optional derived metrics:
+- risk_reversal_25d = iv_put_25d − iv_call_25d (only when delta buckets resolvable)
+- skew_slope definition (must state window + method)
+
+**D) Greeks table**
+Required columns:
+- options_symbol, expiry, strike, right
+- implied_volatility (if available)
+- delta, gamma, theta, vega (null allowed if missing)
+- quote/snapshot timestamp
+
 Every supported answer must include:
 
 1) **Answer summary** (1–6 lines)
