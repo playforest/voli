@@ -8,7 +8,6 @@ from .http import PolygonHTTP
 
 @dataclass(frozen=True)
 class OptionChainQuery:
-    # keep this small; we’ll align it with your tool input models later
     contract_type: str | None = None  # "call" | "put"
     expiration_date: str | None = None  # "YYYY-MM-DD"
     strike_price: float | None = None
@@ -36,6 +35,10 @@ class PolygonClient:
         return self.http.get_json(f"/v2/snapshot/locale/us/markets/stocks/tickers/{ticker}")
 
     # ---- Options ----
+    def get_option_contract_snapshot(self, underlying: str, option_contract: str) -> dict[str, Any]:
+        # GET /v3/snapshot/options/{underlyingAsset}/{optionContract}
+        return self.http.get_json(f"/v3/snapshot/options/{underlying}/{option_contract}")
+
     def get_option_chain_snapshot_page(
         self,
         underlying: str,
