@@ -1,7 +1,13 @@
 from __future__ import annotations
 
-from oqe.models import OptionContract, UnderlyingSnapshot
-from oqe.polygon.normalise import option_contract_from_snapshot_row
+from typing import Any
+
+from oqe.models import OptionContract, OptionGreeks, OptionQuote, UnderlyingSnapshot
+from oqe.polygon.normalise import (
+    option_contract_from_snapshot_row,
+    option_greeks_from_snapshot_row,
+    option_quote_from_snapshot_row,
+)
 
 from .client import OptionChainQuery, PolygonClient
 from .helpers import ns_to_utc_iso
@@ -58,5 +64,45 @@ def list_option_contracts_from_options_snapshot(
         _first, rows = pc.list_option_chain_snapshot(underlying, q)
 
         return [option_contract_from_snapshot_row(r, fallback_underlying=underlying) for r in rows]
+    finally:
+        pc.close()
+
+
+def _extract_single_row(snapshot_resp: dict[str, Any]) -> dict[str, Any]:
+    # contract snapshot responses usually have "results" (dict), but i'll be defensive
+    r = snapshot_resp.get("results") or snapshot_resp.get("result") or snapshot_resp
+    if isinstance(r, list):
+        return r[0]
+    return r
+
+
+def get_option_quotes_from_contract_snapshots(
+    underlying: str,
+    option_symbols: list[str],
+) -> list[OptionQuote]:
+    pc = PolygonClient()
+    try:
+        out: list[OptionQuote] = []
+        for sym in option_symbols:
+            data = pc.get_option_contract_snapshot(underlying, sym)
+            row = _extract_single_row(data)
+            out.append(option_quote_from_snapshot_row(row))
+        return out
+    finally:
+        pc.close()
+
+
+def get_option_greeks_from_contract_snapshots(
+    underlying: str,
+    option_symbols: list[str],
+) -> list[OptionGreeks]:
+    pc = PolygonClient()
+    try:
+        out: list[OptionGreeks] = []
+        for sym in option_symbols:
+            data = pc.get_option_contract_snapshot(underlying, sym)
+            row = _extract_single_row(data)
+            out.append(option_greeks_from_snapshot_row(row))
+        return out
     finally:
         pc.close()
