@@ -63,15 +63,15 @@ Also: make the repo and docs **friendly for learning agents/LLMs**—briefly exp
 - Draft JSON schemas (strict).
 
 **Tools (v1)**
-- [ ] `get_underlying_snapshot(ticker, asof=None)`
-- [ ] `list_option_contracts(ticker, expiry=None, right=None, strike_min=None, strike_max=None, limit=...)`
-- [ ] `get_option_quotes(option_symbols, asof=None)`
-- [ ] `get_option_greeks(option_symbols, asof=None)` (or compute if Polygon doesn’t supply)
-- [ ] `get_option_oi(option_symbols)` (optional)
+- [*] `get_underlying_snapshot(ticker, asof=None)`
+- [*] `list_option_contracts(ticker, expiry=None, right=None, strike_min=None, strike_max=None, limit=...)`
+- [*] `get_option_quotes(option_symbols, asof=None)`
+- [*] `get_option_greeks(option_symbols, asof=None)` (or compute if Polygon doesn’t supply)
+- [*] `get_option_oi(option_symbols)` (optional)
 
 **Deliverables**
-- [ ] `schemas/tools.json`
-- [ ] `docs/tool_contracts.md`
+- [*] `schemas/tools.json`
+- [*] `docs/tool_contracts.md`
 
 **Done when**
 - A tool executor can be written from the schemas without guessing.
