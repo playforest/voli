@@ -3,6 +3,20 @@
     "get_option_greeks": {
       "input_schema": {
         "additionalProperties": false,
+        "description": "Fetch or compute greeks/IV for a list of option symbols at an optional UTC time.",
+        "examples": [
+          {
+            "option_symbols": [
+              "O:NVDA260116C00120000"
+            ]
+          },
+          {
+            "asof": "2025-12-25T00:00:00Z",
+            "option_symbols": [
+              "O:NVDA260116C00120000"
+            ]
+          }
+        ],
         "properties": {
           "asof": {
             "anyOf": [
@@ -15,6 +29,7 @@
               }
             ],
             "default": null,
+            "description": "UTC timestamp (ISO-8601). If None, use latest available.",
             "title": "Asof"
           },
           "option_symbols": {
@@ -148,9 +163,90 @@
             ],
             "title": "OptionGreeks",
             "type": "object"
+          },
+          "ToolMeta": {
+            "additionalProperties": false,
+            "description": "Standard metadata included in every tool response.",
+            "properties": {
+              "asof": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Requested asof timestamp (UTC) or None for latest",
+                "title": "Asof"
+              },
+              "generated_at": {
+                "description": "When this response was produced (UTC)",
+                "format": "date-time",
+                "title": "Generated At",
+                "type": "string"
+              },
+              "primary_source": {
+                "description": "Primary datasource used",
+                "enum": [
+                  "polygon",
+                  "cache",
+                  "synthetic"
+                ],
+                "title": "Primary Source",
+                "type": "string"
+              },
+              "tool": {
+                "description": "Tool name",
+                "enum": [
+                  "get_underlying_snapshot",
+                  "list_option_contracts",
+                  "get_option_quotes",
+                  "get_option_greeks",
+                  "get_option_oi"
+                ],
+                "title": "Tool",
+                "type": "string"
+              },
+              "warnings": {
+                "description": "Non-fatal issues / caveats",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Warnings",
+                "type": "array"
+              }
+            },
+            "required": [
+              "tool",
+              "generated_at",
+              "primary_source"
+            ],
+            "title": "ToolMeta",
+            "type": "object"
           }
         },
         "additionalProperties": false,
+        "description": "Greeks/IV for the requested option symbols.",
+        "examples": [
+          {
+            "greeks": [
+              {
+                "delta": 0.55,
+                "gamma": 0.02,
+                "iv": 0.42,
+                "model": "vendor",
+                "option_symbol": "O:NVDA260116C00120000",
+                "source": "polygon",
+                "theta": -0.1,
+                "ts": "2025-12-25T00:00:00Z",
+                "vega": 0.12
+              }
+            ]
+          }
+        ],
         "properties": {
           "greeks": {
             "items": {
@@ -158,9 +254,13 @@
             },
             "title": "Greeks",
             "type": "array"
+          },
+          "meta": {
+            "$ref": "#/$defs/ToolMeta"
           }
         },
         "required": [
+          "meta",
           "greeks"
         ],
         "title": "GetOptionGreeksOutput",
@@ -170,6 +270,14 @@
     "get_option_oi": {
       "input_schema": {
         "additionalProperties": false,
+        "description": "Fetch open interest for a list of option symbols (if available).",
+        "examples": [
+          {
+            "option_symbols": [
+              "O:NVDA260116C00120000"
+            ]
+          }
+        ],
         "properties": {
           "option_symbols": {
             "description": "List of option symbols (non-empty)",
@@ -192,6 +300,15 @@
         "$defs": {
           "OptionOI": {
             "additionalProperties": false,
+            "description": "Open interest point for a single option symbol.",
+            "examples": [
+              {
+                "open_interest": 12345,
+                "option_symbol": "O:NVDA260116C00120000",
+                "source": "polygon",
+                "ts": "2025-12-25T00:00:00Z"
+              }
+            ],
             "properties": {
               "open_interest": {
                 "anyOf": [
@@ -204,14 +321,18 @@
                   }
                 ],
                 "default": null,
+                "description": "Open interest if known",
                 "title": "Open Interest"
               },
               "option_symbol": {
+                "description": "Option symbol",
+                "minLength": 1,
                 "title": "Option Symbol",
                 "type": "string"
               },
               "source": {
                 "default": "polygon",
+                "description": "Where the value came from",
                 "enum": [
                   "polygon",
                   "cache",
@@ -231,6 +352,7 @@
                   }
                 ],
                 "default": null,
+                "description": "UTC timestamp if known",
                 "title": "Ts"
               }
             },
@@ -239,10 +361,87 @@
             ],
             "title": "OptionOI",
             "type": "object"
+          },
+          "ToolMeta": {
+            "additionalProperties": false,
+            "description": "Standard metadata included in every tool response.",
+            "properties": {
+              "asof": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Requested asof timestamp (UTC) or None for latest",
+                "title": "Asof"
+              },
+              "generated_at": {
+                "description": "When this response was produced (UTC)",
+                "format": "date-time",
+                "title": "Generated At",
+                "type": "string"
+              },
+              "primary_source": {
+                "description": "Primary datasource used",
+                "enum": [
+                  "polygon",
+                  "cache",
+                  "synthetic"
+                ],
+                "title": "Primary Source",
+                "type": "string"
+              },
+              "tool": {
+                "description": "Tool name",
+                "enum": [
+                  "get_underlying_snapshot",
+                  "list_option_contracts",
+                  "get_option_quotes",
+                  "get_option_greeks",
+                  "get_option_oi"
+                ],
+                "title": "Tool",
+                "type": "string"
+              },
+              "warnings": {
+                "description": "Non-fatal issues / caveats",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Warnings",
+                "type": "array"
+              }
+            },
+            "required": [
+              "tool",
+              "generated_at",
+              "primary_source"
+            ],
+            "title": "ToolMeta",
+            "type": "object"
           }
         },
         "additionalProperties": false,
+        "description": "Open interest results for the requested option symbols.",
+        "examples": [
+          {
+            "oi": [
+              {
+                "open_interest": 12345,
+                "option_symbol": "O:NVDA260116C00120000"
+              }
+            ]
+          }
+        ],
         "properties": {
+          "meta": {
+            "$ref": "#/$defs/ToolMeta"
+          },
           "oi": {
             "items": {
               "$ref": "#/$defs/OptionOI"
@@ -252,6 +451,7 @@
           }
         },
         "required": [
+          "meta",
           "oi"
         ],
         "title": "GetOptionOIOutput",
@@ -261,6 +461,21 @@
     "get_option_quotes": {
       "input_schema": {
         "additionalProperties": false,
+        "description": "Fetch bid/ask/last (and compute mid) for a list of option symbols at an optional UTC time.",
+        "examples": [
+          {
+            "option_symbols": [
+              "O:NVDA260116C00120000"
+            ]
+          },
+          {
+            "asof": "2025-12-25T00:00:00Z",
+            "option_symbols": [
+              "O:NVDA260116C00120000",
+              "O:NVDA260116P00120000"
+            ]
+          }
+        ],
         "properties": {
           "asof": {
             "anyOf": [
@@ -273,6 +488,7 @@
               }
             ],
             "default": null,
+            "description": "UTC timestamp (ISO-8601). If None, use latest available.",
             "title": "Asof"
           },
           "option_symbols": {
@@ -377,10 +593,92 @@
             ],
             "title": "OptionQuote",
             "type": "object"
+          },
+          "ToolMeta": {
+            "additionalProperties": false,
+            "description": "Standard metadata included in every tool response.",
+            "properties": {
+              "asof": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Requested asof timestamp (UTC) or None for latest",
+                "title": "Asof"
+              },
+              "generated_at": {
+                "description": "When this response was produced (UTC)",
+                "format": "date-time",
+                "title": "Generated At",
+                "type": "string"
+              },
+              "primary_source": {
+                "description": "Primary datasource used",
+                "enum": [
+                  "polygon",
+                  "cache",
+                  "synthetic"
+                ],
+                "title": "Primary Source",
+                "type": "string"
+              },
+              "tool": {
+                "description": "Tool name",
+                "enum": [
+                  "get_underlying_snapshot",
+                  "list_option_contracts",
+                  "get_option_quotes",
+                  "get_option_greeks",
+                  "get_option_oi"
+                ],
+                "title": "Tool",
+                "type": "string"
+              },
+              "warnings": {
+                "description": "Non-fatal issues / caveats",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Warnings",
+                "type": "array"
+              }
+            },
+            "required": [
+              "tool",
+              "generated_at",
+              "primary_source"
+            ],
+            "title": "ToolMeta",
+            "type": "object"
           }
         },
         "additionalProperties": false,
+        "description": "Quotes for the requested option symbols.",
+        "examples": [
+          {
+            "quotes": [
+              {
+                "ask": 10.5,
+                "bid": 10.0,
+                "last": 10.2,
+                "mid": 10.25,
+                "option_symbol": "O:NVDA260116C00120000",
+                "source": "polygon",
+                "ts": "2025-12-25T00:00:00Z"
+              }
+            ]
+          }
+        ],
         "properties": {
+          "meta": {
+            "$ref": "#/$defs/ToolMeta"
+          },
           "quotes": {
             "items": {
               "$ref": "#/$defs/OptionQuote"
@@ -390,6 +688,7 @@
           }
         },
         "required": [
+          "meta",
           "quotes"
         ],
         "title": "GetOptionQuotesOutput",
@@ -399,6 +698,16 @@
     "get_underlying_snapshot": {
       "input_schema": {
         "additionalProperties": false,
+        "description": "Fetch a spot/last price snapshot for an underlying ticker at an optional UTC time.",
+        "examples": [
+          {
+            "ticker": "NVDA"
+          },
+          {
+            "asof": "2025-12-25T00:00:00Z",
+            "ticker": "NVDA"
+          }
+        ],
         "properties": {
           "asof": {
             "anyOf": [
@@ -411,10 +720,11 @@
               }
             ],
             "default": null,
-            "description": "UTC timestamp; if None, use latest available",
+            "description": "UTC timestamp (ISO-8601). If None, use latest available.",
             "title": "Asof"
           },
           "ticker": {
+            "description": "Underlying ticker, e.g. NVDA",
             "minLength": 1,
             "title": "Ticker",
             "type": "string"
@@ -428,6 +738,69 @@
       },
       "output_schema": {
         "$defs": {
+          "ToolMeta": {
+            "additionalProperties": false,
+            "description": "Standard metadata included in every tool response.",
+            "properties": {
+              "asof": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Requested asof timestamp (UTC) or None for latest",
+                "title": "Asof"
+              },
+              "generated_at": {
+                "description": "When this response was produced (UTC)",
+                "format": "date-time",
+                "title": "Generated At",
+                "type": "string"
+              },
+              "primary_source": {
+                "description": "Primary datasource used",
+                "enum": [
+                  "polygon",
+                  "cache",
+                  "synthetic"
+                ],
+                "title": "Primary Source",
+                "type": "string"
+              },
+              "tool": {
+                "description": "Tool name",
+                "enum": [
+                  "get_underlying_snapshot",
+                  "list_option_contracts",
+                  "get_option_quotes",
+                  "get_option_greeks",
+                  "get_option_oi"
+                ],
+                "title": "Tool",
+                "type": "string"
+              },
+              "warnings": {
+                "description": "Non-fatal issues / caveats",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Warnings",
+                "type": "array"
+              }
+            },
+            "required": [
+              "tool",
+              "generated_at",
+              "primary_source"
+            ],
+            "title": "ToolMeta",
+            "type": "object"
+          },
           "UnderlyingSnapshot": {
             "additionalProperties": false,
             "properties": {
@@ -470,13 +843,28 @@
           }
         },
         "additionalProperties": false,
+        "description": "Underlying snapshot result.",
+        "examples": [
+          {
+            "snapshot": {
+              "source": "polygon",
+              "spot": 123.45,
+              "ticker": "NVDA",
+              "ts": "2025-12-25T00:00:00Z"
+            }
+          }
+        ],
         "properties": {
-          "snapshopt": {
+          "meta": {
+            "$ref": "#/$defs/ToolMeta"
+          },
+          "snapshot": {
             "$ref": "#/$defs/UnderlyingSnapshot"
           }
         },
         "required": [
-          "snapshopt"
+          "meta",
+          "snapshot"
         ],
         "title": "GetUnderlyingSnapshotOutput",
         "type": "object"
@@ -485,6 +873,21 @@
     "list_option_contracts": {
       "input_schema": {
         "additionalProperties": false,
+        "description": "List option contracts for an underlying with optional expiry/right/strike filters.",
+        "examples": [
+          {
+            "expiry": "2026-01-16",
+            "limit": 200,
+            "right": "C",
+            "ticker": "NVDA"
+          },
+          {
+            "limit": 500,
+            "strike_max": 520,
+            "strike_min": 400,
+            "ticker": "SPY"
+          }
+        ],
         "properties": {
           "expiry": {
             "anyOf": [
@@ -497,10 +900,12 @@
               }
             ],
             "default": null,
+            "description": "Expiry date (YYYY-MM-DD)",
             "title": "Expiry"
           },
           "limit": {
             "default": 500,
+            "description": "Max number of contracts to return",
             "maximum": 5000,
             "minimum": 1,
             "title": "Limit",
@@ -520,6 +925,7 @@
               }
             ],
             "default": null,
+            "description": "'C' for calls, 'P' for puts",
             "title": "Right"
           },
           "strike_max": {
@@ -533,6 +939,7 @@
               }
             ],
             "default": null,
+            "description": "Maximum strike (inclusive intent)",
             "title": "Strike Max"
           },
           "strike_min": {
@@ -546,9 +953,11 @@
               }
             ],
             "default": null,
+            "description": "Minimum strike (inclusive intent)",
             "title": "Strike Min"
           },
           "ticker": {
+            "description": "Underlying ticker, e.g. NVDA",
             "minLength": 1,
             "title": "Ticker",
             "type": "string"
@@ -645,9 +1054,89 @@
             ],
             "title": "OptionContract",
             "type": "object"
+          },
+          "ToolMeta": {
+            "additionalProperties": false,
+            "description": "Standard metadata included in every tool response.",
+            "properties": {
+              "asof": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Requested asof timestamp (UTC) or None for latest",
+                "title": "Asof"
+              },
+              "generated_at": {
+                "description": "When this response was produced (UTC)",
+                "format": "date-time",
+                "title": "Generated At",
+                "type": "string"
+              },
+              "primary_source": {
+                "description": "Primary datasource used",
+                "enum": [
+                  "polygon",
+                  "cache",
+                  "synthetic"
+                ],
+                "title": "Primary Source",
+                "type": "string"
+              },
+              "tool": {
+                "description": "Tool name",
+                "enum": [
+                  "get_underlying_snapshot",
+                  "list_option_contracts",
+                  "get_option_quotes",
+                  "get_option_greeks",
+                  "get_option_oi"
+                ],
+                "title": "Tool",
+                "type": "string"
+              },
+              "warnings": {
+                "description": "Non-fatal issues / caveats",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Warnings",
+                "type": "array"
+              }
+            },
+            "required": [
+              "tool",
+              "generated_at",
+              "primary_source"
+            ],
+            "title": "ToolMeta",
+            "type": "object"
           }
         },
         "additionalProperties": false,
+        "description": "Contracts matching the filters.",
+        "examples": [
+          {
+            "contracts": [
+              {
+                "currency": "USD",
+                "exercise_style": "american",
+                "expiry": "2026-01-16",
+                "multiplier": 100,
+                "option_symbol": "O:NVDA260116C00120000",
+                "right": "C",
+                "strike": 120.0,
+                "underlying": "NVDA"
+              }
+            ]
+          }
+        ],
         "properties": {
           "contracts": {
             "items": {
@@ -655,9 +1144,13 @@
             },
             "title": "Contracts",
             "type": "array"
+          },
+          "meta": {
+            "$ref": "#/$defs/ToolMeta"
           }
         },
         "required": [
+          "meta",
           "contracts"
         ],
         "title": "ListOptionContractsOutput",
