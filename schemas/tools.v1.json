@@ -213,6 +213,13 @@
               "warnings": {
                 "description": "Non-fatal issues / caveats",
                 "items": {
+                  "enum": [
+                    "NO_RESULTS",
+                    "MARKET_CLOSED",
+                    "STALE_DATA",
+                    "PARTIAL_DATA",
+                    "VENDOR_LIMIT"
+                  ],
                   "type": "string"
                 },
                 "title": "Warnings",
@@ -411,6 +418,13 @@
               "warnings": {
                 "description": "Non-fatal issues / caveats",
                 "items": {
+                  "enum": [
+                    "NO_RESULTS",
+                    "MARKET_CLOSED",
+                    "STALE_DATA",
+                    "PARTIAL_DATA",
+                    "VENDOR_LIMIT"
+                  ],
                   "type": "string"
                 },
                 "title": "Warnings",
@@ -643,6 +657,13 @@
               "warnings": {
                 "description": "Non-fatal issues / caveats",
                 "items": {
+                  "enum": [
+                    "NO_RESULTS",
+                    "MARKET_CLOSED",
+                    "STALE_DATA",
+                    "PARTIAL_DATA",
+                    "VENDOR_LIMIT"
+                  ],
                   "type": "string"
                 },
                 "title": "Warnings",
@@ -787,6 +808,13 @@
               "warnings": {
                 "description": "Non-fatal issues / caveats",
                 "items": {
+                  "enum": [
+                    "NO_RESULTS",
+                    "MARKET_CLOSED",
+                    "STALE_DATA",
+                    "PARTIAL_DATA",
+                    "VENDOR_LIMIT"
+                  ],
                   "type": "string"
                 },
                 "title": "Warnings",
@@ -1104,6 +1132,13 @@
               "warnings": {
                 "description": "Non-fatal issues / caveats",
                 "items": {
+                  "enum": [
+                    "NO_RESULTS",
+                    "MARKET_CLOSED",
+                    "STALE_DATA",
+                    "PARTIAL_DATA",
+                    "VENDOR_LIMIT"
+                  ],
                   "type": "string"
                 },
                 "title": "Warnings",

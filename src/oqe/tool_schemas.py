@@ -30,6 +30,14 @@ ToolName = Literal[
     "get_option_oi",
 ]
 
+WarningCode = Literal[
+    "NO_RESULTS",
+    "MARKET_CLOSED",
+    "STALE_DATA",
+    "PARTIAL_DATA",
+    "VENDOR_LIMIT",
+]
+
 
 class ToolMeta(StrictModel):
     """
@@ -42,7 +50,9 @@ class ToolMeta(StrictModel):
         default=None, description="Requested asof timestamp (UTC) or None for latest"
     )
     primary_source: DataSource = Field(description="Primary datasource used")
-    warnings: list[str] = Field(default_factory=list, description="Non-fatal issues / caveats")
+    warnings: list[WarningCode] = Field(
+        default_factory=list, description="Non-fatal issues / caveats"
+    )
 
 
 # tool: get_underlying_snapshot ----------
