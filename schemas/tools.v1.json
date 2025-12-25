@@ -32,6 +32,16 @@
             "description": "UTC timestamp (ISO-8601). If None, use latest available.",
             "title": "Asof"
           },
+          "mode": {
+            "default": "vendor_only",
+            "description": "How to source greeks. 'vendor_only' returns vendor greeks/IV when available. 'vendor_then_bs' allows a fallback compute step (implemented later) if vendor greeks missing",
+            "enum": [
+              "vendor_only",
+              "vendor_then_bs"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
           "option_symbols": {
             "description": "List of option symbols (non-empty)",
             "items": {

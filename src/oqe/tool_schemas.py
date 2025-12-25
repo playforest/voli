@@ -38,6 +38,8 @@ WarningCode = Literal[
     "VENDOR_LIMIT",
 ]
 
+GreeksMode = Literal["vendor_only", "vendor_then_bs"]
+
 
 class ToolMeta(StrictModel):
     """
@@ -214,6 +216,13 @@ class GetOptionGreeksInput(StrictModel):
     asof: ISODatetime | None = Field(
         default=None,
         description="UTC timestamp (ISO-8601). If None, use latest available.",
+    )
+    mode: GreeksMode = Field(
+        default="vendor_only",
+        description=(
+            "How to source greeks. 'vendor_only' returns vendor greeks/IV when available. "
+            "'vendor_then_bs' allows a fallback compute step (implemented later) if vendor greeks missing"
+        ),
     )
 
 
