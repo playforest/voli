@@ -10,6 +10,19 @@ from typing import Any
 
 import httpx
 
+
+def _is_debug_enabled() -> bool:
+    return os.getenv("POLYGON_HTTP_DEBUG", "").strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _mask(s: str, keep: int = 4) -> str:
+    if not s:
+        return s
+    if len(s) <= keep:
+        return "*" * len(s)
+    return "*" * (len(s) - keep) + s[-keep:]
+
+
 # ----------------------------
 # Errors (small taxonomy)
 # ----------------------------
@@ -76,6 +89,8 @@ class PolygonHTTP:
             headers={"User-Agent": self.cfg.user_agent},
         )
 
+        self.debug = _is_debug_enabled()
+
     def close(self) -> None:
         self._client.close()
 
@@ -95,8 +110,19 @@ class PolygonHTTP:
         while True:
             attempt += 1
             try:
+                req_url = path
+                if path.startswith("/"):
+                    req_url = f"{self.cfg.base_url.rstrip('/')}{path}"
+                if self.debug:
+                    safe_params = dict(merged_params)
+                    if "apiKey" in safe_params:
+                        safe_params["apiKey"] = _mask(str(safe_params["apiKey"]))
+                    print(f"[polygon] -> {method} {req_url} params={safe_params}")
                 resp = self._client.request(method, path, params=merged_params)
-            except (httpx.TimeoutException, httpx.NetworkError) as e:
+
+                if self.debug:
+                    print(f"[polygon] <- {resp.status_code} {req_url}")
+            except (httpx.TimeoutException, httpx.RequestError) as e:
                 if attempt >= self.cfg.max_retries:
                     raise PolygonNetworkError(
                         f"Polygon network error after {attempt} attempts: {e}"
