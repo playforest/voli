@@ -39,6 +39,8 @@ WarningCode = Literal[
 ]
 
 GreeksMode = Literal["vendor_only", "vendor_then_bs"]
+PriceInput = Literal["mid", "last"]
+DayCount = Literal["act365"]
 
 
 class ToolMeta(StrictModel):
@@ -224,6 +226,13 @@ class GetOptionGreeksInput(StrictModel):
             "'vendor_then_bs' allows a fallback compute step (implemented later) if vendor greeks missing"
         ),
     )
+    pricing_assumptions: PricingAssumptions | None = Field(
+        default=None,
+        description=(
+            "Optional pricing assumptions used only when mode='vendor_then_bs'. "
+            "If omitted, deterministic defaults are used."
+        ),
+    )
 
 
 class GetOptionGreeksOutput(StrictModel):
@@ -300,3 +309,13 @@ class GetOptionOIOutput(StrictModel):
     }
     meta: ToolMeta
     oi: list[OptionOI]
+
+
+class PricingAssumptions(StrictModel):
+    r: float = Field(default=0.0, description="Risk-free rate (annualized, decimal)")
+    q: float = Field(default=0.0, description="Dividend yield (annualized, decimal)")
+    price_input: PriceInput = Field(
+        default="mid",
+        description="Which option price to use for IV solve when computing greeks.",
+    )
+    day_count: DayCount = Field(default="act365", description="Day count convention for T")

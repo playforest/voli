@@ -2,6 +2,44 @@
   "tools": {
     "get_option_greeks": {
       "input_schema": {
+        "$defs": {
+          "PricingAssumptions": {
+            "additionalProperties": false,
+            "properties": {
+              "day_count": {
+                "const": "act365",
+                "default": "act365",
+                "description": "Day count convention for T",
+                "title": "Day Count",
+                "type": "string"
+              },
+              "price_input": {
+                "default": "mid",
+                "description": "Which option price to use for IV solve when computing greeks.",
+                "enum": [
+                  "mid",
+                  "last"
+                ],
+                "title": "Price Input",
+                "type": "string"
+              },
+              "q": {
+                "default": 0.0,
+                "description": "Dividend yield (annualized, decimal)",
+                "title": "Q",
+                "type": "number"
+              },
+              "r": {
+                "default": 0.0,
+                "description": "Risk-free rate (annualized, decimal)",
+                "title": "R",
+                "type": "number"
+              }
+            },
+            "title": "PricingAssumptions",
+            "type": "object"
+          }
+        },
         "additionalProperties": false,
         "description": "Fetch or compute greeks/IV for a list of option symbols at an optional UTC time.",
         "examples": [
@@ -51,6 +89,18 @@
             "minItems": 1,
             "title": "Option Symbols",
             "type": "array"
+          },
+          "pricing_assumptions": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/PricingAssumptions"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional pricing assumptions used only when mode='vendor_then_bs'. If omitted, deterministic defaults are used."
           }
         },
         "required": [
