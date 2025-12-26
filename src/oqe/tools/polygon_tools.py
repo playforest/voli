@@ -297,12 +297,40 @@ def get_option_quotes(inp: GetOptionQuotesInput) -> GetOptionQuotesOutput:
 
 
 def get_option_greeks(inp: GetOptionGreeksInput) -> GetOptionGreeksOutput:
-    warnings: list[WarningCode] = []
+    # request-specific warnings (not cached)
+    req_warnings: list[WarningCode] = []
     if inp.asof is not None:
-        warnings.append("VENDOR_LIMIT")
+        req_warnings.append("VENDOR_LIMIT")
     if inp.mode != "vendor_only":
         # vendor_then_bs fallback compute is Part 4/5
-        warnings.append("VENDOR_LIMIT")
+        req_warnings.append("VENDOR_LIMIT")
+
+    tool_name = "get_option_greeks"
+    effective_asof = None  # snapshot endpoint is latest-only
+
+    # cache key excludes asof so "asof requested but unsupported" reuses latest cache
+    tool_inputs = _dump_model(inp, exclude={"asof"})
+    key, asof_norm, inputs_json = make_cache_key(tool_name, tool_inputs, asof=effective_asof)
+
+    cache = _get_cache()
+
+    # --- Cache hit ---
+    rec = cache.get(key)
+    if rec is not None:
+        cached = json.loads(rec.response_json)
+        base_warnings: list[WarningCode] = cached.get("warnings", [])
+        warnings = [*base_warnings, *req_warnings]
+
+        gb = cached.get("greeks_by_symbol", {})
+        greeks = [gb[s] for s in inp.option_symbols if s in gb]
+
+        return GetOptionGreeksOutput(
+            meta=_meta(tool_name, inp.asof, warnings, primary_source="cache"),
+            greeks=greeks,
+        )
+
+    # --- Cache miss: vendor ---
+    base_warnings: list[WarningCode] = []
 
     by_underlying: dict[str, list[str]] = defaultdict(list)
     for sym in inp.option_symbols:
@@ -310,11 +338,12 @@ def get_option_greeks(inp: GetOptionGreeksInput) -> GetOptionGreeksOutput:
 
     pc = PolygonClient()
     try:
-        out_map = {}
+        out_map: dict[str, Any] = {}
         partial = False
 
         for underlying, syms in by_underlying.items():
-            for sym in syms:
+            # IMPORTANT: dedupe to avoid duplicated HTTP calls in one request
+            for sym in dict.fromkeys(syms):
                 try:
                     data = pc.get_option_contract_snapshot(underlying, sym)
                     row = data.get("results") or data.get("result") or data
@@ -326,16 +355,32 @@ def get_option_greeks(inp: GetOptionGreeksInput) -> GetOptionGreeksOutput:
                     partial = True
 
         greeks = [out_map[s] for s in inp.option_symbols if s in out_map]
+
         if partial or any(
             (g.delta, g.gamma, g.theta, g.vega, g.iv) == (None, None, None, None, None)
             for g in greeks
         ):
-            warnings.append("PARTIAL_DATA")
+            base_warnings.append("PARTIAL_DATA")
         if not greeks:
-            warnings.append("NO_RESULTS")
+            base_warnings.append("NO_RESULTS")
 
+        cache.set(
+            key=key,
+            tool=tool_name,
+            asof=asof_norm,
+            inputs_json=inputs_json,
+            response_json=_stable_json_dumps(
+                {
+                    "greeks_by_symbol": {sym: _dump_model(g) for sym, g in out_map.items()},
+                    "warnings": base_warnings,
+                }
+            ),
+            ttl_seconds=CACHE_TTL_LATEST_SECONDS,
+        )
+
+        warnings = [*base_warnings, *req_warnings]
         return GetOptionGreeksOutput(
-            meta=_meta("get_option_greeks", inp.asof, warnings),
+            meta=_meta(tool_name, inp.asof, warnings, primary_source="polygon"),
             greeks=greeks,
         )
     finally:
