@@ -40,8 +40,10 @@ _OPTION_UNDERLYING_RE = re.compile(r"^O:([A-Z]+)\d{6}[CP]\d+")
 def _dump_model(m, *, exclude: set[str] | None = None) -> dict:
     exclude = exclude or set()
     if hasattr(m, "model_dump"):  # pydantic v2
-        return m.model_dump(exclude_none=True, exclude=exclude)
-    return m.dict(exclude_none=True, exclude=exclude)  # pydantic v1
+        # mode="json" converts datetime -> ISO strings, etc.
+        return m.model_dump(mode="json", exclude_none=True, exclude=exclude)
+    # pydantic v1: .json() handles datetime -> ISO; round-trip back to dict
+    return json.loads(m.json(exclude_none=True, exclude=exclude))
 
 
 def _underlying_from_option_symbol(sym: str) -> str:
@@ -211,9 +213,34 @@ def list_option_contracts(inp: ListOptionContractsInput) -> ListOptionContractsO
 
 
 def get_option_quotes(inp: GetOptionQuotesInput) -> GetOptionQuotesOutput:
-    warnings: list[WarningCode] = []
+    # request-specific warnings (not cached)
+    req_warnings: list[WarningCode] = []
     if inp.asof is not None:
-        warnings.append("VENDOR_LIMIT")
+        req_warnings.append("VENDOR_LIMIT")
+
+    tool_name = "get_option_quotes"
+    effective_asof = None  # snapshot endpoint is latest-only
+
+    # cache key excludes asof so "asof requested but unsupported" reuses latest cache
+    tool_inputs = _dump_model(inp, exclude={"asof"})
+    key, asof_norm, inputs_json = make_cache_key(tool_name, tool_inputs, asof=effective_asof)
+
+    cache = _get_cache()
+
+    # --- Cache hit ---
+    rec = cache.get(key)
+    if rec is not None:
+        cached = json.loads(rec.response_json)
+        base_warnings: list[WarningCode] = cached.get("warnings", [])
+        warnings = [*base_warnings, *req_warnings]
+
+        return GetOptionQuotesOutput(
+            meta=_meta(tool_name, inp.asof, warnings, primary_source="cache"),
+            quotes=cached["quotes"],
+        )
+
+    # --- Cache miss: vendor ---
+    base_warnings: list[WarningCode] = []
 
     by_underlying: dict[str, list[str]] = defaultdict(list)
     for sym in inp.option_symbols:
@@ -221,11 +248,12 @@ def get_option_quotes(inp: GetOptionQuotesInput) -> GetOptionQuotesOutput:
 
     pc = PolygonClient()
     try:
-        out_map = {}
+        out_map: dict[str, Any] = {}
         partial = False
 
         for underlying, syms in by_underlying.items():
-            for sym in syms:
+            # IMPORTANT: dedupe to avoid duplicated HTTP calls in one request
+            for sym in dict.fromkeys(syms):
                 try:
                     data = pc.get_option_contract_snapshot(underlying, sym)
                     row = data.get("results") or data.get("result") or data
@@ -238,12 +266,28 @@ def get_option_quotes(inp: GetOptionQuotesInput) -> GetOptionQuotesOutput:
 
         quotes = [out_map[s] for s in inp.option_symbols if s in out_map]
         if partial:
-            warnings.append("PARTIAL_DATA")
+            base_warnings.append("PARTIAL_DATA")
         if not quotes:
-            warnings.append("NO_RESULTS")
+            base_warnings.append("NO_RESULTS")
 
+        # cache deterministic payload only (quotes + base warnings)
+        cache.set(
+            key=key,
+            tool=tool_name,
+            asof=asof_norm,
+            inputs_json=inputs_json,
+            response_json=_stable_json_dumps(
+                {
+                    "quotes": [_dump_model(q) for q in quotes],
+                    "warnings": base_warnings,
+                }
+            ),
+            ttl_seconds=CACHE_TTL_LATEST_SECONDS,
+        )
+
+        warnings = [*base_warnings, *req_warnings]
         return GetOptionQuotesOutput(
-            meta=_meta("get_option_quotes", inp.asof, warnings),
+            meta=_meta(tool_name, inp.asof, warnings, primary_source="polygon"),
             quotes=quotes,
         )
     finally:
