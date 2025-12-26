@@ -233,10 +233,12 @@ def get_option_quotes(inp: GetOptionQuotesInput) -> GetOptionQuotesOutput:
         cached = json.loads(rec.response_json)
         base_warnings: list[WarningCode] = cached.get("warnings", [])
         warnings = [*base_warnings, *req_warnings]
+        qb = cached.get("quotes_by_symbol", {})
+        quotes = [qb[s] for s in inp.option_symbols if s in qb]
 
         return GetOptionQuotesOutput(
             meta=_meta(tool_name, inp.asof, warnings, primary_source="cache"),
-            quotes=cached["quotes"],
+            quotes=quotes,
         )
 
     # --- Cache miss: vendor ---
@@ -278,7 +280,7 @@ def get_option_quotes(inp: GetOptionQuotesInput) -> GetOptionQuotesOutput:
             inputs_json=inputs_json,
             response_json=_stable_json_dumps(
                 {
-                    "quotes": [_dump_model(q) for q in quotes],
+                    "quotes_by_symbol": {sym: _dump_model(q) for sym, q in out_map.items()},
                     "warnings": base_warnings,
                 }
             ),
