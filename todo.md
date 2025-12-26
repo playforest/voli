@@ -89,9 +89,9 @@ Also: make the repo and docs **friendly for learning agents/LLMs**—briefly exp
 - Add unit tests that mock Polygon responses.
 
 **Deliverables**
-- [ ] `src/polygon_client.py`
-- [ ] `src/tools/polygon_tools.py`
-- [ ] `tests/test_polygon_tools.py`
+- [*] `src/polygon_client.py`
+- [*] `src/tools/polygon_tools.py`
+- [*] `tests/test_polygon_tools.py`
 
 **Done when**
 - Tools run in isolation and return consistent, validated objects.
