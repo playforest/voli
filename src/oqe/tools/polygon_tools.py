@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import json
 import re
 from collections import defaultdict
 from datetime import UTC, datetime
+from functools import lru_cache
+from typing import Any
 
+from oqe.cache import SQLiteCache, default_cache_path
 from oqe.polygon.client import OptionChainQuery, PolygonClient
 from oqe.polygon.helpers import ns_to_utc_iso
 from oqe.polygon.http import PolygonError, PolygonNotFoundError
@@ -43,6 +47,17 @@ def _meta(tool: str, asof: datetime | None, warnings: list[WarningCode]) -> Tool
         primary_source="polygon",
         warnings=warnings,
     )
+
+
+@lru_cache(maxsize=1)
+def _get_cache() -> SQLiteCache:
+    # One shared connection per process; path is env-overridable via OQE_CACHE_PATH
+    return SQLiteCache(default_cache_path())
+
+
+def _stable_json_dumps(obj: Any) -> str:
+    # Deterministic JSON for cache storage (sort keys, compact)
+    return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
 def get_underlying_snapshot(inp: GetUnderlyingSnapshotInput) -> GetUnderlyingSnapshotOutput:
