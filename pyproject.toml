@@ -31,6 +31,8 @@ httpx = "^0.28.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"
+ipykernel = "^7.1.0"
+jupyter = "^1.1.1"
 
 [build-system]
 requires = ["poetry-core>=1.8.0"]
