@@ -110,8 +110,9 @@ Also: make the repo and docs **friendly for learning agents/LLMs**—briefly exp
 
 **Deliverables**
 - [*] `src/oqe/cache.py`
-- [ ] `src/oqe/run_trace.py` (stores tool calls + outputs summary)
-- [ ] `docs/reproducibility.md`
+- [*] `src/oqe/run_trace.py` (stores tool calls + outputs summary)
+- [*] `docs/reproducibility.md`
+- [*] `docs/notebooks/part4_replay_and_trace_walkthrough.ipynb`
 
 **Done when**
 - You can rerun the same prompt and see the same trace + same computed metrics (when using cached/asof).
