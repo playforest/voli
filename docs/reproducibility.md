@@ -8,6 +8,8 @@ Reproducibility in v1 is achieved through:
 - **Explicit TTL policy** (freshness window per tool)
 - **Run traces** (JSONL “flight recorder” of tool calls + sources)
 
+> Live, step-by-step replay example: see `docs/notebooks/part4_replay_and_trace_walkthrough.ipynb`.
+
 ---
 
 ## Key terms
@@ -64,3 +66,87 @@ Override:
 Example:
 ```bash
 export OQE_CACHE_PATH=/tmp/oqe-cache.sqlite
+```
+
+---
+
+## Data source attribution
+
+Each tool response includes `ToolMeta.primary_source` indicating where the returned data was served from:
+- `"polygon"`: fetched from Polygon (vendor)
+- `"cache"`: served from on-disk cache
+
+Warnings (e.g., `STALE_DATA`, `PARTIAL_DATA`, `VENDOR_LIMIT`) appear in `ToolMeta.warnings`.
+
+---
+
+## Run traces (tool-call flight recorder)
+
+A **trace** records what happened during a “run” (one question / one workflow).
+
+Traces are stored as **JSONL** (one JSON object per line), containing:
+- tool name
+- canonical inputs JSON
+- cache key
+- primary_source (`polygon` or `cache`)
+- warnings
+- created_at timestamps
+
+### Trace location
+Default:
+- `~/.oqe/traces/<trace_id>.jsonl`
+
+Override:
+- set `OQE_TRACE_DIR`
+
+Example:
+```bash
+export OQE_TRACE_DIR=/tmp/oqe-traces
+```
+
+### How to start/end a trace (minimal)
+```python
+from oqe.run_trace import start_trace, end_trace
+
+t = start_trace()  # or start_trace("my_trace_id")
+# ... call tools ...
+end_trace()
+
+print(t.path)  # where JSONL was written
+```
+
+---
+
+## How to replay / reproduce a run (detailed workflow)
+
+### What “replay” means in v1
+In v1, “replay” means: **reuse the same cached tool payloads** (and log that reuse in a new trace),
+so the same tool inputs produce the same tool outputs (while the cache entries remain valid).
+
+Because snapshot endpoints are *latest-only*, the key to reproducibility is preserving cache state.
+
+### Replay workflow (CLI-level)
+1) Identify the cache and trace from the original run:
+- Cache: `~/.oqe/cache.sqlite` (or `OQE_CACHE_PATH`)
+- Trace: `~/.oqe/traces/<trace_id>.jsonl` (or `OQE_TRACE_DIR`)
+
+2) Freeze cache state by copying the SQLite DB:
+```bash
+cp ~/.oqe/cache.sqlite /tmp/replay-cache.sqlite
+export OQE_CACHE_PATH=/tmp/replay-cache.sqlite
+```
+
+3) Re-run with the same tool inputs.
+- If keys match and entries are not expired, responses will serve from cache.
+- The new run will produce a new trace file capturing `primary_source="cache"`.
+
+4) Compare traces:
+```bash
+diff -u ~/.oqe/traces/<old>.jsonl ~/.oqe/traces/<new>.jsonl
+```
+
+### Replay workflow (Notebook-level)
+See `docs/notebooks/part4_replay_and_trace_walkthrough.ipynb` for a concrete, end-to-end example:
+- run 1: vendor → cache write → trace
+- run 2: cache hit → trace
+- “new machine” simulation: copy cache DB + disable vendor → still serves from cache
