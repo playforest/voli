@@ -19,6 +19,19 @@ ORDER_INSENSITIVE_FIELDS = {
     "tickers",
 }
 
+# v1 TTL defaults (seconds)
+TOOL_TTL_LATEST_SECONDS: dict[str, int] = {
+    "get_underlying_snapshot": 30,
+    "get_option_quotes": 30,
+    "get_option_greeks": 30,
+    "list_option_contracts": 6 * 60 * 60,
+}
+
+TOOL_TTL_HISTORICAL_SECONDS: dict[str, int] = {
+    # When a tool truly supports historical asof (Part 4/5), cache much longer.
+    "default": 24 * 60 * 60,
+}
+
 
 def _canonicalize(obj: Any, *, field_name: str | None = None) -> JsonLike:
     """
@@ -209,3 +222,9 @@ def default_cache_path() -> Path:
     if env:
         return Path(env).expanduser()
     return Path.home() / ".oqe" / "cache.sqlite"
+
+
+def ttl_for(tool_name: str, *, asof_is_latest: bool) -> int:
+    if asof_is_latest:
+        return TOOL_TTL_LATEST_SECONDS.get(tool_name, 60)
+    return TOOL_TTL_HISTORICAL_SECONDS.get(tool_name, TOOL_TTL_HISTORICAL_SECONDS["default"])

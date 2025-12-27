@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from functools import lru_cache
 from typing import Any
 
-from oqe.cache import SQLiteCache, default_cache_path, make_cache_key
+from oqe.cache import SQLiteCache, default_cache_path, make_cache_key, ttl_for
 from oqe.polygon.client import OptionChainQuery, PolygonClient
 from oqe.polygon.helpers import ns_to_utc_iso
 from oqe.polygon.http import PolygonError, PolygonNotFoundError
@@ -16,6 +16,7 @@ from oqe.polygon.normalise import (
     option_greeks_from_snapshot_row,
     option_quote_from_snapshot_row,
 )
+from oqe.run_trace import get_trace
 from oqe.tool_schemas import (
     GetOptionGreeksInput,
     GetOptionGreeksOutput,
@@ -80,6 +81,31 @@ def _stable_json_dumps(obj: Any) -> str:
     return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+def _trace_tool_call(
+    *,
+    tool: str,
+    inputs_json: str,
+    cache_key: str,
+    primary_source: str,
+    warnings: list[WarningCode],
+    asof_norm: str,
+) -> None:
+    t = get_trace()
+    if t is None:
+        return
+    t.log(
+        {
+            "event": "tool_call",
+            "tool": tool,
+            "inputs_json": inputs_json,
+            "cache_key": cache_key,
+            "primary_source": primary_source,
+            "warnings": list(warnings),
+            "asof_norm": asof_norm,
+        }
+    )
+
+
 def get_underlying_snapshot(inp: GetUnderlyingSnapshotInput) -> GetUnderlyingSnapshotOutput:
     # Warnings that are request-specific (not cached)
     req_warnings: list[WarningCode] = []
@@ -103,6 +129,15 @@ def get_underlying_snapshot(inp: GetUnderlyingSnapshotInput) -> GetUnderlyingSna
         snapshot = cached["snapshot"]
         base_warnings: list[WarningCode] = cached.get("warnings", [])
         warnings = [*base_warnings, *req_warnings]
+
+        _trace_tool_call(
+            tool=tool_name,
+            inputs_json=inputs_json,
+            cache_key=key,
+            primary_source="cache",
+            warnings=warnings,
+            asof_norm=asof_norm,
+        )
 
         return GetUnderlyingSnapshotOutput(
             meta=_meta(tool_name, inp.asof, warnings, primary_source="cache"),
@@ -148,10 +183,20 @@ def get_underlying_snapshot(inp: GetUnderlyingSnapshotInput) -> GetUnderlyingSna
             asof=asof_norm,
             inputs_json=inputs_json,
             response_json=_stable_json_dumps({"snapshot": snapshot, "warnings": base_warnings}),
-            ttl_seconds=CACHE_TTL_LATEST_SECONDS,
+            ttl_seconds=ttl_for(tool_name, asof_is_latest=True),
         )
 
         warnings = [*base_warnings, *req_warnings]
+
+        _trace_tool_call(
+            tool=tool_name,
+            inputs_json=inputs_json,
+            cache_key=key,
+            primary_source="polygon",
+            warnings=warnings,
+            asof_norm=asof_norm,
+        )
+
         return GetUnderlyingSnapshotOutput(
             meta=_meta(tool_name, inp.asof, warnings, primary_source="polygon"),
             snapshot=snapshot,
@@ -236,6 +281,15 @@ def get_option_quotes(inp: GetOptionQuotesInput) -> GetOptionQuotesOutput:
         qb = cached.get("quotes_by_symbol", {})
         quotes = [qb[s] for s in inp.option_symbols if s in qb]
 
+        _trace_tool_call(
+            tool=tool_name,
+            inputs_json=inputs_json,
+            cache_key=key,
+            primary_source="cache",
+            warnings=warnings,
+            asof_norm=asof_norm,
+        )
+
         return GetOptionQuotesOutput(
             meta=_meta(tool_name, inp.asof, warnings, primary_source="cache"),
             quotes=quotes,
@@ -284,10 +338,20 @@ def get_option_quotes(inp: GetOptionQuotesInput) -> GetOptionQuotesOutput:
                     "warnings": base_warnings,
                 }
             ),
-            ttl_seconds=CACHE_TTL_LATEST_SECONDS,
+            ttl_seconds=ttl_for(tool_name, asof_is_latest=True),
         )
 
         warnings = [*base_warnings, *req_warnings]
+
+        _trace_tool_call(
+            tool=tool_name,
+            inputs_json=inputs_json,
+            cache_key=key,
+            primary_source="polygon",
+            warnings=warnings,
+            asof_norm=asof_norm,
+        )
+
         return GetOptionQuotesOutput(
             meta=_meta(tool_name, inp.asof, warnings, primary_source="polygon"),
             quotes=quotes,
@@ -323,6 +387,15 @@ def get_option_greeks(inp: GetOptionGreeksInput) -> GetOptionGreeksOutput:
 
         gb = cached.get("greeks_by_symbol", {})
         greeks = [gb[s] for s in inp.option_symbols if s in gb]
+
+        _trace_tool_call(
+            tool=tool_name,
+            inputs_json=inputs_json,
+            cache_key=key,
+            primary_source="cache",
+            warnings=warnings,
+            asof_norm=asof_norm,
+        )
 
         return GetOptionGreeksOutput(
             meta=_meta(tool_name, inp.asof, warnings, primary_source="cache"),
@@ -375,10 +448,20 @@ def get_option_greeks(inp: GetOptionGreeksInput) -> GetOptionGreeksOutput:
                     "warnings": base_warnings,
                 }
             ),
-            ttl_seconds=CACHE_TTL_LATEST_SECONDS,
+            ttl_seconds=ttl_for(tool_name, asof_is_latest=True),
         )
 
         warnings = [*base_warnings, *req_warnings]
+
+        _trace_tool_call(
+            tool=tool_name,
+            inputs_json=inputs_json,
+            cache_key=key,
+            primary_source="polygon",
+            warnings=warnings,
+            asof_norm=asof_norm,
+        )
+
         return GetOptionGreeksOutput(
             meta=_meta(tool_name, inp.asof, warnings, primary_source="polygon"),
             greeks=greeks,

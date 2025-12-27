@@ -109,8 +109,8 @@ Also: make the repo and docs **friendly for learning agents/LLMs**—briefly exp
 - Add a “trace id” per question run.
 
 **Deliverables**
-- [ ] `src/cache.py`
-- [ ] `src/run_trace.py` (stores tool calls + outputs summary)
+- [*] `src/oqe/cache.py`
+- [ ] `src/oqe/run_trace.py` (stores tool calls + outputs summary)
 - [ ] `docs/reproducibility.md`
 
 **Done when**
