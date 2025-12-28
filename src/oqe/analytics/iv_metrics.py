@@ -147,6 +147,25 @@ def is_spread_too_wide(
     return MetricResult(rs.value > max_relative_spread, ())
 
 
+def mid_from_quote(quote: object) -> MetricResult[float]:
+    """Compute mid price from an OptionQuote-like object (bid/ask/last attrs)."""
+    bid = getattr(quote, "bid", None)
+    ask = getattr(quote, "ask", None)
+    last = getattr(quote, "last", None)
+    return mid_price(bid, ask, last)
+
+
+def is_quote_spread_too_wide(
+    quote: object,
+    *,
+    max_relative_spread: float = 0.20,
+) -> MetricResult[bool]:
+    """Spread-too-wide check from an OptionQuote-like object (bid/ask attrs)."""
+    bid = getattr(quote, "bid", None)
+    ask = getattr(quote, "ask", None)
+    return is_spread_too_wide(bid, ask, max_relative_spread=max_relative_spread)
+
+
 # --- ATM selection ---------------------------------------------------------
 
 

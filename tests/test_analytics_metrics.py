@@ -5,7 +5,9 @@ from datetime import date
 
 from oqe.analytics.iv_metrics import (
     atm_iv_term_structure,
+    is_quote_spread_too_wide,
     is_spread_too_wide,
+    mid_from_quote,
     mid_price,
     relative_spread,
     select_atm_strike,
@@ -79,6 +81,28 @@ def test_mid_price_and_spread_logic():
     too_wide2 = is_spread_too_wide(None, 3.0)
     assert too_wide2.value is None
     assert "MISSING_BID" in too_wide2.flags
+
+
+@dataclass(frozen=True)
+class _Q:
+    bid: float | None
+    ask: float | None
+    last: float | None = None
+
+
+def test_quote_helpers_mid_and_spread():
+    q = _Q(bid=1.0, ask=3.0, last=None)
+
+    m = mid_from_quote(q)
+    assert m.value == 2.0  # (1+3)/2
+
+    tw = is_quote_spread_too_wide(q, max_relative_spread=0.8)
+    assert tw.value is True  # rel spread = (3-1)/2 = 1.0 > 0.8
+
+    q2 = _Q(bid=1.0, ask=None, last=None)
+    tw2 = is_quote_spread_too_wide(q2)
+    assert tw2.value is None
+    assert "MISSING_ASK" in tw2.flags
 
 
 def test_term_structure_atm_iv_comparison_calls():
