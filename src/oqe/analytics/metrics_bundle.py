@@ -3,10 +3,10 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from typing import Any
 
 from .greeks import GreeksSnapshot, atm_greeks_for_expiry
 from .iv_metrics import MetricResult, TermStructureResult, atm_iv_term_structure
+from .protocols import OptionContractLike, OptionGreeksLike
 from .skew import skew_slope
 
 
@@ -22,20 +22,11 @@ class MetricsBundle:
 def compute_v1_metrics_bundle(
     *,
     spot: float,
-    contracts: Iterable[Any],
-    greeks_by_symbol: Mapping[str, Any],
+    contracts: Iterable[OptionContractLike],
+    greeks_by_symbol: Mapping[str, OptionGreeksLike],
     right: str,
 ) -> MetricsBundle:
-    """
-    Compute the v1 metric bundle for a given right ("call"/"put").
-
-    v1 semantics:
-    - Term structure: front expiry vs next expiry using the SAME strike (ATM strike from front grid).
-    - Skew slope: computed on the front expiry.
-    - ATM greeks: selected on the front expiry.
-
-    All components surface missing-data via MetricResult flags; never fabricate values.
-    """
+    """Compute the v1 metric bundle for a given right ("call"/"put")."""
     contracts_list = list(contracts)
 
     ts = atm_iv_term_structure(
