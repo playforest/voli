@@ -7,15 +7,16 @@ from typing import Protocol, runtime_checkable
 
 @runtime_checkable
 class OptionContractLike(Protocol):
-    """Minimum shape required by analytics for an option contract."""
+    """Minimum shape required by analytics for an option contract.
+
+    Note: analytics also expects a symbol identifier via either `.option_symbol` or `.symbol`.
+    We intentionally don't require those attributes in this Protocol to avoid forcing
+    models to implement both.
+    """
 
     expiry: date | datetime | str
     strike: float
     right: str
-
-    # at least one of these must exist
-    option_symbol: str  # noqa: SIM905 - protocol attribute
-    # symbol: str  # optional alternative supported via getattr
 
 
 @runtime_checkable

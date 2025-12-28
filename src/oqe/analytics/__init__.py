@@ -1,4 +1,6 @@
 # src/oqe/analytics/__init__.py
+# ruff: noqa: F401
+
 from __future__ import annotations
 
 from .greeks import GreeksSnapshot, atm_greeks_for_expiry
@@ -19,7 +21,6 @@ from .protocols import OptionContractLike, OptionGreeksLike, OptionQuoteLike
 from .skew import SkewCurve, skew_slope, skew_slope_ols, strike_iv_pairs
 
 __all__ = [
-    "ATMGreeksSnapshot",
     "GreeksSnapshot",
     "MetricResult",
     "MetricsBundle",
