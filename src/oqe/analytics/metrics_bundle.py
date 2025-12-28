@@ -3,12 +3,11 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from datetime import date
 from typing import Any
 
-from .greeks import ATMGreeksResult, atm_greeks_for_expiry
-from .iv_metrics import TermStructureResult, atm_iv_term_structure
-from .skew import SkewSlopeResult, skew_slope
+from .greeks import GreeksSnapshot, atm_greeks_for_expiry
+from .iv_metrics import MetricResult, TermStructureResult, atm_iv_term_structure
+from .skew import skew_slope
 
 
 @dataclass(frozen=True)
@@ -16,8 +15,8 @@ class MetricsBundle:
     """Convenience container for the v1 metric outputs."""
 
     term_structure: TermStructureResult
-    skew_slope: SkewSlopeResult
-    atm_greeks: ATMGreeksResult
+    skew_slope: MetricResult[float]
+    atm_greeks: MetricResult[GreeksSnapshot]
 
 
 def compute_v1_metrics_bundle(
@@ -29,34 +28,30 @@ def compute_v1_metrics_bundle(
 ) -> MetricsBundle:
     """
     Compute the v1 metric bundle for a given right ("call"/"put").
-    - Term structure uses front vs next expiry and same strike.
-    - Skew slope uses the front expiry (if available).
-    - ATM greeks uses the front expiry (if available).
+
+    v1 semantics:
+    - Term structure: front expiry vs next expiry using the SAME strike (ATM strike from front grid).
+    - Skew slope: computed on the front expiry.
+    - ATM greeks: selected on the front expiry.
+
+    All components surface missing-data via MetricResult flags; never fabricate values.
     """
+    contracts_list = list(contracts)
+
     ts = atm_iv_term_structure(
         spot=spot,
-        contracts=contracts,
+        contracts=contracts_list,
         greeks_by_symbol=greeks_by_symbol,
         right=right,
     )
 
-    # For skew + ATM greeks we focus on the front expiry (v1)
     front_expiry = ts.front_expiry
-
     if front_expiry is None:
-        # If we can't find expiries, keep deterministic Nones + flags
-        ss = SkewSlopeResult(expiry=date.min, right=right, slope=None, flags=("MISSING_EXPIRY",))
-        ag = ATMGreeksResult(
-            expiry=date.min,
-            right=right,
-            atm_strike=ts.atm_strike,
-            greeks=None,
-            flags=("MISSING_EXPIRY",),
-        )
-        return MetricsBundle(term_structure=ts, skew_slope=ss, atm_greeks=ag)
+        missing = MetricResult(None, ("MISSING_EXPIRY",))
+        return MetricsBundle(term_structure=ts, skew_slope=missing, atm_greeks=missing)
 
     ss = skew_slope(
-        contracts=contracts,
+        contracts=contracts_list,
         greeks_by_symbol=greeks_by_symbol,
         expiry=front_expiry,
         right=right,
@@ -64,7 +59,7 @@ def compute_v1_metrics_bundle(
 
     ag = atm_greeks_for_expiry(
         spot=spot,
-        contracts=contracts,
+        contracts=contracts_list,
         greeks_by_symbol=greeks_by_symbol,
         expiry=front_expiry,
         right=right,
