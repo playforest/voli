@@ -1,18 +1,7 @@
-"""IV + pricing metrics.
-
-v1 principles
-- Deterministic: given the same inputs, always the same outputs.
-- Conservative: when data is missing/invalid, return None + flags.
-- Lightweight: no numpy dependency.
-
-Notes
-- "IV" here means the vendor-supplied/implied volatility field from OptionGreeks.
-  We are not re-fitting vol from prices in v1.
-"""
-
+# src/oqe/analytics/iv_metrics.py
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Generic, TypeVar
@@ -22,15 +11,8 @@ T = TypeVar("T")
 
 @dataclass(frozen=True)
 class MetricResult(Generic[T]):
-    """A deterministic value plus flags for partial/missing data."""
-
     value: T | None
     flags: tuple[str, ...] = ()
-
-    def with_flag(self, flag: str) -> MetricResult[T]:
-        if flag in self.flags:
-            return self
-        return MetricResult(self.value, self.flags + (flag,))
 
 
 def _as_date(d: date | datetime | str) -> date:
@@ -38,96 +20,90 @@ def _as_date(d: date | datetime | str) -> date:
         return d
     if isinstance(d, datetime):
         return d.date()
-    # Accept ISO strings ("YYYY-MM-DD" or full timestamp).
-    try:
-        return datetime.fromisoformat(d).date()
-    except ValueError:
-        return date.fromisoformat(d)
+    return date.fromisoformat(str(d))
 
 
 def normalize_right(right: str) -> str:
-    """Normalize option right values.
-
-    Accepts: 'call'/'put', 'c'/'p', 'C'/'P'.
-    Returns: 'call' or 'put'.
-    """
-
-    r = (right or "").strip().lower()
-    if r in {"c", "call"}:
+    r = right.strip().lower()
+    if r in {"c", "call", "calls"}:
         return "call"
-    if r in {"p", "put"}:
+    if r in {"p", "put", "puts"}:
         return "put"
     return r
 
 
-# --- pricing helpers -------------------------------------------------------
-
-
 def mid_price(
-    bid: float | None, ask: float | None, last: float | None = None
+    bid: float | None,
+    ask: float | None,
+    last: float | None = None,
 ) -> MetricResult[float]:
-    """Compute a deterministic mid price.
+    """Deterministic mid price.
 
-    Rules (in order):
-    1) If bid and ask are present, non-negative, and ask >= bid: mid = (bid + ask)/2.
-    2) Else if last is present and non-negative: use last.
-    3) Else if only bid is present and non-negative: use bid.
-    4) Else if only ask is present and non-negative: use ask.
-    5) Else: None.
-
-    Flags are added when we fall back from the ideal case.
+    Order:
+    1) if bid & ask present, non-negative, and ask>=bid: mid=(bid+ask)/2
+    2) else if last present: last (flag MID_FROM_LAST)
+    3) else if only bid: bid (flag MID_FROM_BID_ONLY)
+    4) else if only ask: ask (flag MID_FROM_ASK_ONLY)
+    5) else: None + flags
     """
-
     flags: list[str] = []
 
-    def _ok(x: float | None) -> bool:
-        return x is not None and x >= 0
+    if bid is not None:
+        bid = float(bid)
+    if ask is not None:
+        ask = float(ask)
 
-    if _ok(bid) and _ok(ask) and ask >= bid:  # type: ignore[operator]
-        return MetricResult((bid + ask) / 2, ())
+    if bid is not None and ask is not None:
+        if bid < 0:
+            flags.append("NEGATIVE_BID")
+        if ask < 0:
+            flags.append("NEGATIVE_ASK")
+        if bid >= 0 and ask >= 0 and ask >= bid:
+            return MetricResult((bid + ask) / 2.0, tuple(flags))
+        flags.append("INVALID_BID_ASK")
 
-    flags.append("MID_NOT_FROM_BIDASK")
+    if last is not None:
+        return MetricResult(float(last), ("MID_FROM_LAST",))
 
-    if _ok(last):
-        return MetricResult(last, tuple(flags) + ("MID_FROM_LAST",))
+    if bid is not None and bid >= 0:
+        return MetricResult(float(bid), ("MID_FROM_BID_ONLY",))
 
-    if _ok(bid) and ask is None:
-        return MetricResult(bid, tuple(flags) + ("MID_FROM_BID_ONLY",))
+    if ask is not None and ask >= 0:
+        return MetricResult(float(ask), ("MID_FROM_ASK_ONLY",))
 
-    if _ok(ask) and bid is None:
-        return MetricResult(ask, tuple(flags) + ("MID_FROM_ASK_ONLY",))
-
-    # If both are present but invalid order or negatives, treat as missing.
+    missing: list[str] = []
     if bid is None:
-        flags.append("MISSING_BID")
+        missing.append("MISSING_BID")
     if ask is None:
-        flags.append("MISSING_ASK")
+        missing.append("MISSING_ASK")
     if last is None:
-        flags.append("MISSING_LAST")
+        missing.append("MISSING_LAST")
 
-    return MetricResult(None, tuple(flags) + ("MID_MISSING",))
+    return MetricResult(None, tuple(missing))
 
 
 def relative_spread(bid: float | None, ask: float | None) -> MetricResult[float]:
-    """Relative spread = (ask - bid) / mid, where mid=(bid+ask)/2.
+    """Compute (ask-bid)/mid using mid=(bid+ask)/2.
 
-    Returns None if bid/ask missing or invalid.
+    Returns None if bid/ask invalid or mid==0.
     """
-
     if bid is None:
-        return MetricResult(None, ("MISSING_BID", "SPREAD_MISSING"))
+        return MetricResult(None, ("MISSING_BID",))
     if ask is None:
-        return MetricResult(None, ("MISSING_ASK", "SPREAD_MISSING"))
-    if bid < 0 or ask < 0:
-        return MetricResult(None, ("NEGATIVE_QUOTE", "SPREAD_MISSING"))
-    if ask < bid:
-        return MetricResult(None, ("ASK_LT_BID", "SPREAD_MISSING"))
+        return MetricResult(None, ("MISSING_ASK",))
 
-    mid = (bid + ask) / 2
+    b = float(bid)
+    a = float(ask)
+    if b < 0 or a < 0:
+        return MetricResult(None, ("NEGATIVE_BID_ASK",))
+    if a < b:
+        return MetricResult(None, ("ASK_LT_BID",))
+
+    mid = (a + b) / 2.0
     if mid == 0:
-        return MetricResult(None, ("MID_ZERO", "SPREAD_MISSING"))
+        return MetricResult(None, ("ZERO_MID",))
 
-    return MetricResult((ask - bid) / mid, ())
+    return MetricResult((a - b) / mid, ())
 
 
 def is_spread_too_wide(
@@ -140,7 +116,6 @@ def is_spread_too_wide(
 
     If spread can't be computed, returns None + flags.
     """
-
     rs = relative_spread(bid, ask)
     if rs.value is None:
         return MetricResult(None, rs.flags)
@@ -148,7 +123,6 @@ def is_spread_too_wide(
 
 
 def mid_from_quote(quote: object) -> MetricResult[float]:
-    """Compute mid price from an OptionQuote-like object (bid/ask/last attrs)."""
     bid = getattr(quote, "bid", None)
     ask = getattr(quote, "ask", None)
     last = getattr(quote, "last", None)
@@ -160,41 +134,24 @@ def is_quote_spread_too_wide(
     *,
     max_relative_spread: float = 0.20,
 ) -> MetricResult[bool]:
-    """Spread-too-wide check from an OptionQuote-like object (bid/ask attrs)."""
     bid = getattr(quote, "bid", None)
     ask = getattr(quote, "ask", None)
     return is_spread_too_wide(bid, ask, max_relative_spread=max_relative_spread)
 
 
-# --- ATM selection ---------------------------------------------------------
+def select_atm_strike(spot: float, strikes: Sequence[float]) -> MetricResult[float]:
+    """Select nearest strike to spot with deterministic tie-break.
 
-
-def select_atm_strike(spot: float, strikes: Iterable[float]) -> MetricResult[float]:
-    """Select nearest strike to spot (deterministic tie-break).
-
-    Tie-break: if two strikes are equally distant, choose the *lower* strike.
-
-    Returns None if strikes is empty.
+    Tie-break: lower strike if equidistant.
     """
-
-    strikes_list = list(strikes)
-    if not strikes_list:
+    if spot is None:
+        return MetricResult(None, ("MISSING_SPOT",))
+    if not strikes:
         return MetricResult(None, ("NO_STRIKES",))
 
-    # Sort ensures deterministic tie-break.
-    strikes_list.sort()
-
-    best = strikes_list[0]
-    best_dist = abs(best - spot)
-
-    for k in strikes_list[1:]:
-        dist = abs(k - spot)
-        if dist < best_dist:
-            best = k
-            best_dist = dist
-        elif dist == best_dist and k < best:
-            best = k
-
+    s = float(spot)
+    uniq = sorted({float(x) for x in strikes})
+    best = min(uniq, key=lambda k: (abs(k - s), k))
     return MetricResult(best, ())
 
 
@@ -202,47 +159,36 @@ def select_contract_by_strike(
     contracts: Sequence[object],
     *,
     strike: float,
-    right: str | None = None,
-    expiry: date | datetime | str | None = None,
+    right: str,
+    expiry: date,
 ) -> MetricResult[object]:
-    """Pick a single contract by strike + optional right/expiry.
+    """Select a contract for expiry/right/strike deterministically.
 
-    Assumes each contract has attributes: strike, right, expiry.
-    Deterministic tie-break if multiple match: sort by option_symbol or symbol.
+    If multiple match, tie-break by option symbol lexicographically.
     """
-
-    right_n = normalize_right(right) if right is not None else None
-    expiry_d = _as_date(expiry) if expiry is not None else None
+    r = normalize_right(right)
+    exp = _as_date(expiry)
 
     matches: list[object] = []
     for c in contracts:
-        if c.strike != strike:
+        if _as_date(c.expiry) != exp:
             continue
-        if right_n is not None and normalize_right(c.right) != right_n:
+        if normalize_right(c.right) != r:
             continue
-        if expiry_d is not None and _as_date(c.expiry) != expiry_d:
+        if float(c.strike) != float(strike):
             continue
         matches.append(c)
 
     if not matches:
-        flags = ["CONTRACT_NOT_FOUND"]
-        if right_n is not None:
-            flags.append("RIGHT_FILTERED")
-        if expiry_d is not None:
-            flags.append("EXPIRY_FILTERED")
-        return MetricResult(None, tuple(flags))
+        return MetricResult(None, ("NO_MATCHING_CONTRACT",))
 
-    def _key(c: object) -> tuple[str, str]:
-        # Polygon usually uses option_symbol, but we also support symbol.
-        sym = getattr(c, "option_symbol", None) or getattr(c, "symbol", None) or ""
-        r = normalize_right(getattr(c, "right", ""))
-        return (sym, r)
+    def _sym(c: object) -> str:
+        return str(getattr(c, "option_symbol", None) or getattr(c, "symbol", None) or "")
 
-    matches.sort(key=_key)
-    return MetricResult(matches[0], ())
-
-
-# --- term structure --------------------------------------------------------
+    best = sorted(matches, key=_sym)[0]
+    if not _sym(best):
+        return MetricResult(None, ("MISSING_OPTION_SYMBOL",))
+    return MetricResult(best, ())
 
 
 @dataclass(frozen=True)
@@ -255,73 +201,131 @@ class TermStructureResult:
     flags: tuple[str, ...] = ()
 
 
+def _select_front_and_next_expiry(
+    contracts: Sequence[object],
+    right: str,
+) -> MetricResult[tuple[date, date]]:
+    r = normalize_right(right)
+    expiries = sorted({_as_date(c.expiry) for c in contracts if normalize_right(c.right) == r})
+    if len(expiries) < 2:
+        return MetricResult(None, ("INSUFFICIENT_EXPIRIES",))
+    return MetricResult((expiries[0], expiries[1]), ())
+
+
 def atm_iv_term_structure(
     *,
     spot: float,
     contracts: Sequence[object],
     greeks_by_symbol: Mapping[str, object],
-    right: str = "call",
+    right: str,
+    quotes_by_symbol: Mapping[str, object] | None = None,
+    max_relative_spread: float | None = None,
+    exclude_if_spread_unknown: bool = True,
 ) -> TermStructureResult:
-    """Compare ATM IV for the two nearest expiries using the *same strike*.
+    """Compare front vs next expiry ATM IV (same strike).
 
-    Strategy:
-    - Find the two earliest expiries available for the given right.
-    - Choose ATM strike using the *front* expiry strike grid.
-    - Look up IV for that strike for front and next expiry.
+    v1 moneyness rule: same strike (ATM strike selected from front expiry strike grid).
 
-    Assumes:
-    - contract has attrs: expiry, strike, right, option_symbol (or symbol)
-    - greeks object has attr: iv
+    Optional spread filtering:
+    - If quotes_by_symbol and max_relative_spread are provided, we exclude contracts whose
+      quote spread is too wide when building the strike grid AND when selecting IV points.
+    - If spread can't be computed, exclude iff exclude_if_spread_unknown=True.
+
+    Missing IV returns None and sets flags (e.g., MISSING_IV).
     """
-
-    right_n = normalize_right(right)
-
-    # Collect expiries for this right.
-    expiries = sorted(
-        {_as_date(c.expiry) for c in contracts if normalize_right(c.right) == right_n}
-    )
-    if len(expiries) == 0:
-        return TermStructureResult(None, None, None, None, None, ("NO_EXPIRIES",))
-    if len(expiries) == 1:
-        return TermStructureResult(None, expiries[0], None, None, None, ("ONLY_ONE_EXPIRY",))
-
-    front, nxt = expiries[0], expiries[1]
-
-    front_strikes = [
-        c.strike
-        for c in contracts
-        if normalize_right(c.right) == right_n and _as_date(c.expiry) == front
-    ]
-    atm = select_atm_strike(spot, front_strikes)
-    if atm.value is None:
-        return TermStructureResult(None, front, nxt, None, None, atm.flags)
-
-    strike = atm.value
-
     flags: list[str] = []
 
+    exp_pair = _select_front_and_next_expiry(contracts, right)
+    if exp_pair.value is None:
+        return TermStructureResult(None, None, None, None, None, exp_pair.flags)
+
+    front_expiry, next_expiry = exp_pair.value
+    r = normalize_right(right)
+
+    def _sym(c: object) -> str | None:
+        return getattr(c, "option_symbol", None) or getattr(c, "symbol", None)
+
+    def _include_by_spread(sym: str) -> bool:
+        if quotes_by_symbol is None or max_relative_spread is None:
+            return True
+
+        q = quotes_by_symbol.get(sym)
+        if q is None:
+            flags.append("MISSING_QUOTE")
+            return not exclude_if_spread_unknown
+
+        tw = is_quote_spread_too_wide(q, max_relative_spread=max_relative_spread)
+        if tw.value is None:
+            flags.extend(list(tw.flags))
+            flags.append("SPREAD_UNKNOWN")
+            return not exclude_if_spread_unknown
+
+        if tw.value:
+            flags.append("FILTERED_WIDE_SPREAD")
+            return False
+
+        return True
+
+    # Build strike grid for front expiry/right (optionally spread-filtered)
+    strikes: list[float] = []
+    for c in contracts:
+        if _as_date(c.expiry) != front_expiry:
+            continue
+        if normalize_right(c.right) != r:
+            continue
+        sym = _sym(c)
+        if not sym:
+            flags.append("MISSING_OPTION_SYMBOL")
+            continue
+        if not _include_by_spread(str(sym)):
+            continue
+        strikes.append(float(c.strike))
+
+    atm = select_atm_strike(spot, strikes)
+    if atm.value is None:
+        return TermStructureResult(
+            None,
+            front_expiry,
+            next_expiry,
+            None,
+            None,
+            tuple(flags + list(atm.flags)),
+        )
+
+    atm_strike = atm.value
+
     def _iv_for(exp: date) -> float | None:
-        c_res = select_contract_by_strike(contracts, strike=strike, right=right_n, expiry=exp)
+        c_res = select_contract_by_strike(contracts, strike=atm_strike, right=r, expiry=exp)
         if c_res.value is None:
-            flags.extend(c_res.flags)
-            flags.append("MISSING_CONTRACT_FOR_IV")
+            flags.extend(list(c_res.flags))
+            flags.append("MISSING_CONTRACT")
             return None
-        c = c_res.value
-        sym = getattr(c, "option_symbol", None) or getattr(c, "symbol", None)
+
+        sym = _sym(c_res.value)
         if not sym:
             flags.append("MISSING_OPTION_SYMBOL")
             return None
-        g = greeks_by_symbol.get(sym)
+
+        if not _include_by_spread(str(sym)):
+            flags.append("FILTERED_AT_POINT")
+            return None
+
+        g = greeks_by_symbol.get(str(sym))
         if g is None:
             flags.append("MISSING_GREEKS")
             return None
+
         iv = getattr(g, "iv", None)
         if iv is None:
             flags.append("MISSING_IV")
             return None
+
         return float(iv)
 
-    front_iv = _iv_for(front)
-    next_iv = _iv_for(nxt)
+    front_iv = _iv_for(front_expiry)
+    next_iv = _iv_for(next_expiry)
 
-    return TermStructureResult(strike, front, nxt, front_iv, next_iv, tuple(flags))
+    dedup_flags = tuple(dict.fromkeys(tuple(flags)))
+    return TermStructureResult(
+        atm_strike, front_expiry, next_expiry, front_iv, next_iv, dedup_flags
+    )
