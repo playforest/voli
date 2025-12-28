@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from .greeks import GreeksSnapshot, atm_greeks_for_expiry
 from .iv_metrics import MetricResult, TermStructureResult, atm_iv_term_structure
-from .protocols import OptionContractLike, OptionGreeksLike
+from .protocols import OptionContractLike, OptionGreeksLike, OptionQuoteLike
 from .skew import skew_slope
 
 
@@ -25,8 +25,15 @@ def compute_v1_metrics_bundle(
     contracts: Iterable[OptionContractLike],
     greeks_by_symbol: Mapping[str, OptionGreeksLike],
     right: str,
+    quotes_by_symbol: Mapping[str, OptionQuoteLike] | None = None,
+    max_relative_spread: float | None = None,
+    exclude_if_spread_unknown: bool = True,
 ) -> MetricsBundle:
-    """Compute the v1 metric bundle for a given right ("call"/"put")."""
+    """Compute the v1 metric bundle for a given right ("call"/"put").
+
+    If quotes_by_symbol and max_relative_spread are provided, spread filtering is applied
+    to term structure and skew slope computations.
+    """
     contracts_list = list(contracts)
 
     ts = atm_iv_term_structure(
@@ -34,6 +41,9 @@ def compute_v1_metrics_bundle(
         contracts=contracts_list,
         greeks_by_symbol=greeks_by_symbol,
         right=right,
+        quotes_by_symbol=quotes_by_symbol,
+        max_relative_spread=max_relative_spread,
+        exclude_if_spread_unknown=exclude_if_spread_unknown,
     )
 
     front_expiry = ts.front_expiry
@@ -46,8 +56,12 @@ def compute_v1_metrics_bundle(
         greeks_by_symbol=greeks_by_symbol,
         expiry=front_expiry,
         right=right,
+        quotes_by_symbol=quotes_by_symbol,
+        max_relative_spread=max_relative_spread,
+        exclude_if_spread_unknown=exclude_if_spread_unknown,
     )
 
+    # v1: ATM greeks selection does NOT depend on quotes; it depends on the strike grid.
     ag = atm_greeks_for_expiry(
         spot=spot,
         contracts=contracts_list,
