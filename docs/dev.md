@@ -75,3 +75,78 @@ Use it:
 ```bash
 git pccommit -m "your message"
 ```
+
+## Inspecting the cache
+
+Tool results are cached in a SQLite database. Useful when debugging stale data, TTLs, or unexpected cache misses.
+
+**Default location:** `~/.oqe/cache.sqlite` (override with `OQE_CACHE_PATH`).
+**Test runs:** `.pytest_oqe_cache.sqlite` at the repo root, reset by `conftest.py` on every pytest run.
+
+### Schema
+
+Single table `cache_entries` (see `src/oqe/cache.py`):
+
+| column | type | meaning |
+|---|---|---|
+| `key` | TEXT (PK) | sha256 of `tool + canonical_inputs + asof` |
+| `tool` | TEXT | tool name (e.g. `get_option_quotes`) |
+| `asof` | TEXT | `latest` or normalized asof string |
+| `inputs_json` | TEXT | canonicalized inputs |
+| `response_json` | TEXT | tool response payload |
+| `created_at` | REAL | unix epoch seconds at write time |
+| `ttl_seconds` | INTEGER | TTL applied at write |
+| `expires_at` | REAL | `created_at + ttl_seconds` |
+
+### One-liners
+
+`-header -column` makes output readable; treat `expires_at > strftime('%s','now')` as the "still fresh" predicate.
+
+```bash
+# count entries by tool
+sqlite3 -header -column ~/.oqe/cache.sqlite \
+  "SELECT tool, COUNT(*) AS n FROM cache_entries GROUP BY tool;"
+
+# list fresh entries with human-readable timestamps
+sqlite3 -header -column ~/.oqe/cache.sqlite \
+  "SELECT tool, asof,
+          datetime(created_at,'unixepoch') AS created,
+          ttl_seconds,
+          datetime(expires_at,'unixepoch') AS expires
+   FROM cache_entries
+   WHERE expires_at > strftime('%s','now')
+   ORDER BY created_at DESC;"
+
+# show one entry's payload, pretty-printed
+sqlite3 ~/.oqe/cache.sqlite \
+  "SELECT response_json FROM cache_entries LIMIT 1;" \
+  | python -m json.tool
+
+# inspect a specific tool's most recent entry
+sqlite3 -header -column ~/.oqe/cache.sqlite \
+  "SELECT key, asof, inputs_json, ttl_seconds
+   FROM cache_entries
+   WHERE tool='get_option_quotes'
+   ORDER BY created_at DESC LIMIT 1;"
+
+# wipe the cache (no schema change)
+sqlite3 ~/.oqe/cache.sqlite "DELETE FROM cache_entries;"
+```
+
+### Interactive REPL
+
+```bash
+sqlite3 ~/.oqe/cache.sqlite
+```
+
+Then inside the prompt:
+
+```
+.headers on
+.mode column
+.schema cache_entries
+SELECT tool, asof, ttl_seconds FROM cache_entries LIMIT 10;
+.quit
+```
+
+> Note: never commit `~/.oqe/cache.sqlite` or `.pytest_oqe_cache.sqlite` — they're machine-local state, not source.
