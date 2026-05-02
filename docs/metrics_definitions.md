@@ -89,3 +89,43 @@ Missing or absent `iv` yields `None` and flags like `MISSING_GREEKS`, `MISSING_I
   - `slope = cov(strike, iv) / var(strike)`
 - Returns `None` if fewer than 2 points or if all strikes are identical.
 
+## Optional spread filtering (recommended)
+
+Some markets/strikes are effectively unusable because quotes are extremely wide or missing a side. In v1 we keep computations deterministic by optionally filtering out those strikes/points using a **relative spread** rule.
+
+### Relative spread
+
+When both bid and ask are present and valid:
+
+- `mid = (bid + ask) / 2`
+- `relative_spread = (ask - bid) / mid`
+
+A quote is considered **too wide** when:
+
+- `relative_spread > max_relative_spread` (default threshold used in examples/tests is `0.20`)
+
+### Where spread filtering can be applied
+
+These analytics functions accept optional quote spread filtering:
+
+- `strike_iv_pairs(..., quotes_by_symbol, max_relative_spread, exclude_if_spread_unknown)`
+- `skew_slope(..., quotes_by_symbol, max_relative_spread, exclude_if_spread_unknown)`
+- `atm_iv_term_structure(..., quotes_by_symbol, max_relative_spread, exclude_if_spread_unknown)`
+- `compute_v1_metrics_bundle(..., quotes_by_symbol, max_relative_spread, exclude_if_spread_unknown)`
+
+### Deterministic behavior
+
+If `quotes_by_symbol` and `max_relative_spread` are provided:
+
+- **Wide spread:** the contract/point is excluded and a `FILTERED_WIDE_SPREAD` flag is added.
+- **Spread unknown:** if bid/ask is missing (so spread cannot be computed), behavior depends on:
+  - `exclude_if_spread_unknown=True` (default): exclude and add `SPREAD_UNKNOWN` plus the underlying quote flags (e.g., `MISSING_BID`, `MISSING_ASK`).
+  - `exclude_if_spread_unknown=False`: keep the point and still surface `SPREAD_UNKNOWN` flags.
+
+If spread filtering is not enabled (no quotes map or no threshold), all contracts are considered eligible and the computations fall back to the usual missing-data rules.
+
+### Important notes
+
+- Spread filtering is **purely a data-quality filter**. It never fabricates IVs or prices.
+- When filtering removes too many points, you may see `INSUFFICIENT_POINTS` for skew slope.
+- Term structure still returns the front/next expiries and chosen ATM strike whenever possible; missing points become `None` with flags.
