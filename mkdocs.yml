@@ -103,6 +103,8 @@ nav:
       - Refusals & rewrites: examples/refusals.md
       - Multi-ticker batching: examples/batch.md
       - Skeptic sub-agent: examples/skeptic.md
+      - Plotting: examples/plotting.md
+      - Replay mode: examples/replay.md
       - Recipes: examples/recipes.md
   - Architecture:
       - Orchestrator flow: architecture/orchestrator.md
