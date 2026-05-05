@@ -31,11 +31,21 @@ httpx = "^0.28.1"
 python-dotenv = "^1.2.2"
 pyyaml = "^6.0.3"
 matplotlib = {version = "^3.10.9", optional = true}
+anthropic = {version = "^0.98.1", optional = true}
+openai = {version = "^2.34.0", optional = true}
 
 [tool.poetry.extras]
 # Install with: poetry install -E plot
 # Enables `oqe ask --plot out.png` and the oqe.plot module.
 plot = ["matplotlib"]
+
+# LLM-driven agent (oqe llm-ask). Pick one provider or both.
+#   poetry install -E anthropic
+#   poetry install -E openai
+#   poetry install -E llm        # both
+anthropic = ["anthropic"]
+openai = ["openai"]
+llm = ["anthropic", "openai"]
 
 [tool.poetry.scripts]
 oqe = "oqe.cli:main"

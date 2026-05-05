@@ -140,6 +140,35 @@ def _build_parser() -> argparse.ArgumentParser:
     ask_many.add_argument("--skeptic", action="store_true")
     _add_theme_flags(ask_many)
 
+    # ---- llm-ask ---------------------------------------------------------
+    llm = sub.add_parser(
+        "llm-ask",
+        help="Ask an LLM (Claude or GPT) using OQE tools as its data backend.",
+    )
+    llm.add_argument("prompt", help="The question to ask, in quotes.")
+    llm.add_argument(
+        "--provider",
+        default=None,
+        choices=["anthropic", "openai"],
+        help="LLM provider. Default: $OQE_LLM_PROVIDER, or anthropic/openai "
+        "based on which API key is set.",
+    )
+    llm.add_argument(
+        "--model",
+        default=None,
+        help="Model name (overrides $OQE_LLM_MODEL and the provider default).",
+    )
+    llm.add_argument(
+        "--json", action="store_true", help="Emit a JSON object with the final answer + tool log."
+    )
+    llm.add_argument(
+        "--max-iterations",
+        type=int,
+        default=6,
+        help="Cap on planner/tool/answer cycles. Default 6.",
+    )
+    _add_theme_flags(llm)
+
     # ---- replay -----------------------------------------------------------
     replay = sub.add_parser(
         "replay",
@@ -189,6 +218,8 @@ def main(
         return _cmd_ask(args, registry=registry, out=out)
     if args.command == "ask-many":
         return _cmd_ask_many(args, registry=registry, out=out)
+    if args.command == "llm-ask":
+        return _cmd_llm_ask(args, out=out)
     if args.command == "replay":
         return _cmd_replay(args, out=out)
     if args.command == "themes":
@@ -332,6 +363,131 @@ def _cmd_ask_many(args: argparse.Namespace, *, registry: ToolRegistry | None, ou
     finally:
         if args.trace and get_trace() is not None:
             end_trace()
+
+
+# ---- llm-ask ---------------------------------------------------------------
+
+
+def _cmd_llm_ask(args: argparse.Namespace, *, out) -> int:
+    """Run the LLM-driven agent loop and stream events to the terminal.
+
+    Designed to feel like the rest of the CLI: themed status bar, themed
+    [ THINKING ] / [ TOOL CALL ] / [ ANSWER ] sections, exit code 0 on a
+    finished answer, 4 on any provider/SDK error.
+    """
+
+    import json as _json
+
+    from .llm import (
+        AgentConfig,
+        StepComplete,
+        TextDelta,
+        ToolCallStart,
+        ToolResult,
+        build_default_tools,
+        llm_ask,
+    )
+    from .llm.provider import make_provider
+
+    theme_name = _selected_theme(args)
+    color = _color_flag(args)
+    t = make_theme(color, theme=theme_name)
+
+    try:
+        provider = make_provider(args.provider, model=args.model)
+    except (ImportError, ValueError) as exc:
+        return _render_error(args, exc, out=out)
+
+    cfg = AgentConfig(max_iterations=args.max_iterations)
+    tools = build_default_tools()
+
+    # Status bar.
+    bits = [
+        "OQE LLM",
+        f"PROVIDER: {provider.name}",
+        f"MODEL: {provider.model}",
+    ]
+    if t.color and t.name != "bloomberg":
+        bits.append(f"THEME: {t.name}")
+    print(t.dim("=" * 80), file=out)
+    print(t.status_bar(" | ".join(bits)), file=out)
+    print(t.dim("=" * 80), file=out)
+    print(t.header("[ PROMPT ]"), file=out)
+    print(args.prompt, file=out)
+
+    answer_buf: list[str] = []
+    tool_calls: list[ToolCallStart] = []
+    tool_results: list[ToolResult] = []
+    in_answer = False
+    stop_reason = "end_turn"
+
+    try:
+        for event in llm_ask(args.prompt, provider=provider, tools=tools, config=cfg):
+            if isinstance(event, ToolCallStart):
+                if in_answer:
+                    print("", file=out)  # close answer paragraph cleanly
+                    in_answer = False
+                pretty_args = _json.dumps(event.arguments, separators=(", ", "="))
+                print(
+                    f"\n{t.label('[ TOOL CALL ]')} {t.value(event.name)}({t.dim(pretty_args)})",
+                    file=out,
+                    flush=True,
+                )
+                tool_calls.append(event)
+            elif isinstance(event, ToolResult):
+                preview = event.content
+                if len(preview) > 200:
+                    preview = preview[:197] + "..."
+                marker = "[ TOOL ERR  ]" if event.is_error else "[ TOOL OK   ]"
+                print(
+                    f"{t.label(marker)} {t.dim(preview)}",
+                    file=out,
+                    flush=True,
+                )
+                tool_results.append(event)
+            elif isinstance(event, TextDelta):
+                if not in_answer:
+                    print(f"\n{t.header('[ ANSWER ]')}", file=out, flush=True)
+                    in_answer = True
+                print(t.value(event.text), end="", file=out, flush=True)
+                answer_buf.append(event.text)
+            elif isinstance(event, StepComplete):
+                stop_reason = event.stop_reason
+    except Exception as exc:  # pragma: no cover - hard to provoke without live API
+        return _render_error(args, exc, out=out)
+
+    # Trailing newline so the next shell prompt isn't glued to the answer.
+    if in_answer:
+        print("", file=out)
+    print(t.dim("-" * 80), file=out)
+    print(
+        t.dim(
+            f"stop_reason: {stop_reason}  |  tool_calls: {len(tool_calls)}  "
+            f"|  tool_results: {len(tool_results)}"
+        ),
+        file=out,
+    )
+    print(t.dim("=" * 80), file=out)
+
+    if args.json:
+        # Emit a structured JSON tail for scripting after the themed block.
+        payload = {
+            "provider": provider.name,
+            "model": provider.model,
+            "prompt": args.prompt,
+            "answer": "".join(answer_buf),
+            "tool_calls": [
+                {"id": c.id, "name": c.name, "arguments": c.arguments} for c in tool_calls
+            ],
+            "tool_results": [
+                {"id": r.id, "name": r.name, "content": r.content, "is_error": r.is_error}
+                for r in tool_results
+            ],
+            "stop_reason": stop_reason,
+        }
+        print(_json.dumps(payload, indent=2, default=str), file=out)
+
+    return 0
 
 
 # ---- replay -----------------------------------------------------------------
