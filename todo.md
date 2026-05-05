@@ -219,12 +219,16 @@ Also: make the repo and docs **friendly for learning agents/LLMs**—briefly exp
 - License + repo hygiene
 
 **Deliverables**
-- [ ] `README.md`
-- [ ] `config.example.yaml`
-- [ ] `docker/` (optional)
+- [*] `README.md` (polished landing page with quickstart, sample output, project structure)
+- [*] `config.example.yaml` (every supported key, documented inline)
+- [*] `docker/` (Dockerfile + docker-compose.yml + .devcontainer/devcontainer.json)
+- [*] Bonus: `src/oqe/config.py` (YAML loader with env-precedence), `src/oqe/logging.py` (themed/JSON structured logging)
+- [*] Bonus: 27-page MkDocs Material doc site (`docs/`, `mkdocs.yml`)
 
 **Done when**
-- A new machine can run it with minimal setup friction.
+- [*] A new machine can run it with minimal setup friction.
+  Docker compose, devcontainer, polished README, env-driven config, and a
+  full doc site (`poetry run mkdocs serve` -> http://127.0.0.1:8000).
 
 ---
 
