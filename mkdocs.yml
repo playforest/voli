@@ -101,6 +101,8 @@ nav:
       - Greeks: examples/greeks.md
       - Chain slices: examples/chain.md
       - Refusals & rewrites: examples/refusals.md
+      - Multi-ticker batching: examples/batch.md
+      - Skeptic sub-agent: examples/skeptic.md
       - Recipes: examples/recipes.md
   - Architecture:
       - Orchestrator flow: architecture/orchestrator.md
