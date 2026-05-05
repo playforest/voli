@@ -39,6 +39,7 @@ from .cli_render import (
 )
 from .config import load_config
 from .logging import setup_logging
+from .replay import dump_response, replay_to_response
 from .run_trace import end_trace, get_trace, start_trace
 
 # Load .env at CLI import time so POLYGON_API_KEY (and other Polygon settings)
@@ -113,6 +114,13 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Run the skeptic sub-agent and append a [ SKEPTIC ] block.",
     )
+    ask.add_argument(
+        "--plot",
+        default=None,
+        metavar="PATH",
+        help="Save a category-specific PNG chart to PATH (requires `pip install matplotlib` "
+        "or `poetry install -E plot`).",
+    )
     _add_theme_flags(ask)
 
     # ---- ask-many ---------------------------------------------------------
@@ -131,6 +139,19 @@ def _build_parser() -> argparse.ArgumentParser:
     ask_many.add_argument("--trace", action="store_true")
     ask_many.add_argument("--skeptic", action="store_true")
     _add_theme_flags(ask_many)
+
+    # ---- replay -----------------------------------------------------------
+    replay = sub.add_parser(
+        "replay",
+        help="Re-render a previously stored answer (companion JSON from --trace).",
+    )
+    replay.add_argument(
+        "target",
+        help="Trace ID (e.g. 20260505T130904Z_a1b2c3d4) or a path to a "
+        "<trace_id>.response.json file.",
+    )
+    replay.add_argument("--json", action="store_true")
+    _add_theme_flags(replay)
 
     # ---- themes -----------------------------------------------------------
     themes = sub.add_parser("themes", help="List or preview the colour themes.")
@@ -168,6 +189,8 @@ def main(
         return _cmd_ask(args, registry=registry, out=out)
     if args.command == "ask-many":
         return _cmd_ask_many(args, registry=registry, out=out)
+    if args.command == "replay":
+        return _cmd_replay(args, out=out)
     if args.command == "themes":
         return _cmd_themes(args, out=out)
 
@@ -208,21 +231,65 @@ def _cmd_ask(args: argparse.Namespace, *, registry: ToolRegistry | None, out) ->
         except Exception as exc:
             return _render_error(args, exc, out=out)
 
+        theme_name = _selected_theme(args)
         if args.json:
             text = render_json(resp, asof=args.asof, trace_id=trace_id)
         else:
             text = render_response(
                 resp,
                 color=_color_flag(args),
-                theme=_selected_theme(args),
+                theme=theme_name,
                 asof=args.asof,
                 trace_id=trace_id,
             )
         print(text, file=out)
+
+        # Optional side effects: chart + replay companion.
+        if getattr(args, "plot", None):
+            try:
+                _save_plot(resp, args.plot, out=out, theme_name=theme_name, color=_color_flag(args))
+            except Exception as exc:
+                # Plot failures shouldn't poison the answer's exit code; show
+                # a themed warning and continue.
+                _print_warning(args, f"plot failed: {type(exc).__name__}: {exc}", out=out)
+
+        if args.trace and trace_id is not None:
+            try:
+                path = dump_response(
+                    trace_id,
+                    resp,
+                    prompt=args.prompt,
+                    asof=args.asof,
+                    theme=theme_name,
+                    ticker_default=args.ticker,
+                    skeptic=getattr(args, "skeptic", False),
+                )
+                t = make_theme(_color_flag(args), theme=theme_name)
+                print(t.dim(f"replay companion: {path}"), file=out)
+            except Exception as exc:
+                _print_warning(args, f"replay companion failed: {exc}", out=out)
+
         return 0 if resp.supported else 3
     finally:
         if args.trace and get_trace() is not None:
             end_trace()
+
+
+def _save_plot(
+    resp: AnswerResponse, path: str, *, out, theme_name: str, color: bool | None
+) -> None:
+    """Render a chart for `resp` and confirm in the themed style."""
+
+    from .plot import plot_response  # lazy import - matplotlib is optional
+
+    saved = plot_response(resp, path)
+    t = make_theme(color, theme=theme_name)
+    print(t.dim(f"plot: {saved}"), file=out)
+
+
+def _print_warning(args: argparse.Namespace, message: str, *, out) -> None:
+    t = make_theme(_color_flag(args), theme=_selected_theme(args))
+    print(t.warn(f"warn: {message}"), file=out)
 
 
 # ---- ask-many ---------------------------------------------------------------
@@ -265,6 +332,37 @@ def _cmd_ask_many(args: argparse.Namespace, *, registry: ToolRegistry | None, ou
     finally:
         if args.trace and get_trace() is not None:
             end_trace()
+
+
+# ---- replay -----------------------------------------------------------------
+
+
+def _cmd_replay(args: argparse.Namespace, *, out) -> int:
+    """Read a stored answer companion and re-render it.
+
+    Replay only re-renders the saved AnswerResponse - it does not re-run
+    tool dispatch. This makes replays free + offline + deterministic, and
+    lets the user pivot the visualisation (theme, json) without re-fetching
+    Polygon data.
+    """
+
+    try:
+        resp = replay_to_response(args.target)
+    except FileNotFoundError as exc:
+        _print_warning(args, str(exc), out=out)
+        return 4
+
+    if args.json:
+        text = render_json(resp)
+    else:
+        text = render_response(
+            resp,
+            color=_color_flag(args),
+            theme=_selected_theme(args),
+            trace_id=args.target if not args.target.endswith(".json") else None,
+        )
+    print(text, file=out)
+    return 0 if resp.supported else 3
 
 
 # ---- themes -----------------------------------------------------------------
