@@ -65,6 +65,7 @@ def atm_greeks_for_expiry(
     greeks_by_symbol: Mapping[str, object],
     expiry: date | datetime | str,
     right: str,
+    tie_break: str = "lower",
 ) -> MetricResult[GreeksSnapshot]:
     """Select the ATM contract for expiry/right and return its greeks.
 
@@ -83,7 +84,7 @@ def atm_greeks_for_expiry(
         for c in contracts
         if _as_date(c.expiry) == exp and normalize_right(c.right) == r
     ]
-    atm = select_atm_strike(spot, strikes)
+    atm = select_atm_strike(spot, strikes, tie_break=tie_break)
     if atm.value is None:
         return MetricResult(None, atm.flags + ("ATM_STRIKE_MISSING",))
 

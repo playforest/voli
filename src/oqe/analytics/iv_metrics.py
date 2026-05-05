@@ -156,19 +156,31 @@ def is_quote_spread_too_wide(
     return is_spread_too_wide(bid, ask, max_relative_spread=max_relative_spread)
 
 
-def select_atm_strike(spot: float, strikes: Sequence[float]) -> MetricResult[float]:
+def select_atm_strike(
+    spot: float,
+    strikes: Sequence[float],
+    *,
+    tie_break: str = "lower",
+) -> MetricResult[float]:
     """Select nearest strike to spot with deterministic tie-break.
 
-    Tie-break: lower strike if equidistant.
+    tie_break:
+    - "lower" (default): if two strikes are equidistant, choose the lower one.
+    - "higher": choose the higher one.
     """
     if spot is None:
         return MetricResult(None, ("MISSING_SPOT",))
     if not strikes:
         return MetricResult(None, ("NO_STRIKES",))
+    if tie_break not in ("lower", "higher"):
+        return MetricResult(None, ("INVALID_TIE_BREAK",))
 
     s = float(spot)
     uniq = sorted({float(x) for x in strikes})
-    best = min(uniq, key=lambda k: (abs(k - s), k))
+    if tie_break == "lower":
+        best = min(uniq, key=lambda k: (abs(k - s), k))
+    else:
+        best = min(uniq, key=lambda k: (abs(k - s), -k))
     return MetricResult(best, ())
 
 
@@ -238,6 +250,7 @@ def atm_iv_term_structure(
     quotes_by_symbol: Mapping[str, object] | None = None,
     max_relative_spread: float | None = None,
     exclude_if_spread_unknown: bool = True,
+    tie_break: str = "lower",
 ) -> TermStructureResult:
     """Compare front vs next expiry ATM IV (same strike).
 
@@ -298,7 +311,7 @@ def atm_iv_term_structure(
             continue
         strikes.append(float(c.strike))
 
-    atm = select_atm_strike(spot, strikes)
+    atm = select_atm_strike(spot, strikes, tie_break=tie_break)
     if atm.value is None:
         return TermStructureResult(
             None,

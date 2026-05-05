@@ -61,17 +61,24 @@ Returns `None` if:
 
 ## ATM strike selection
 
-**Function:** `select_atm_strike(spot, strikes)`
+**Function:** `select_atm_strike(spot, strikes, *, tie_break="lower")`
 
 - Choose the strike `K` minimizing `abs(K - spot)`.
-- **Deterministic tie-break:** if two strikes are equally close, choose the **lower** strike.
-- Returns `None` if `strikes` is empty.
+- **Deterministic tie-break** (configurable):
+  - `tie_break="lower"` (default) — choose the lower strike when two are equidistant.
+  - `tie_break="higher"` — choose the higher strike.
+  - any other value returns `None` with flag `INVALID_TIE_BREAK`.
+- Returns `None` with flag `NO_STRIKES` if `strikes` is empty, or `MISSING_SPOT` if spot is `None`.
+
+The `tie_break` parameter is plumbed through `atm_iv_term_structure`, `atm_greeks_for_expiry`, and `compute_v1_metrics_bundle`.
 
 ## Term structure comparison
 
 **Function:** `atm_iv_term_structure(spot, contracts, greeks_by_symbol, right='call')`
 
 Goal: compare **ATM IV** for the **front** expiry vs the **next** expiry using the **same strike**.
+
+> **v1 moneyness rule.** Term structure compares the two expiries at the **same strike**, not at strictly the same moneyness (e.g., same `K/S` or same delta). This is a deterministic approximation that holds well when the two expiries are close in time and spot has not drifted materially. A future v2 may compare at constant moneyness or constant delta.
 
 Algorithm:
 1. Filter to contracts matching `right`.

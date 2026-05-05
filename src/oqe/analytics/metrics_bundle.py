@@ -28,6 +28,7 @@ def compute_v1_metrics_bundle(
     quotes_by_symbol: Mapping[str, OptionQuoteLike] | None = None,
     max_relative_spread: float | None = None,
     exclude_if_spread_unknown: bool = True,
+    tie_break: str = "lower",
 ) -> MetricsBundle:
     """Compute the v1 metric bundle for a given right ("call"/"put").
 
@@ -44,6 +45,7 @@ def compute_v1_metrics_bundle(
         quotes_by_symbol=quotes_by_symbol,
         max_relative_spread=max_relative_spread,
         exclude_if_spread_unknown=exclude_if_spread_unknown,
+        tie_break=tie_break,
     )
 
     front_expiry = ts.front_expiry
@@ -68,6 +70,7 @@ def compute_v1_metrics_bundle(
         greeks_by_symbol=greeks_by_symbol,
         expiry=front_expiry,
         right=right,
+        tie_break=tie_break,
     )
 
     return MetricsBundle(term_structure=ts, skew_slope=ss, atm_greeks=ag)
