@@ -216,8 +216,10 @@ def list_option_contracts(inp: ListOptionContractsInput) -> ListOptionContractsO
 
     expiry_str = inp.expiry.isoformat() if inp.expiry is not None else None
 
-    # Page sizing: Polygon returns paginated results; fetch enough pages to satisfy limit.
-    per_page = min(1000, max(250, inp.limit))
+    # Page sizing: Polygon's options-chain snapshot caps `limit` at 250 per page.
+    # Fetch enough pages to satisfy inp.limit, plus headroom so we still get
+    # results when strike-range filtering trims the page.
+    per_page = min(250, inp.limit)
     max_pages = min(50, (inp.limit // per_page) + 2)
 
     pc = PolygonClient()
