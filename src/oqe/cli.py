@@ -180,6 +180,17 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     _add_theme_flags(llm)
 
+    # ---- mcp-serve --------------------------------------------------------
+    mcp_serve = sub.add_parser(
+        "mcp-serve",
+        help="Run the OQE Model Context Protocol server over stdio.",
+    )
+    mcp_serve.add_argument(
+        "--raw-only",
+        action="store_true",
+        help="Expose only the four raw Polygon tools (skip the analytics layer).",
+    )
+
     # ---- replay -----------------------------------------------------------
     replay = sub.add_parser(
         "replay",
@@ -231,6 +242,8 @@ def main(
         return _cmd_ask_many(args, registry=registry, out=out)
     if args.command == "llm-ask":
         return _cmd_llm_ask(args, out=out)
+    if args.command == "mcp-serve":
+        return _cmd_mcp_serve(args, out=out)
     if args.command == "replay":
         return _cmd_replay(args, out=out)
     if args.command == "themes":
@@ -548,6 +561,32 @@ def _cmd_llm_ask(args: argparse.Namespace, *, out) -> int:
         }
         print(_json.dumps(payload, indent=2, default=str), file=out)
 
+    return 0
+
+
+# ---- mcp-serve --------------------------------------------------------------
+
+
+def _cmd_mcp_serve(args: argparse.Namespace, *, out) -> int:
+    """Run the OQE MCP server over stdio.
+
+    The server logs to stderr; stdout is reserved for the MCP wire protocol
+    (Claude Desktop talks JSON-RPC over the child process's stdin/stdout).
+    `--raw-only` drops the analytics tools - useful when you want Claude
+    to chain the primitives itself.
+    """
+
+    try:
+        from .mcp_server import serve
+    except ImportError as exc:
+        return _render_error(args, exc, out=out)
+
+    try:
+        serve(include_analytics=not args.raw_only)
+    except KeyboardInterrupt:
+        return 0
+    except Exception as exc:  # pragma: no cover - hard to provoke without a client
+        return _render_error(args, exc, out=out)
     return 0
 
 
