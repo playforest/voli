@@ -106,6 +106,30 @@ Missing or absent `iv` yields `None` and flags like `MISSING_GREEKS`, `MISSING_I
   - `slope = cov(strike, iv) / var(strike)`
 - Returns `None` if fewer than 2 points or if all strikes are identical.
 
+## Delta skew
+
+**Function:** `delta_skew(contracts, greeks_by_symbol, expiry, target_delta=0.25, ...)`
+
+The classic options-market skew read: **the put IV at a target delta minus the call IV at the same target delta**, for a single expiry.
+
+- Convention: a **positive** value means puts trade richer than calls (typical equity skew).
+- Default `target_delta = 0.25` reproduces the standard "25-delta risk reversal" measure.
+
+Algorithm:
+1. Take `target = abs(target_delta)`.
+2. For the given expiry:
+   - find the **put** whose `delta` is closest to `-target`,
+   - find the **call** whose `delta` is closest to `+target`.
+3. Return `put_iv - call_iv`.
+
+Tie-break (deterministic): smallest delta-distance wins; on equal distance, lower strike, then lower option symbol.
+
+Skipped/flagged when:
+- `MISSING_DELTA`, `MISSING_IV`, `MISSING_GREEKS`, `MISSING_OPTION_SYMBOL` — drop the candidate and flag.
+- `MISSING_PUT_LEG` / `MISSING_CALL_LEG` — no usable contract was found for that side; result is `None`.
+
+Spread filtering (`quotes_by_symbol` + `max_relative_spread` + `exclude_if_spread_unknown`) applies symmetrically to both legs.
+
 ## Optional spread filtering (recommended)
 
 Some markets/strikes are effectively unusable because quotes are extremely wide or missing a side. In v1 we keep computations deterministic by optionally filtering out those strikes/points using a **relative spread** rule.
@@ -127,6 +151,7 @@ These analytics functions accept optional quote spread filtering:
 
 - `strike_iv_pairs(..., quotes_by_symbol, max_relative_spread, exclude_if_spread_unknown)`
 - `skew_slope(..., quotes_by_symbol, max_relative_spread, exclude_if_spread_unknown)`
+- `delta_skew(..., quotes_by_symbol, max_relative_spread, exclude_if_spread_unknown)`
 - `atm_iv_term_structure(..., quotes_by_symbol, max_relative_spread, exclude_if_spread_unknown)`
 - `compute_v1_metrics_bundle(..., quotes_by_symbol, max_relative_spread, exclude_if_spread_unknown)`
 

@@ -192,3 +192,96 @@ def skew_slope(
     # Keep curve flags (missing IV / filtered etc.) along with slope computation flags.
     flags = tuple(dict.fromkeys(curve_res.flags + slope_res.flags))
     return MetricResult(slope_res.value, flags)
+
+
+def delta_skew(
+    *,
+    contracts: Sequence[object],
+    greeks_by_symbol: Mapping[str, object],
+    expiry: date | datetime | str,
+    target_delta: float = 0.25,
+    quotes_by_symbol: Mapping[str, object] | None = None,
+    max_relative_spread: float | None = None,
+    exclude_if_spread_unknown: bool = True,
+) -> MetricResult[float]:
+    """|target_delta| put IV minus |target_delta| call IV for a given expiry.
+
+    Convention: positive value means puts trade richer than calls.
+
+    Algorithm:
+    1. For the given expiry, find the put whose delta is closest to -|target_delta|.
+    2. Find the call whose delta is closest to +|target_delta|.
+    3. Return put_iv - call_iv.
+
+    Tie-break (deterministic): smaller delta-distance wins; on equal distance, lower strike,
+    then lower option symbol.
+
+    Spread filtering applies symmetrically to both legs.
+    """
+
+    exp = _as_date(expiry)
+    target = abs(float(target_delta))
+    flags: list[str] = []
+
+    def _spread_ok(sym: str) -> bool:
+        if quotes_by_symbol is None or max_relative_spread is None:
+            return True
+        q = quotes_by_symbol.get(sym)
+        if q is None:
+            flags.append("MISSING_QUOTE")
+            return not exclude_if_spread_unknown
+        tw = is_quote_spread_too_wide(q, max_relative_spread=max_relative_spread)
+        if tw.value is None:
+            flags.extend(list(tw.flags))
+            flags.append("SPREAD_UNKNOWN")
+            return not exclude_if_spread_unknown
+        if tw.value:
+            flags.append("FILTERED_WIDE_SPREAD")
+            return False
+        return True
+
+    def _find_leg(target_signed_delta: float, right: str) -> float | None:
+        r = normalize_right(right)
+        best: tuple[float, float, str, float] | None = None  # (distance, strike, sym, iv)
+        for c in contracts:
+            if _as_date(c.expiry) != exp:
+                continue
+            if normalize_right(c.right) != r:
+                continue
+            sym = getattr(c, "option_symbol", None) or getattr(c, "symbol", None)
+            if not sym:
+                flags.append("MISSING_OPTION_SYMBOL")
+                continue
+            if not _spread_ok(str(sym)):
+                continue
+            g = greeks_by_symbol.get(str(sym))
+            if g is None:
+                flags.append("MISSING_GREEKS")
+                continue
+            d = getattr(g, "delta", None)
+            if d is None:
+                flags.append("MISSING_DELTA")
+                continue
+            iv = getattr(g, "iv", None)
+            if iv is None:
+                flags.append("MISSING_IV")
+                continue
+            distance = abs(float(d) - target_signed_delta)
+            cand = (distance, float(c.strike), str(sym), float(iv))
+            if best is None or cand < best:
+                best = cand
+        return None if best is None else best[3]
+
+    put_iv = _find_leg(-target, "put")
+    call_iv = _find_leg(target, "call")
+
+    if put_iv is None:
+        flags.append("MISSING_PUT_LEG")
+    if call_iv is None:
+        flags.append("MISSING_CALL_LEG")
+
+    dedup = tuple(dict.fromkeys(flags))
+    if put_iv is None or call_iv is None:
+        return MetricResult(None, dedup)
+
+    return MetricResult(put_iv - call_iv, dedup)
