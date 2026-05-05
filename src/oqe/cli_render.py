@@ -227,6 +227,31 @@ THEMES: dict[str, Palette] = {
         bg=_bg(254),
         bold_status=False,
     ),
+    "sepia": Palette(
+        name="sepia",
+        description="Sepia / aged photograph: warm browns + cream on near-black.",
+        primary=_fg(130),  # burnt sienna
+        secondary=_fg(137),  # light brown
+        value=_fg(223),  # cream beige
+        dim=_fg(94),  # dark brown
+        warn=_fg(124),  # deep red-brown
+        good=_fg(100),  # olive
+        bg=_bg(233),  # near-black with warm tint
+    ),
+    "material": Palette(
+        name="material",
+        description=(
+            "MkDocs Material dark code palette: pink keywords, purple modules, "
+            "soft green strings on dark blue-grey. Same vibe as the docs site."
+        ),
+        primary=_fg(211),  # pink (matches `from`/`import` in code blocks)
+        secondary=_fg(141),  # purple (matches module names)
+        value=_fg(252),  # light grey (body text)
+        dim=_fg(240),  # mid grey (borders / comments)
+        warn=_fg(197),  # red
+        good=_fg(114),  # soft green (matches strings)
+        bg=_bg(235),  # near-black blue-grey
+    ),
 }
 
 DEFAULT_THEME = "bloomberg"

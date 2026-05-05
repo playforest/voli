@@ -82,7 +82,7 @@ poetry run pre-commit run --all-files
 
 **CLI** (`cli.py` + `cli_render.py`):
 - Subcommands: `ask`, `ask-many`, `llm-ask`, `mcp-serve`, `replay`, `themes`
-- 10 Bloomberg-style colour themes; `--theme NAME` / `--cycle-theme` / `--no-color`
+- 12 Bloomberg-style colour themes; `--theme NAME` / `--cycle-theme` / `--no-color`
 - `cli_render.py` renders all output through one themed pipeline
 
 ### Key Design Patterns

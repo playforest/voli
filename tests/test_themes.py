@@ -30,12 +30,12 @@ from oqe.cli_render import (
 # ---- palette catalogue ------------------------------------------------------
 
 
-def test_ten_themes_are_registered() -> None:
-    """The product spec is 10 themes - regression-guard the count and the
-    presence of the named themes the docs / CLI help advertise.
+def test_themes_registered_match_docs_catalogue() -> None:
+    """Regression-guard the count and the presence of the named themes
+    the docs / CLI help advertise.
     """
 
-    assert len(THEMES) == 10
+    assert len(THEMES) == 12
     expected = {
         "bloomberg",
         "bloomberg_classic",
@@ -47,6 +47,8 @@ def test_ten_themes_are_registered() -> None:
         "cyberpunk",
         "mono",
         "paper",
+        "sepia",
+        "material",
     }
     assert set(THEMES) == expected
 
@@ -58,7 +60,7 @@ def test_default_theme_is_bloomberg() -> None:
 def test_list_themes_returns_palettes_in_definition_order() -> None:
     names = [p.name for p in list_themes()]
     assert names[0] == "bloomberg"
-    assert len(names) == 10
+    assert len(names) == 12
     assert names == list(THEMES.keys())
 
 

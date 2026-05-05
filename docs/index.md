@@ -55,7 +55,7 @@ Same tools, four entry points: rule-based CLI, LLM-driven CLI, MCP server
 
     ---
 
-    Ten built-in colour themes. Sensible defaults, easy to switch, no emojis.
+    Twelve built-in colour themes. Sensible defaults, easy to switch, no emojis.
 
     [:octicons-arrow-right-24: Themes](cli/themes.md)
 
@@ -163,7 +163,7 @@ NEXT_IV       0.3457
 | [`oqe llm-ask`](examples/llm-ask.md) | LLM (Claude / GPT) drives the OQE tools. Streams chain-of-thought. |
 | [`oqe mcp-serve`](examples/mcp.md) | MCP server for Claude Desktop / claude.ai. |
 | [`oqe replay`](examples/replay.md) | Re-render a stored answer offline (rule-based or LLM). |
-| [`oqe themes`](cli/themes.md) | Browse / preview the 10 colour palettes. |
+| [`oqe themes`](cli/themes.md) | Browse / preview the 12 colour palettes. |
 
 ## What it answers
 

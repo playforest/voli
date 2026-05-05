@@ -1,6 +1,6 @@
 # Themes
 
-Ten bundled palettes. The visual layout (status bar / sections / tables /
+Twelve bundled palettes. The visual layout (status bar / sections / tables /
 facts) is fixed; only the colour mix changes.
 
 ## Browse them
@@ -18,7 +18,7 @@ names — fastest way to pick one.
 # One theme
 poetry run oqe themes preview --theme dracula
 
-# All ten side-by-side
+# All twelve side-by-side
 poetry run oqe themes preview --all
 ```
 
@@ -36,6 +36,8 @@ poetry run oqe themes preview --all
 | `cyberpunk` | Neon pink primary, cyan accents. |
 | `mono` | Greyscale only — works on any terminal. |
 | `paper` | Inverted, dark inks for light terminals. |
+| `sepia` | Aged-photograph: warm browns + cream on near-black. |
+| `material` | MkDocs Material dark code: pink keywords, purple modules, soft green strings on dark blue-grey. Same vibe as the docs site's code blocks. |
 
 ## Pick one for an `ask`
 
@@ -67,7 +69,7 @@ A/B in a real workflow.
 poetry run oqe ask --cycle-theme "NVDA ATM IV this week"   # bloomberg
 poetry run oqe ask --cycle-theme "NVDA ATM IV this week"   # bloomberg_classic
 poetry run oqe ask --cycle-theme "NVDA ATM IV this week"   # matrix
-# ... wraps after the 10th call.
+# ... wraps after the 12th call.
 ```
 
 The cursor lives at `~/.oqe/theme_cursor`. Override the path with

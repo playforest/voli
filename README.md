@@ -43,7 +43,7 @@ NEXT_IV       0.3457
   snapshot. Same prompt + same cache window = same answer.
 - **LLM-driven** path. Claude or GPT can drive the same toolset for free-form
   questions; the LLM streams its tool calls live as it works.
-- **Bloomberg-style CLI.** Ten bundled colour themes; defaults to a
+- **Bloomberg-style CLI.** Twelve bundled colour themes; defaults to a
   Bloomberg-Terminal-inspired orange/amber on black.
 - **MCP server**. Connect to Claude Desktop or claude.ai web in two minutes
   and ask options questions in chat.
@@ -151,13 +151,13 @@ environment wins over `.env`.
 | `oqe llm-ask "..."` | LLM (Claude / GPT) drives the OQE tools. Streams chain-of-thought. |
 | `oqe mcp-serve` | MCP server (stdio) for Claude Desktop / claude.ai web. |
 | `oqe replay <trace_id>` | Re-render a previously stored answer (rule-based or LLM). |
-| `oqe themes list / preview` | Browse / preview the 10 colour palettes. |
+| `oqe themes list / preview` | Browse / preview the 12 colour palettes. |
 
 Common flags across the answer commands:
 
 | Flag | Effect |
 | --- | --- |
-| `--theme NAME` | Pick one of 10 themes (default `bloomberg`). |
+| `--theme NAME` | Pick one of 12 themes (default `bloomberg`). |
 | `--cycle-theme` | Rotate to the next theme each invocation. |
 | `--no-color` | Disable ANSI (auto when stdout isn't a TTY). |
 | `--json` | Machine-readable output. |

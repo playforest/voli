@@ -107,7 +107,7 @@ execution
 
 ## Themes
 
-Ten bundled palettes (run `oqe themes list` to see them with live samples):
+Twelve bundled palettes (run `oqe themes list` to see them with live samples):
 
 | Name | Vibe |
 | --- | --- |
@@ -121,6 +121,8 @@ Ten bundled palettes (run `oqe themes list` to see them with live samples):
 | `cyberpunk` | Neon pink primary, cyan accents |
 | `mono` | Greyscale only - works on any terminal |
 | `paper` | Inverted, dark inks for light terminals |
+| `sepia` | Aged photograph: warm browns + cream on near-black |
+| `material` | MkDocs Material dark code: pink keywords, purple modules, soft green strings on dark blue-grey |
 
 Selection precedence: `--cycle-theme` > `--theme NAME` > `$OQE_THEME` > `bloomberg`.
 
