@@ -425,9 +425,14 @@ _TABLE_COLUMNS: dict[str, tuple[str, ...]] = {
 
 def _table_block(theme: Theme, table: dict[str, Any]) -> str:
     ttype = table.get("type", "none")
-    columns = _TABLE_COLUMNS.get(ttype, ())
     rows = table.get("rows", []) or []
-    title = ttype.replace("_", " ").upper() if ttype != "none" else "TABLE"
+    # `columns` and `title` may be supplied inline (used by the comparison
+    # table type, where the column set depends on which category the batch
+    # ended up running). Otherwise fall back to the per-type defaults.
+    columns = table.get("columns") or _TABLE_COLUMNS.get(ttype, ())
+    title = table.get("title")
+    if title is None:
+        title = ttype.replace("_", " ").upper() if ttype != "none" else "TABLE"
     return f"{_section(theme, title)}\n{_render_table(theme, columns, rows)}"
 
 
@@ -490,6 +495,18 @@ def render_response(
         for w in resp.limitations:
             blocks.append(f"{t.dim('!')} {t.warn(w)}")
 
+    if resp.skeptic:
+        blocks.append("")
+        blocks.append(_section(t, "Skeptic"))
+        for line in resp.skeptic:
+            # Severity is the first token in each pre-rendered line - colour
+            # the whole row by that severity for at-a-glance scanning.
+            head = line.split()[0] if line else ""
+            if head == "CRITICAL" or head == "WARN":
+                blocks.append(t.warn(line))
+            else:
+                blocks.append(t.dim(line))
+
     if trace_id:
         blocks.append("")
         blocks.append(_hr(t, "-"))
@@ -497,6 +514,118 @@ def render_response(
 
     blocks.append(_hr(t))
     return "\n".join(blocks)
+
+
+# ---------------------------------------------------------------------------
+# Multi-ticker batch rendering. Same theme + section layout as a single
+# answer; the table type is "comparison" with category-specific columns.
+# ---------------------------------------------------------------------------
+
+
+_COMPARISON_COLUMNS: dict[str, tuple[str, ...]] = {
+    "term_structure": ("ticker", "atm_strike", "front_iv", "next_iv", "diff", "status"),
+    "skew": ("ticker", "front_expiry", "atm_strike", "skew_slope", "status"),
+    "greeks": ("ticker", "strike", "iv", "delta", "gamma", "theta", "vega", "status"),
+    "chain": ("ticker", "spot", "contracts_count", "expiries_used", "status"),
+}
+
+
+def render_batch(
+    batch: Any,  # oqe.agent.batch.BatchResult (avoid import cycle)
+    *,
+    color: bool | None = None,
+    theme: str | None = None,
+    asof: str | None = None,
+    trace_id: str | None = None,
+) -> str:
+    """Render a multi-ticker batch as a single themed report."""
+
+    from .agent.batch import comparison_rows  # local import to avoid a cycle
+
+    t = make_theme(color, theme=theme)
+    cat = batch.primary_category or "term_structure"
+    columns = _COMPARISON_COLUMNS.get(cat, _COMPARISON_COLUMNS["term_structure"])
+    rows = comparison_rows(batch)
+
+    ok = sum(1 for r in rows if r.get("status") == "OK")
+    total = len(rows)
+
+    blocks: list[str] = []
+    blocks.append(_hr(t))
+    bits = [
+        "OQE BATCH",
+        f"CATEGORY: {cat.upper()}",
+        f"TICKERS: {total}",
+        f"OK: {ok}",
+    ]
+    if asof:
+        bits.append(f"AS-OF: {asof}")
+    if t.color and t.name != "bloomberg":
+        bits.append(f"THEME: {t.name}")
+    blocks.append(t.status_bar(" | ".join(bits)))
+    blocks.append(_hr(t))
+
+    blocks.append(_section(t, "Prompt"))
+    blocks.extend(_wrap(batch.prompt))
+
+    blocks.append("")
+    blocks.append(
+        _table_block(
+            t,
+            {
+                "type": "comparison",
+                "title": f"{cat.replace('_', ' ').upper()} COMPARISON",
+                "columns": columns,
+                "rows": rows,
+            },
+        )
+    )
+
+    # Aggregate skeptic concerns across responses (deduplicated).
+    sk_lines: list[str] = []
+    seen: set[str] = set()
+    for row in batch.rows:
+        if row.response is None:
+            continue
+        for line in row.response.skeptic or ():
+            tagged = f"[{row.ticker}] {line}"
+            if tagged in seen:
+                continue
+            seen.add(tagged)
+            sk_lines.append(tagged)
+    if sk_lines:
+        blocks.append("")
+        blocks.append(_section(t, "Skeptic"))
+        for line in sk_lines:
+            head = line.split("] ", 1)[-1].split()[0] if "] " in line else ""
+            if head in ("CRITICAL", "WARN"):
+                blocks.append(t.warn(line))
+            else:
+                blocks.append(t.dim(line))
+
+    if trace_id:
+        blocks.append("")
+        blocks.append(_hr(t, "-"))
+        blocks.append(t.dim(f"trace_id: {trace_id}"))
+
+    blocks.append(_hr(t))
+    return "\n".join(blocks)
+
+
+def render_batch_json(batch: Any, *, asof: str | None = None, trace_id: str | None = None) -> str:
+    """JSON mode for batches. One object per ticker so consumers can iterate."""
+
+    from .agent.batch import comparison_rows  # local import to avoid a cycle
+
+    rows = comparison_rows(batch)
+    payload = {
+        "prompt": batch.prompt,
+        "category": batch.primary_category,
+        "rows": rows,
+        "asof": asof,
+        "trace_id": trace_id,
+    }
+    return json.dumps(payload, sort_keys=True, indent=2, default=str)
 
 
 def render_json(
@@ -516,6 +645,7 @@ def render_json(
         "numbers_used": resp.numbers_used,
         "limitations": resp.limitations,
         "suggested_rewrites": resp.suggested_rewrites,
+        "skeptic": resp.skeptic,
         "asof": asof,
         "trace_id": trace_id,
     }

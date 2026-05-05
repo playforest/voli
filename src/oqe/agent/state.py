@@ -101,3 +101,8 @@ class AnswerResponse:
     numbers_used: list[float]
     limitations: list[str] = field(default_factory=list)
     suggested_rewrites: list[str] = field(default_factory=list)
+    # `None` means the skeptic didn't run (default behaviour). An empty list
+    # means it ran and found nothing. A non-empty list means concerns to show.
+    # Each entry is a pre-rendered `<SEVERITY>  <CODE>  <message>` string -
+    # the underlying SkepticConcern objects live in oqe.agent.skeptic.
+    skeptic: list[str] | None = None

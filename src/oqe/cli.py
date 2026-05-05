@@ -23,6 +23,7 @@ from datetime import UTC, datetime
 from dotenv import load_dotenv
 
 from .agent import answer_question
+from .agent.batch import answer_many
 from .agent.executor import ToolRegistry
 from .agent.state import AnswerResponse
 from .cli_render import (
@@ -30,6 +31,8 @@ from .cli_render import (
     cycle_next_theme,
     list_themes,
     make_theme,
+    render_batch,
+    render_batch_json,
     render_json,
     render_response,
     resolve_theme_name,
@@ -105,7 +108,29 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Open a JSONL run-trace under $OQE_TRACE_DIR for this question.",
     )
+    ask.add_argument(
+        "--skeptic",
+        action="store_true",
+        help="Run the skeptic sub-agent and append a [ SKEPTIC ] block.",
+    )
     _add_theme_flags(ask)
+
+    # ---- ask-many ---------------------------------------------------------
+    ask_many = sub.add_parser(
+        "ask-many",
+        help="Run the same prompt against multiple tickers and compare results.",
+    )
+    ask_many.add_argument("prompt", help="Generic prompt without a ticker.")
+    ask_many.add_argument(
+        "--tickers",
+        required=True,
+        help="Comma-separated list, e.g. NVDA,SPY,QQQ",
+    )
+    ask_many.add_argument("--asof", default=None)
+    ask_many.add_argument("--json", action="store_true")
+    ask_many.add_argument("--trace", action="store_true")
+    ask_many.add_argument("--skeptic", action="store_true")
+    _add_theme_flags(ask_many)
 
     # ---- themes -----------------------------------------------------------
     themes = sub.add_parser("themes", help="List or preview the colour themes.")
@@ -141,6 +166,8 @@ def main(
 
     if args.command == "ask":
         return _cmd_ask(args, registry=registry, out=out)
+    if args.command == "ask-many":
+        return _cmd_ask_many(args, registry=registry, out=out)
     if args.command == "themes":
         return _cmd_themes(args, out=out)
 
@@ -176,6 +203,7 @@ def _cmd_ask(args: argparse.Namespace, *, registry: ToolRegistry | None, out) ->
                 args.prompt,
                 ticker_default=args.ticker,
                 registry=registry,
+                skeptic=getattr(args, "skeptic", False),
             )
         except Exception as exc:
             return _render_error(args, exc, out=out)
@@ -192,6 +220,48 @@ def _cmd_ask(args: argparse.Namespace, *, registry: ToolRegistry | None, out) ->
             )
         print(text, file=out)
         return 0 if resp.supported else 3
+    finally:
+        if args.trace and get_trace() is not None:
+            end_trace()
+
+
+# ---- ask-many ---------------------------------------------------------------
+
+
+def _cmd_ask_many(args: argparse.Namespace, *, registry: ToolRegistry | None, out) -> int:
+    tickers = [t.strip().upper() for t in (args.tickers or "").split(",") if t.strip()]
+    if not tickers:
+        print("No tickers supplied. Use --tickers NVDA,SPY,QQQ", file=out)
+        return 2
+
+    trace_id = None
+    if args.trace:
+        trace_id = start_trace().trace_id
+    try:
+        try:
+            batch = answer_many(
+                args.prompt,
+                tickers,
+                registry=registry,
+                skeptic=getattr(args, "skeptic", False),
+            )
+        except Exception as exc:
+            return _render_error(args, exc, out=out)
+
+        if args.json:
+            text = render_batch_json(batch, asof=args.asof, trace_id=trace_id)
+        else:
+            text = render_batch(
+                batch,
+                color=_color_flag(args),
+                theme=_selected_theme(args),
+                asof=args.asof,
+                trace_id=trace_id,
+            )
+        print(text, file=out)
+        # Exit 0 if every row succeeded, else 3.
+        any_failed = any(r.error or (r.response and not r.response.supported) for r in batch.rows)
+        return 0 if not any_failed else 3
     finally:
         if args.trace and get_trace() is not None:
             end_trace()
