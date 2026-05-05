@@ -172,8 +172,11 @@ def _render_term_structure(state: AgentState) -> AnswerResponse:
     if intent.ticker:
         parts.append(f"{intent.ticker} ATM IV term structure:")
     if front_iv is not None and next_iv is not None and atm_strike is not None:
+        # Round in the summary (4dp matches table formatting); the underlying
+        # full-precision values are still in `numbers_used` so the guardrail
+        # tolerance accepts both.
         parts.append(
-            f"front IV {float(front_iv)} vs next IV {float(next_iv)} "
+            f"front IV {round(float(front_iv), 4)} vs next IV {round(float(next_iv), 4)} "
             f"at strike {float(atm_strike)} (diff {diff})."
         )
     elif ts is not None and ts.flags:
