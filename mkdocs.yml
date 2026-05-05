@@ -1,0 +1,125 @@
+site_name: Options Query Engine
+site_description: Natural-language Q&A over options chains, grounded in Polygon data.
+site_author: Playforest
+repo_url: https://github.com/playforest/options-query-agent
+repo_name: playforest/options-query-agent
+edit_uri: edit/main/docs/
+
+# Render docs from the existing docs/ directory.
+docs_dir: docs
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - search.highlight
+    - search.suggest
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.action.edit
+  palette:
+    # Bloomberg-inspired: orange accent on dark grey, slate as the dark
+    # toggle. Both palettes pass WCAG AA against the primary text colour.
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep orange
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep orange
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
+
+extra:
+  generator: false   # remove "Made with Material for MkDocs" footer line
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.caret
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Your first query: getting-started/first-query.md
+      - Concepts: getting-started/concepts.md
+  - CLI Reference:
+      - Overview: cli/overview.md
+      - Themes: cli/themes.md
+      - Troubleshooting: cli/troubleshooting.md
+  - Python API:
+      - answer_question: python-api/answer-question.md
+      - Agent internals: python-api/agent.md
+      - Analytics: python-api/analytics.md
+      - Polygon tools: python-api/tools.md
+  - Examples:
+      - IV term structure: examples/term-structure.md
+      - Skew: examples/skew.md
+      - Greeks: examples/greeks.md
+      - Chain slices: examples/chain.md
+      - Refusals & rewrites: examples/refusals.md
+      - Recipes: examples/recipes.md
+  - Architecture:
+      - Orchestrator flow: architecture/orchestrator.md
+      - Data model: architecture/data-model.md
+      - Caching: architecture/caching.md
+      - Guardrails: architecture/guardrails.md
+  - Eval Harness:
+      - Running the harness: eval/harness.md
+      - Dataset format: eval/dataset-format.md
+      - Adding cases: eval/adding-cases.md
+  - Contributing:
+      - Setup: contributing/setup.md
+      - Testing: contributing/testing.md
+      - Releasing: contributing/release.md
+  - Appendix:
+      - v1 contract: v1_contract.md
+      - Requirements taxonomy: requirements.md
+      - Metric definitions: metrics_definitions.md
+      - Reproducibility notes: reproducibility.md
+      - Agent flow notes: agent_flow.md
+      - CLI usage notes: usage.md
+      - Dev notes: dev.md
