@@ -214,3 +214,9 @@ __marimo__/
 .cache/
 
 .DS_Store
+
+# Local OQE config (config.example.yaml is the template)
+config.yaml
+
+# MkDocs build output
+site/

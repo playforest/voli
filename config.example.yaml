@@ -1,0 +1,41 @@
+# Options Query Engine — example config.
+#
+# Copy to `config.yaml` (gitignored) and uncomment the keys you want.
+#
+# Lookup order: $OQE_CONFIG -> ./config.yaml -> ~/.oqe/config.yaml
+# Process env vars set BEFORE Python starts always override these values
+# (use `OQE_CONFIG=path` to point at an alternate file).
+
+# ----- caching ----------------------------------------------------------------
+
+# SQLite cache file. Default: ~/.oqe/cache.sqlite
+# cache_path: ~/.oqe/cache.sqlite
+
+# Run-trace JSONL directory. Default: ~/.oqe/traces/
+# trace_dir: ~/.oqe/traces
+
+# ----- CLI presentation -------------------------------------------------------
+
+# Default colour theme. One of: bloomberg, bloomberg_classic, matrix,
+# amber_crt, solarized_dark, dracula, nord, cyberpunk, mono, paper.
+# default_theme: bloomberg
+
+# Where the --cycle-theme cursor is persisted.
+# theme_cursor_path: ~/.oqe/theme_cursor
+
+# ----- logging ----------------------------------------------------------------
+
+# Log level: DEBUG, INFO, WARNING (default), ERROR, CRITICAL.
+# log_level: INFO
+
+# Log format: text (themed when stderr is a TTY) or json (one object per line).
+# log_format: text
+
+# ----- Polygon ----------------------------------------------------------------
+
+# Polygon REST API key. Prefer .env for secrets; this entry exists only so
+# you can override it for a single environment.
+# polygon_api_key: pk_xxx
+
+# Print every Polygon HTTP request/response on stderr (for debugging).
+# polygon_http_debug: false
