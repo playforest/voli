@@ -198,12 +198,14 @@ Also: make the repo and docs **friendly for learning agents/LLMs**—briefly exp
 - Track failures by category.
 
 **Deliverables**
-- [ ] `eval/prompts.jsonl`
-- [ ] `eval/run_eval.py`
-- [ ] `tests/test_end_to_end.py`
+- [*] `eval/prompts.jsonl` (20 cases across all 4 supported categories + refusal + missing-ticker)
+- [*] `eval/run_eval.py` (themed report; non-zero exit on any failure)
+- [*] `tests/test_end_to_end.py` (parametrised pytest backed by the same dataset)
 
 **Done when**
-- You can refactor the agent and know if you broke behavior.
+- [*] You can refactor the agent and know if you broke behavior.
+  Verified by sabotaging the writer (dropping `atm_strike` from facts): the
+  harness reported 4 failed cases with per-check detail. Reverted, 20/20 pass.
 
 ---
 
