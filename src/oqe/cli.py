@@ -34,6 +34,8 @@ from .cli_render import (
     render_response,
     resolve_theme_name,
 )
+from .config import load_config
+from .logging import setup_logging
 from .run_trace import end_trace, get_trace, start_trace
 
 # Load .env at CLI import time so POLYGON_API_KEY (and other Polygon settings)
@@ -41,6 +43,11 @@ from .run_trace import end_trace, get_trace, start_trace
 # Library users who import oqe.* directly are unaffected - dotenv only fires
 # when this CLI module is imported.
 load_dotenv()
+# Then layer config.yaml on top (env vars already set still win).
+load_config()
+# Configure the `oqe` logger so any module that imports `from oqe.logging
+# import get_logger` writes through a real handler.
+setup_logging()
 
 
 def _add_theme_flags(parser: argparse.ArgumentParser) -> None:

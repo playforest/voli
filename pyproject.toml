@@ -29,6 +29,7 @@ python = "^3.11"
 pydantic = "^2.0"
 httpx = "^0.28.1"
 python-dotenv = "^1.2.2"
+pyyaml = "^6.0.3"
 
 [tool.poetry.scripts]
 oqe = "oqe.cli:main"
@@ -37,6 +38,12 @@ oqe = "oqe.cli:main"
 pytest = "^9.0.2"
 ipykernel = "^7.1.0"
 jupyter = "^1.1.1"
+
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = "^1.6.1"
+mkdocs-material = "^9.7.6"
+pymdown-extensions = "^10.21.2"
 
 [build-system]
 requires = ["poetry-core>=1.8.0"]
