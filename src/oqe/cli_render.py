@@ -1,4 +1,4 @@
-"""Bloomberg-style ANSI renderer for AnswerResponse.
+"""ANSI renderer for AnswerResponse with pluggable colour themes.
 
 Design:
   * 256-color ANSI only - no third-party deps, works in every modern terminal.
@@ -7,11 +7,9 @@ Design:
   * Pure functions: `render_response(resp)` returns a string. The CLI handles
     actual stdout writing so tests can capture the rendered text directly.
 
-Theme (close to Bloomberg Terminal defaults):
-  * Section headers and the top status bar: bold orange (#FF8A00, ANSI 208).
-  * Facts keys / column headers: amber (ANSI 214).
-  * Borders, dividers, dim labels: gray (ANSI 240).
-  * Values default to the terminal's foreground colour (typically white).
+The visual layout (status bar / sections / tables / facts) is fixed; only the
+*palette* changes. Ten palettes ship out of the box (see THEMES at the bottom
+of this module) - users select with `oqe ask --theme NAME` or `OQE_THEME=NAME`.
 """
 
 from __future__ import annotations
@@ -40,23 +38,46 @@ def _bg(n: int) -> str:
     return f"{ESC}[48;5;{n}m"
 
 
-# Bloomberg-ish palette
-ORANGE = _fg(208)  # Bloomberg primary accent
-AMBER = _fg(214)  # softer amber for keys
-WHITE = _fg(231)  # values
-GRAY = _fg(240)  # borders / dim
-RED = _fg(196)  # negatives / warnings
-GREEN = _fg(46)  # positives
-BLACK_BG = _bg(16)
+# ---------------------------------------------------------------------------
+# Palette: the colour personality of a theme. The renderer's layout is fixed;
+# swapping a palette swaps the visual identity (Bloomberg orange vs Matrix
+# green vs Solarized vs ...).
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Palette:
+    name: str
+    description: str
+
+    # ANSI escape sequences (already wrapped with `_fg`/`_bg`/style codes).
+    primary: str  # status bar / section headers (the "personality" colour)
+    secondary: str  # facts keys / column headers
+    value: str  # body values / table cells
+    dim: str  # borders, dividers, separators
+    warn: str  # warnings, refusal "REFUSED" marker, errors
+    good: str  # positive / "OK" markers
+    bg: str  # status bar background
+
+    # Whether the status bar should be bold. Mostly aesthetic, exposed so
+    # softer themes (paper, mono) can drop it.
+    bold_status: bool = True
 
 
 @dataclass(frozen=True)
 class Theme:
-    """Resolved styling tokens. `color=False` returns a no-op theme so the
-    output is pure ASCII (ideal for tests, redirected output, dumb terminals).
+    """Resolved theme - palette + on/off switch.
+
+    `color=False` returns a no-op theme so the output is pure ASCII (ideal
+    for tests, redirected output, dumb terminals).
     """
 
+    palette: Palette
     color: bool
+
+    @property
+    def name(self) -> str:
+        return self.palette.name
 
     def style(self, *codes: str, text: str) -> str:
         if not self.color or not text:
@@ -64,27 +85,167 @@ class Theme:
         return "".join(codes) + text + RESET
 
     def header(self, text: str) -> str:
-        return self.style(BOLD, ORANGE, text=text)
+        return self.style(BOLD, self.palette.primary, text=text)
 
     def label(self, text: str) -> str:
-        return self.style(BOLD, AMBER, text=text)
+        return self.style(BOLD, self.palette.secondary, text=text)
 
     def value(self, text: str) -> str:
-        return self.style(WHITE, text=text)
+        return self.style(self.palette.value, text=text)
 
     def dim(self, text: str) -> str:
-        return self.style(DIM, GRAY, text=text)
+        return self.style(DIM, self.palette.dim, text=text)
 
     def warn(self, text: str) -> str:
-        return self.style(BOLD, RED, text=text)
+        return self.style(BOLD, self.palette.warn, text=text)
 
     def good(self, text: str) -> str:
-        return self.style(BOLD, GREEN, text=text)
+        return self.style(BOLD, self.palette.good, text=text)
 
     def status_bar(self, text: str) -> str:
         if not self.color:
             return text
-        return f"{BLACK_BG}{BOLD}{ORANGE} {text} {RESET}"
+        bold = BOLD if self.palette.bold_status else ""
+        return f"{self.palette.bg}{bold}{self.palette.primary} {text} {RESET}"
+
+
+# ---------------------------------------------------------------------------
+# Built-in themes. All use the same layout; only the colour mix differs.
+# ---------------------------------------------------------------------------
+
+
+THEMES: dict[str, Palette] = {
+    "bloomberg": Palette(
+        name="bloomberg",
+        description="Default. Bloomberg Terminal: orange on black with amber accents.",
+        primary=_fg(208),
+        secondary=_fg(214),
+        value=_fg(231),
+        dim=_fg(240),
+        warn=_fg(196),
+        good=_fg(46),
+        bg=_bg(16),
+    ),
+    "bloomberg_classic": Palette(
+        name="bloomberg_classic",
+        description="Deeper, slightly desaturated take on the Bloomberg look.",
+        primary=_fg(202),
+        secondary=_fg(130),
+        value=_fg(230),
+        dim=_fg(238),
+        warn=_fg(124),
+        good=_fg(28),
+        bg=_bg(16),
+    ),
+    "matrix": Palette(
+        name="matrix",
+        description="Matrix-style phosphor green on black.",
+        primary=_fg(46),
+        secondary=_fg(34),
+        value=_fg(120),
+        dim=_fg(238),
+        warn=_fg(196),
+        good=_fg(46),
+        bg=_bg(16),
+    ),
+    "amber_crt": Palette(
+        name="amber_crt",
+        description="Vintage amber-monochrome CRT terminal.",
+        primary=_fg(214),
+        secondary=_fg(208),
+        value=_fg(222),
+        dim=_fg(94),
+        warn=_fg(202),
+        good=_fg(220),
+        bg=_bg(16),
+    ),
+    "solarized_dark": Palette(
+        name="solarized_dark",
+        description="Solarized Dark: yellow accent, base0 body, blue highlights.",
+        primary=_fg(136),
+        secondary=_fg(33),
+        value=_fg(244),
+        dim=_fg(240),
+        warn=_fg(160),
+        good=_fg(64),
+        bg=_bg(235),
+    ),
+    "dracula": Palette(
+        name="dracula",
+        description="Dracula: purple/pink on dark grey.",
+        primary=_fg(141),
+        secondary=_fg(212),
+        value=_fg(231),
+        dim=_fg(245),
+        warn=_fg(203),
+        good=_fg(84),
+        bg=_bg(236),
+    ),
+    "nord": Palette(
+        name="nord",
+        description="Nord: cool frost-blues, low contrast.",
+        primary=_fg(110),
+        secondary=_fg(67),
+        value=_fg(188),
+        dim=_fg(239),
+        warn=_fg(174),
+        good=_fg(108),
+        bg=_bg(236),
+    ),
+    "cyberpunk": Palette(
+        name="cyberpunk",
+        description="Neon pink primary, cyan accents, high contrast.",
+        primary=_fg(201),
+        secondary=_fg(51),
+        value=_fg(231),
+        dim=_fg(240),
+        warn=_fg(196),
+        good=_fg(82),
+        bg=_bg(16),
+    ),
+    "mono": Palette(
+        name="mono",
+        description="Greyscale only - works on any terminal, easiest to read.",
+        primary=_fg(255),
+        secondary=_fg(250),
+        value=_fg(231),
+        dim=_fg(244),
+        warn=_fg(255),
+        good=_fg(255),
+        bg=_bg(238),
+        bold_status=True,
+    ),
+    "paper": Palette(
+        name="paper",
+        description="Inverted: dark inks for light terminals.",
+        primary=_fg(19),
+        secondary=_fg(60),
+        value=_fg(16),
+        dim=_fg(244),
+        warn=_fg(88),
+        good=_fg(22),
+        bg=_bg(254),
+        bold_status=False,
+    ),
+}
+
+DEFAULT_THEME = "bloomberg"
+
+
+def list_themes() -> list[Palette]:
+    """Stable ordering for UIs that list/cycle themes."""
+
+    return [THEMES[name] for name in THEMES]
+
+
+def resolve_theme_name(name: str | None) -> str:
+    """Validate `name` (or fall back to OQE_THEME or the default)."""
+
+    if name is None:
+        name = os.environ.get("OQE_THEME") or DEFAULT_THEME
+    if name not in THEMES:
+        raise ValueError(f"Unknown theme '{name}'. Available: {', '.join(THEMES)}.")
+    return name
 
 
 def _color_supported() -> bool:
@@ -98,10 +259,15 @@ def _color_supported() -> bool:
         return False
 
 
-def make_theme(color: bool | None = None) -> Theme:
+def make_theme(color: bool | None = None, *, theme: str | None = None) -> Theme:
+    """Build a Theme. `color=None` auto-detects, `theme=None` uses OQE_THEME
+    or the package default.
+    """
+
     if color is None:
         color = _color_supported()
-    return Theme(color=bool(color))
+    palette = THEMES[resolve_theme_name(theme)]
+    return Theme(palette=palette, color=bool(color))
 
 
 # Layout helpers --------------------------------------------------------------
@@ -161,11 +327,7 @@ def _fmt_value(v: Any) -> str:
 
 
 def _render_table(theme: Theme, columns: Sequence[str], rows: Sequence[dict[str, Any]]) -> str:
-    """Tight monospaced table with right-aligned numeric cells.
-
-    Column header is amber, separator is dim gray, values use the terminal's
-    default foreground.
-    """
+    """Tight monospaced table with right-aligned numeric cells."""
 
     if not rows:
         return theme.dim("(no rows)")
@@ -280,6 +442,8 @@ def _status_line(theme: Theme, resp: AnswerResponse, *, asof: str | None) -> str
     bits.append(f"CATEGORY: {resp.category.upper()}")
     if asof:
         bits.append(f"AS-OF: {asof}")
+    if theme.color and theme.name != "bloomberg":
+        bits.append(f"THEME: {theme.name}")
     bits.append("OK" if resp.supported else "REFUSED")
     return theme.status_bar(" | ".join(bits))
 
@@ -288,49 +452,50 @@ def render_response(
     resp: AnswerResponse,
     *,
     color: bool | None = None,
+    theme: str | None = None,
     asof: str | None = None,
     trace_id: str | None = None,
 ) -> str:
-    """Render an AnswerResponse to a Bloomberg-style block of text."""
+    """Render an AnswerResponse to a themed block of text."""
 
-    theme = make_theme(color)
+    t = make_theme(color, theme=theme)
 
     blocks: list[str] = []
-    blocks.append(_hr(theme))
-    blocks.append(_status_line(theme, resp, asof=asof))
-    blocks.append(_hr(theme))
+    blocks.append(_hr(t))
+    blocks.append(_status_line(t, resp, asof=asof))
+    blocks.append(_hr(t))
 
-    blocks.append(_section(theme, "Summary"))
+    blocks.append(_section(t, "Summary"))
     blocks.extend(_wrap(resp.summary))
 
     if resp.supported:
         blocks.append("")
-        blocks.append(_table_block(theme, resp.table))
+        blocks.append(_table_block(t, resp.table))
         blocks.append("")
-        blocks.append(_section(theme, "Facts"))
-        blocks.append(_render_facts(theme, resp.facts))
+        blocks.append(_section(t, "Facts"))
+        blocks.append(_render_facts(t, resp.facts))
     else:
         blocks.append("")
-        blocks.append(_section(theme, "Reason"))
-        blocks.append(theme.warn(str(resp.facts.get("reason", "out of scope"))))
+        blocks.append(_section(t, "Reason"))
+        blocks.append(t.warn(str(resp.facts.get("reason", "out of scope"))))
         if resp.suggested_rewrites:
             blocks.append("")
-            blocks.append(_section(theme, "Try Instead"))
+            blocks.append(_section(t, "Try Instead"))
             for r in resp.suggested_rewrites:
-                blocks.append(f"{theme.dim('>')} {theme.value(r)}")
+                blocks.append(f"{t.dim('>')} {t.value(r)}")
 
     if resp.limitations:
         blocks.append("")
-        blocks.append(_section(theme, "Limitations"))
+        blocks.append(_section(t, "Limitations"))
         for w in resp.limitations:
-            blocks.append(f"{theme.dim('!')} {theme.warn(w)}")
+            blocks.append(f"{t.dim('!')} {t.warn(w)}")
 
     if trace_id:
         blocks.append("")
-        blocks.append(_hr(theme, "-"))
-        blocks.append(theme.dim(f"trace_id: {trace_id}"))
+        blocks.append(_hr(t, "-"))
+        blocks.append(t.dim(f"trace_id: {trace_id}"))
 
-    blocks.append(_hr(theme))
+    blocks.append(_hr(t))
     return "\n".join(blocks)
 
 
@@ -340,9 +505,7 @@ def render_json(
     asof: str | None = None,
     trace_id: str | None = None,
 ) -> str:
-    """JSON mode: stable, color-free, machine-readable. Still routes through
-    `_fmt_value` for floats so the same precision shows up in both modes.
-    """
+    """JSON mode: stable, color-free, machine-readable."""
 
     payload = {
         "supported": resp.supported,
@@ -357,3 +520,42 @@ def render_json(
         "trace_id": trace_id,
     }
     return json.dumps(payload, sort_keys=True, indent=2, default=str)
+
+
+# ---------------------------------------------------------------------------
+# Theme cycling: lightweight per-user state at ~/.oqe/theme_cursor so
+# successive `oqe ask --cycle-theme` invocations rotate through THEMES in
+# definition order.
+# ---------------------------------------------------------------------------
+
+
+def _theme_cursor_path() -> str:
+    override = os.environ.get("OQE_THEME_CURSOR")
+    if override:
+        return os.path.expanduser(override)
+    return os.path.expanduser("~/.oqe/theme_cursor")
+
+
+def _read_cursor() -> int:
+    try:
+        with open(_theme_cursor_path(), encoding="utf-8") as f:
+            return int(f.read().strip() or "0")
+    except (FileNotFoundError, ValueError):
+        return 0
+
+
+def _write_cursor(idx: int) -> None:
+    path = _theme_cursor_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(str(idx))
+
+
+def cycle_next_theme() -> str:
+    """Advance the cursor and return the name of the theme to use this run."""
+
+    names = list(THEMES.keys())
+    idx = _read_cursor() % len(names)
+    name = names[idx]
+    _write_cursor((idx + 1) % len(names))
+    return name
