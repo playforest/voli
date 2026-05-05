@@ -102,13 +102,34 @@ def _tool_get_option_greeks(args: dict[str, Any]) -> str:
 # ---- public builder --------------------------------------------------------
 
 
-def build_default_tools() -> list[ToolDef]:
-    """Return the v1 LLM tool surface.
+def build_default_tools(*, include_analytics: bool = True) -> list[ToolDef]:
+    """Return the LLM tool surface.
 
-    Stage A: just the four raw Polygon tools. Stage B can add analytics
-    wrappers (compute_atm_iv_term_structure, compute_skew_slope, get_atm_greeks).
+    Two layers, both included by default:
+
+      * Analytics tools (Stage B) - high-level, one-call answers for the
+        canonical question shapes (term structure, skew slope, ATM greeks).
+        Prefer these.
+      * Raw Polygon tools (Stage A) - chain listing, quotes, greeks by
+        symbol. Use when the analytics layer doesn't cover what's asked.
+
+    Pass `include_analytics=False` to expose only the raw tools (useful
+    for testing the LLM's ability to chain primitives, or for prompts that
+    explicitly want a chain slice).
     """
 
+    raw = _build_raw_polygon_tools()
+    if not include_analytics:
+        return raw
+
+    # Local import keeps build_default_tools() lightweight if the analytics
+    # module ever grows expensive imports.
+    from .analytics_tools import build_analytics_tools
+
+    return build_analytics_tools() + raw
+
+
+def _build_raw_polygon_tools() -> list[ToolDef]:
     return [
         ToolDef(
             name="get_underlying_snapshot",
