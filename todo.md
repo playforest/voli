@@ -130,10 +130,10 @@ Also: make the repo and docs **friendly for learning agents/LLMs**—briefly exp
 - Decide how to handle missing bid/ask or wide spreads (filters).
 
 **Deliverables**
-- [ ] `src/analytics/iv_metrics.py`
-- [ ] `src/analytics/skew.py`
-- [ ] `src/analytics/greeks.py`
-- [ ] `docs/metrics_definitions.md`
+- [*] `src/analytics/iv_metrics.py` (lives at `src/oqe/analytics/iv_metrics.py`)
+- [*] `src/analytics/skew.py` (lives at `src/oqe/analytics/skew.py`)
+- [*] `src/analytics/greeks.py` (lives at `src/oqe/analytics/greeks.py`)
+- [*] `docs/metrics_definitions.md`
 
 **Done when**
 - Given a chain snapshot, you can compute and print all metrics without the LLM.
