@@ -178,11 +178,12 @@ Also: make the repo and docs **friendly for learning agents/LLMs**—briefly exp
   - Facts section (raw values + timestamps)
 
 **Deliverables**
-- [ ] `src/cli.py`
-- [ ] `docs/usage.md`
+- [*] `src/cli.py` (lives at `src/oqe/cli.py` + `src/oqe/cli_render.py`)
+- [*] `docs/usage.md`
 
 **Done when**
-- You can run it end-to-end locally and understand any failure quickly.
+- [*] You can run it end-to-end locally and understand any failure quickly.
+  (`poetry run oqe ask "<prompt>"` works for any v1 category; refusal path returns exit 3; Bloomberg-style ANSI theme with auto NO_COLOR detection; --json and --trace supported.)
 
 ---
 
