@@ -167,6 +167,17 @@ def _build_parser() -> argparse.ArgumentParser:
         default=6,
         help="Cap on planner/tool/answer cycles. Default 6.",
     )
+    llm.add_argument(
+        "--skeptic",
+        action="store_true",
+        help="Run the skeptic over the LLM's tool results and append a [ SKEPTIC ] block.",
+    )
+    llm.add_argument(
+        "--trace",
+        action="store_true",
+        help="Open a JSONL run-trace and write a <trace_id>.llm.json "
+        "companion so 'oqe replay' can re-render the answer offline.",
+    )
     _add_theme_flags(llm)
 
     # ---- replay -----------------------------------------------------------
@@ -401,6 +412,12 @@ def _cmd_llm_ask(args: argparse.Namespace, *, out) -> int:
     cfg = AgentConfig(max_iterations=args.max_iterations)
     tools = build_default_tools()
 
+    # Optional: open a JSONL trace. Polygon tools auto-log to it; we'll
+    # also write an LLM companion at the end.
+    trace_id = None
+    if getattr(args, "trace", False):
+        trace_id = start_trace().trace_id
+
     # Status bar.
     bits = [
         "OQE LLM",
@@ -459,6 +476,24 @@ def _cmd_llm_ask(args: argparse.Namespace, *, out) -> int:
     # Trailing newline so the next shell prompt isn't glued to the answer.
     if in_answer:
         print("", file=out)
+
+    # Optional skeptic pass over the LLM's tool results.
+    skeptic_lines: list[str] | None = None
+    if getattr(args, "skeptic", False):
+        from .llm.skeptic import review_llm_run
+
+        concerns = review_llm_run(tool_results)
+        skeptic_lines = [c.render() for c in concerns]
+        if skeptic_lines:
+            print("", file=out)
+            print(t.header("[ SKEPTIC ]"), file=out)
+            for line in skeptic_lines:
+                head = line.split()[0] if line else ""
+                if head in ("CRITICAL", "WARN"):
+                    print(t.warn(line), file=out)
+                else:
+                    print(t.dim(line), file=out)
+
     print(t.dim("-" * 80), file=out)
     print(
         t.dim(
@@ -467,6 +502,30 @@ def _cmd_llm_ask(args: argparse.Namespace, *, out) -> int:
         ),
         file=out,
     )
+
+    # Optional replay companion + trace bookkeeping.
+    if trace_id is not None:
+        from .llm.replay import dump_llm_run
+
+        try:
+            path = dump_llm_run(
+                trace_id,
+                prompt=args.prompt,
+                provider=provider.name,
+                model=provider.model,
+                answer="".join(answer_buf),
+                stop_reason=stop_reason,
+                tool_calls=tool_calls,
+                tool_results=tool_results,
+                skeptic=skeptic_lines,
+            )
+            print(t.dim(f"replay companion: {path}"), file=out)
+        except Exception as exc:
+            _print_warning(args, f"replay companion failed: {exc}", out=out)
+        finally:
+            if get_trace() is not None:
+                end_trace()
+
     print(t.dim("=" * 80), file=out)
 
     if args.json:
@@ -484,6 +543,8 @@ def _cmd_llm_ask(args: argparse.Namespace, *, out) -> int:
                 for r in tool_results
             ],
             "stop_reason": stop_reason,
+            "skeptic": skeptic_lines,
+            "trace_id": trace_id,
         }
         print(_json.dumps(payload, indent=2, default=str), file=out)
 
@@ -496,12 +557,29 @@ def _cmd_llm_ask(args: argparse.Namespace, *, out) -> int:
 def _cmd_replay(args: argparse.Namespace, *, out) -> int:
     """Read a stored answer companion and re-render it.
 
-    Replay only re-renders the saved AnswerResponse - it does not re-run
-    tool dispatch. This makes replays free + offline + deterministic, and
-    lets the user pivot the visualisation (theme, json) without re-fetching
+    Replay only re-renders the saved companion - it does not re-run tool
+    dispatch. This makes replays free + offline + deterministic, and lets
+    the user pivot the visualisation (theme, json) without re-fetching
     Polygon data.
+
+    Auto-detects two companion shapes:
+      * <id>.response.json  - rule-based AnswerResponse (oqe.replay.dump_response)
+      * <id>.llm.json       - LLM run record (oqe.llm.replay.dump_llm_run)
     """
 
+    # Try LLM companion first - it's the newer shape and the resolver
+    # falls through cleanly when the file doesn't exist.
+    from .llm.replay import load_llm_run
+
+    try:
+        record = load_llm_run(args.target)
+    except FileNotFoundError:
+        record = None
+
+    if record is not None:
+        return _replay_llm_run(args, record, out=out)
+
+    # Fall back to the rule-based replay path.
     try:
         resp = replay_to_response(args.target)
     except FileNotFoundError as exc:
@@ -519,6 +597,77 @@ def _cmd_replay(args: argparse.Namespace, *, out) -> int:
         )
     print(text, file=out)
     return 0 if resp.supported else 3
+
+
+def _replay_llm_run(args: argparse.Namespace, record, *, out) -> int:
+    """Render a stored LLMRunRecord via the same themed blocks `_cmd_llm_ask`
+    uses live, so a replay is visually indistinguishable from the original
+    run minus the streaming.
+    """
+
+    import json as _json
+
+    if args.json:
+        from dataclasses import asdict
+
+        print(_json.dumps(asdict(record), indent=2, default=str, sort_keys=True), file=out)
+        return 0
+
+    theme_name = _selected_theme(args)
+    color = _color_flag(args)
+    t = make_theme(color, theme=theme_name)
+
+    bits = [
+        "OQE LLM | REPLAY",
+        f"PROVIDER: {record.provider}",
+        f"MODEL: {record.model}",
+    ]
+    if t.color and t.name != "bloomberg":
+        bits.append(f"THEME: {t.name}")
+    print(t.dim("=" * 80), file=out)
+    print(t.status_bar(" | ".join(bits)), file=out)
+    print(t.dim("=" * 80), file=out)
+    print(t.header("[ PROMPT ]"), file=out)
+    print(record.prompt, file=out)
+
+    for call, result in zip(record.tool_calls, record.tool_results, strict=False):
+        pretty_args = _json.dumps(call["arguments"], separators=(", ", "="))
+        print(
+            f"\n{t.label('[ TOOL CALL ]')} {t.value(call['name'])}({t.dim(pretty_args)})",
+            file=out,
+        )
+        preview = result["content"]
+        if len(preview) > 200:
+            preview = preview[:197] + "..."
+        marker = "[ TOOL ERR  ]" if result.get("is_error") else "[ TOOL OK   ]"
+        print(f"{t.label(marker)} {t.dim(preview)}", file=out)
+
+    if record.answer:
+        print(f"\n{t.header('[ ANSWER ]')}", file=out)
+        print(t.value(record.answer), file=out)
+
+    if record.skeptic:
+        print("", file=out)
+        print(t.header("[ SKEPTIC ]"), file=out)
+        for line in record.skeptic:
+            head = line.split()[0] if line else ""
+            if head in ("CRITICAL", "WARN"):
+                print(t.warn(line), file=out)
+            else:
+                print(t.dim(line), file=out)
+
+    print(t.dim("-" * 80), file=out)
+    print(
+        t.dim(
+            f"stop_reason: {record.stop_reason}  |  "
+            f"tool_calls: {len(record.tool_calls)}  |  "
+            f"tool_results: {len(record.tool_results)}  |  "
+            f"trace_id: {record.trace_id}"
+        ),
+        file=out,
+    )
+    print(t.dim("=" * 80), file=out)
+    return 0
 
 
 # ---- themes -----------------------------------------------------------------
