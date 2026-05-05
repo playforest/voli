@@ -154,14 +154,15 @@ Also: make the repo and docs **friendly for learning agents/LLMs**—briefly exp
   - Require a “Numbers used” section
 
 **Deliverables**
-- [ ] `src/agent/state.py`
-- [ ] `src/agent/planner.py`
-- [ ] `src/agent/executor.py`
-- [ ] `src/agent/writer.py`
-- [ ] `docs/agent_flow.md`
+- [*] `src/agent/state.py` (lives at `src/oqe/agent/state.py`)
+- [*] `src/agent/planner.py` (lives at `src/oqe/agent/planner.py`)
+- [*] `src/agent/executor.py` (lives at `src/oqe/agent/executor.py`)
+- [*] `src/agent/writer.py` (lives at `src/oqe/agent/writer.py`)
+- [*] `docs/agent_flow.md`
 
 **Done when**
-- The agent answers 10+ sample prompts with correct tool usage and no made-up numbers.
+- [*] The agent answers 10+ sample prompts with correct tool usage and no made-up numbers.
+  (See `tests/test_agent_end_to_end.py` — 12 prompts run through planner→executor→writer with a stubbed ToolRegistry; the writer's no-invented-numbers guardrail enforces the second clause.)
 
 ---
 
