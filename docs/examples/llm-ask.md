@@ -68,7 +68,19 @@ You see each tool call as it happens (the live "chain of thought" log).
 
 ## Tool surface
 
-Stage A exposes the four raw Polygon tools:
+Two layers, both exposed by default. The LLM is nudged (via the system
+prompt) to prefer the analytics tools — they save round trips.
+
+**Analytics tools (Stage B)** — one call each:
+
+| Tool | Description |
+| --- | --- |
+| `compute_atm_iv_term_structure` | Front + next ATM IV, ATM strike, expiries, IV diff. Optional `max_relative_spread` filter. |
+| `compute_skew_slope` | OLS slope of IV vs strike for one expiry (defaults to front). |
+| `get_atm_greeks` | ATM contract's iv/delta/gamma/theta/vega for one expiry (defaults to front). |
+
+**Raw Polygon tools (Stage A)** — for chain slices, custom strike windows,
+or specific symbol lookups the analytics layer doesn't cover:
 
 | Tool | Description |
 | --- | --- |
@@ -77,8 +89,18 @@ Stage A exposes the four raw Polygon tools:
 | `get_option_quotes` | bid/ask/last/mid for a list of option symbols. |
 | `get_option_greeks` | iv/delta/gamma/theta/vega for a list of option symbols. |
 
-The LLM is told (in the system prompt) to call `list_option_contracts`
-first to get symbols, then fetch quotes/greeks by symbol.
+When using raw tools, call `list_option_contracts` first to get the
+`option_symbol` identifiers, then fetch quotes/greeks by symbol.
+
+To restrict the LLM to raw tools only (e.g. for testing chain reasoning):
+
+```python
+from oqe.llm import build_default_tools, llm_ask
+from oqe.llm.provider import make_provider
+
+tools = build_default_tools(include_analytics=False)   # raw only
+result = llm_ask("...", provider=make_provider(), tools=tools)
+```
 
 ## Flags
 
