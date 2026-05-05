@@ -89,3 +89,46 @@ def test_option_greeks_from_snapshot_row():
     assert g.model == "vendor"
     assert g.ts.tzinfo is not None
     assert g.ts.astimezone(UTC).tzinfo == UTC
+
+
+def test_option_greeks_clamps_tiny_negative_noise_to_zero():
+    """Polygon occasionally returns ~-3e-10 for gamma/vega; the model has
+    `ge=0` so without clamping this raises ValidationError. The normaliser
+    must floor near-zero noise.
+    """
+
+    row = {
+        **SAMPLE_ROW,
+        "greeks": {
+            "delta": 0.5,
+            "gamma": -3.1526505506027033e-10,
+            "theta": -0.1,
+            "vega": -7.4e-11,
+        },
+    }
+    g = option_greeks_from_snapshot_row(row)
+    assert g.gamma == 0.0
+    assert g.vega == 0.0
+
+
+def test_option_greeks_real_negative_still_propagates():
+    """A genuine negative (outside the noise window) must NOT be silently
+    clamped - it would mask a real upstream bug. Pydantic's ge=0 raises.
+    """
+
+    import pytest
+    from pydantic import ValidationError
+
+    row = {**SAMPLE_ROW, "greeks": {"gamma": -0.5}}
+    with pytest.raises(ValidationError):
+        option_greeks_from_snapshot_row(row)
+
+
+def test_option_greeks_clamps_observed_polygon_vega_noise():
+    """Regression: Polygon emitted vega -8.007e-05 against live NVDA data,
+    which is much larger than the gamma noise but still below 1e-3.
+    """
+
+    row = {**SAMPLE_ROW, "greeks": {"vega": -8.007028049680383e-05}}
+    g = option_greeks_from_snapshot_row(row)
+    assert g.vega == 0.0

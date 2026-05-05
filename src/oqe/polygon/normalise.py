@@ -90,6 +90,31 @@ def option_quote_from_snapshot_row(row: dict[str, Any]) -> OptionQuote:
     )
 
 
+# Tolerance window for clamping near-zero negative greeks. Polygon has been
+# observed returning gamma ~ -3e-10 and vega ~ -8e-5; both are noise from
+# upstream Black-Scholes solvers. We pick 1e-3 - wide enough to absorb real
+# vendor noise, narrow enough that a genuine negative greek (a real bug) still
+# surfaces as a validation error.
+_ZERO_NOISE_EPS = 1e-3
+
+
+def _clamp_nonneg(v: Any) -> float | None:
+    """Floor tiny negative floating-point noise from vendor greeks.
+
+    Real gamma/vega can't be negative for vanilla options, but vendors emit
+    near-zero noise that fails our `ge=0` model constraints. Clamp anything
+    within `_ZERO_NOISE_EPS` of zero to exactly 0.0; pass real negatives
+    through so they still raise (a real bug worth surfacing).
+    """
+
+    if v is None:
+        return None
+    f = float(v)
+    if -_ZERO_NOISE_EPS <= f < 0.0:
+        return 0.0
+    return f
+
+
 def option_greeks_from_snapshot_row(row: dict[str, Any]) -> OptionGreeks:
     d = row.get("details") or {}
     option_symbol = d["ticker"]
@@ -102,9 +127,9 @@ def option_greeks_from_snapshot_row(row: dict[str, Any]) -> OptionGreeks:
     return OptionGreeks(
         option_symbol=option_symbol,
         delta=g.get("delta"),
-        gamma=g.get("gamma"),
+        gamma=_clamp_nonneg(g.get("gamma")),
         theta=g.get("theta"),
-        vega=g.get("vega"),
+        vega=_clamp_nonneg(g.get("vega")),
         iv=float(iv) if iv is not None else None,
         ts=ns_to_utc_iso(ts_ns),
         source="polygon",
