@@ -41,10 +41,13 @@ def mid_price(
 
     Order:
     1) if bid & ask present, non-negative, and ask>=bid: mid=(bid+ask)/2
-    2) else if last present: last (flag MID_FROM_LAST)
-    3) else if only bid: bid (flag MID_FROM_BID_ONLY)
-    4) else if only ask: ask (flag MID_FROM_ASK_ONLY)
-    5) else: None + flags
+    2) else if last present and non-negative: last (MID_NOT_FROM_BIDASK + MID_FROM_LAST)
+    3) else if bid present and non-negative: bid (MID_NOT_FROM_BIDASK + MID_FROM_BID_ONLY)
+    4) else if ask present and non-negative: ask (MID_NOT_FROM_BIDASK + MID_FROM_ASK_ONLY)
+    5) else: None (MID_MISSING + missing-field flags)
+
+    Diagnostic flags accumulated from earlier checks
+    (NEGATIVE_BID/NEGATIVE_ASK/INVALID_BID_ASK/NEGATIVE_LAST) are propagated.
     """
     flags: list[str] = []
 
@@ -52,6 +55,8 @@ def mid_price(
         bid = float(bid)
     if ask is not None:
         ask = float(ask)
+    if last is not None:
+        last = float(last)
 
     if bid is not None and ask is not None:
         if bid < 0:
@@ -62,14 +67,26 @@ def mid_price(
             return MetricResult((bid + ask) / 2.0, tuple(flags))
         flags.append("INVALID_BID_ASK")
 
-    if last is not None:
-        return MetricResult(float(last), ("MID_FROM_LAST",))
+    if last is not None and last < 0:
+        flags.append("NEGATIVE_LAST")
+
+    if last is not None and last >= 0:
+        return MetricResult(
+            last,
+            tuple(flags) + ("MID_NOT_FROM_BIDASK", "MID_FROM_LAST"),
+        )
 
     if bid is not None and bid >= 0:
-        return MetricResult(float(bid), ("MID_FROM_BID_ONLY",))
+        return MetricResult(
+            bid,
+            tuple(flags) + ("MID_NOT_FROM_BIDASK", "MID_FROM_BID_ONLY"),
+        )
 
     if ask is not None and ask >= 0:
-        return MetricResult(float(ask), ("MID_FROM_ASK_ONLY",))
+        return MetricResult(
+            ask,
+            tuple(flags) + ("MID_NOT_FROM_BIDASK", "MID_FROM_ASK_ONLY"),
+        )
 
     missing: list[str] = []
     if bid is None:
@@ -79,7 +96,7 @@ def mid_price(
     if last is None:
         missing.append("MISSING_LAST")
 
-    return MetricResult(None, tuple(missing))
+    return MetricResult(None, tuple(flags) + tuple(missing) + ("MID_MISSING",))
 
 
 def relative_spread(bid: float | None, ask: float | None) -> MetricResult[float]:

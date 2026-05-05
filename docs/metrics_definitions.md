@@ -17,16 +17,26 @@ This document defines the **exact**, deterministic rules used by `oqe.analytics`
 Rule order:
 1. If `bid` and `ask` are present, non-negative, and `ask >= bid`:
    - `mid = (bid + ask) / 2`
+   - flags: none on the happy path
 2. Else if `last` is present, non-negative:
-   - `mid = last` (flag: `MID_FROM_LAST`)
-3. Else if only `bid` is present, non-negative:
-   - `mid = bid` (flag: `MID_FROM_BID_ONLY`)
-4. Else if only `ask` is present, non-negative:
-   - `mid = ask` (flag: `MID_FROM_ASK_ONLY`)
+   - `mid = last` (flags: `MID_NOT_FROM_BIDASK`, `MID_FROM_LAST`)
+3. Else if `bid` is present and non-negative:
+   - `mid = bid` (flags: `MID_NOT_FROM_BIDASK`, `MID_FROM_BID_ONLY`)
+4. Else if `ask` is present and non-negative:
+   - `mid = ask` (flags: `MID_NOT_FROM_BIDASK`, `MID_FROM_ASK_ONLY`)
 5. Else:
-   - `mid = None` (flag: `MID_MISSING`)
+   - `mid = None` (flags: `MID_MISSING` plus the relevant `MISSING_BID` / `MISSING_ASK` / `MISSING_LAST`)
 
-Whenever we do **not** use bid/ask midpoint, we also add `MID_NOT_FROM_BIDASK`.
+### Diagnostic flags propagated into the result
+
+Earlier checks add diagnostic flags that are preserved into whichever branch ultimately returns:
+
+- `NEGATIVE_BID` — bid was provided but negative.
+- `NEGATIVE_ASK` — ask was provided but negative.
+- `INVALID_BID_ASK` — both sides present but the pair was unusable (negative or `ask < bid`).
+- `NEGATIVE_LAST` — last was provided but negative (and therefore not used).
+
+Example: `mid_price(bid=5, ask=3, last=4)` returns `value=4.0` with flags `("INVALID_BID_ASK", "MID_NOT_FROM_BIDASK", "MID_FROM_LAST")` — the orchestrator can see *why* we fell back, not just that we did.
 
 ## Relative spread
 
