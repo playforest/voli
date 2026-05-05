@@ -15,10 +15,18 @@ import argparse
 import sys
 from collections.abc import Sequence
 
+from dotenv import load_dotenv
+
 from .agent import answer_question
 from .agent.executor import ToolRegistry
 from .cli_render import make_theme, render_json, render_response
 from .run_trace import end_trace, get_trace, start_trace
+
+# Load .env at CLI import time so POLYGON_API_KEY (and other Polygon settings)
+# are available before the default registry instantiates the HTTP client.
+# Library users who import oqe.* directly are unaffected - dotenv only fires
+# when this CLI module is imported.
+load_dotenv()
 
 
 def _build_parser() -> argparse.ArgumentParser:
