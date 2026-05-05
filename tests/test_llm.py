@@ -175,19 +175,34 @@ def test_max_iterations_caps_runaway_loop() -> None:
 # ---- default tool surface --------------------------------------------------
 
 
-def test_build_default_tools_returns_four_polygon_tools() -> None:
+def test_build_default_tools_returns_analytics_plus_raw() -> None:
     tools = build_default_tools()
     names = {t.name for t in tools}
+    assert names == {
+        # Analytics layer (Stage B) - listed first so providers see them first.
+        "compute_atm_iv_term_structure",
+        "compute_skew_slope",
+        "get_atm_greeks",
+        # Raw polygon layer (Stage A).
+        "get_underlying_snapshot",
+        "list_option_contracts",
+        "get_option_quotes",
+        "get_option_greeks",
+    }
+    for t in tools:
+        assert isinstance(t.input_schema, dict)
+        assert t.input_schema.get("type") == "object"
+
+
+def test_build_default_tools_can_drop_analytics() -> None:
+    raw_only = build_default_tools(include_analytics=False)
+    names = {t.name for t in raw_only}
     assert names == {
         "get_underlying_snapshot",
         "list_option_contracts",
         "get_option_quotes",
         "get_option_greeks",
     }
-    # Each must have an input_schema that's a dict (so providers can serialise it).
-    for t in tools:
-        assert isinstance(t.input_schema, dict)
-        assert t.input_schema.get("type") == "object"
 
 
 # ---- tool dispatch end-to-end via the synthetic registry -------------------
@@ -203,8 +218,10 @@ def test_default_tools_dispatch_against_synthetic_market(monkeypatch) -> None:
     reg: ToolRegistry = _mk()
 
     # The default tools call oqe.tools.polygon_tools functions; rather than
-    # rewire them, we drive llm_ask's tool dispatch directly.
-    tools = build_default_tools()
+    # rewire them, we drive llm_ask's tool dispatch directly. Use raw-only
+    # mode so the wrapping below has a 1:1 name -> synth map. Analytics
+    # tools are exercised in tests/test_llm_analytics.py.
+    tools = build_default_tools(include_analytics=False)
 
     # Replace each tool's fn with the synthetic registry equivalent.
     name_to_synth = {
