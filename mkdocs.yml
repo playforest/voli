@@ -105,6 +105,7 @@ nav:
       - Skeptic sub-agent: examples/skeptic.md
       - Plotting: examples/plotting.md
       - Replay mode: examples/replay.md
+      - LLM-driven agent: examples/llm-ask.md
       - Recipes: examples/recipes.md
   - Architecture:
       - Orchestrator flow: architecture/orchestrator.md
