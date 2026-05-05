@@ -64,6 +64,27 @@ poetry run pre-commit run --all-files
 - JSONL "flight recorder" for tool calls
 - Default path: `~/.oqe/traces/<trace_id>.jsonl` (override with `OQE_TRACE_DIR`)
 
+**Rule-based Agent** (`agent/`):
+- `planner.py` / `executor.py` / `writer.py` / `state.py` / `skeptic.py` / `batch.py`
+- `answer_question(prompt, ...)` is the public entrypoint
+- Writer enforces "no invented numbers" guardrail; raises `GuardrailViolation`
+
+**LLM-driven Agent** (`llm/`):
+- Provider-agnostic: `provider.py` + `anthropic_provider.py` + `openai_provider.py`
+- `tools.py` exposes the 4 raw Polygon tools as `ToolDef`; `analytics_tools.py` adds the 3 analytics shortcuts (term structure / skew / ATM greeks)
+- `agent.py` -> `llm_ask(prompt, provider, tools, ...)` drives the loop
+- `skeptic.py` + `replay.py` mirror the rule-based equivalents for LLM mode
+
+**MCP Server** (`mcp_server.py`):
+- Exposes the same `build_default_tools()` over MCP stdio
+- Wired into Claude Desktop via `claude_desktop_config.json`
+- Lazy-imports `mcp` SDK; `oqe mcp-serve` is the CLI entrypoint
+
+**CLI** (`cli.py` + `cli_render.py`):
+- Subcommands: `ask`, `ask-many`, `llm-ask`, `mcp-serve`, `replay`, `themes`
+- 10 Bloomberg-style colour themes; `--theme NAME` / `--cycle-theme` / `--no-color`
+- `cli_render.py` renders all output through one themed pipeline
+
 ### Key Design Patterns
 
 1. **Reproducibility via caching**: Same inputs → same cache key → same outputs (while cache valid)
@@ -74,11 +95,44 @@ poetry run pre-commit run --all-files
 ### Environment Variables
 
 ```
-POLYGON_API_KEY=<your_key>      # Required for live data
+POLYGON_API_KEY=<your_key>      # Required for live Polygon data
+ANTHROPIC_API_KEY=<your_key>    # Required for `oqe llm-ask --provider anthropic` + MCP via Claude
+OPENAI_API_KEY=<your_key>       # Required for `oqe llm-ask --provider openai`
+OQE_LLM_PROVIDER=<name>         # Default LLM provider when --provider not passed
+OQE_LLM_MODEL=<name>            # Default model name when --model not passed
 OQE_CACHE_PATH=<path>           # Override default cache location
 OQE_TRACE_DIR=<path>            # Override default trace directory
+OQE_THEME=<name>                # Default colour theme (default: bloomberg)
+```
+
+### Optional Extras
+
+```bash
+poetry install -E plot          # matplotlib for `--plot PATH`
+poetry install -E anthropic     # Claude provider for llm-ask + MCP
+poetry install -E openai        # GPT provider for llm-ask
+poetry install -E llm           # both LLM providers
+poetry install -E mcp           # `oqe mcp-serve`
+poetry install --with docs      # mkdocs site
 ```
 
 ## Testing
 
-Tests use a repo-local cache (`.pytest_oqe_cache.sqlite`) via `conftest.py` - automatically cleaned on each pytest run. No live API calls needed for most tests; they use synthetic/mocked data.
+Tests use a repo-local cache (`.pytest_oqe_cache.sqlite`) via `conftest.py` - automatically cleaned on each pytest run. No live API calls needed for any tests; they use synthetic/mocked data. Current count: 253 tests.
+
+## Documentation Maintenance
+
+Treat doc updates as part of "feature done", not a separate task. When
+adding or changing user-facing behaviour:
+
+* Update `README.md` if quickstart, env vars, subcommands, or extras change.
+* Update `docs/index.md` if hero cards / quickstart tabs / subcommand map need it.
+* Update `docs/getting-started/installation.md` for new env vars or extras.
+* Update `docs/cli/overview.md` for new flags / subcommands.
+* Add or update the relevant `docs/examples/<feature>.md` page.
+* Run `poetry run mkdocs build --strict` and verify zero warnings before pushing.
+
+Bundle the doc commit in the same push as the feature commit so a reader
+of git history sees feature + docs land together. Never ship a feature
+that updates code/tests without touching docs unless the change is
+internal-only (refactor, dep bump, lint fix).
