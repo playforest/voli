@@ -234,8 +234,8 @@ Also: make the repo and docs **friendly for learning agents/LLMs**—briefly exp
 
 ## Part 10 — Optional upgrades
 Pick one or two:
-- Simple web UI (FastAPI + minimal frontend)
-- Plotting (IV term structure chart, skew chart)
-- Multi-ticker batching
-- “Skeptic” sub-agent to sanity-check spreads, stale quotes, missing data
-- Replay mode using stored traces
+- [ ] Simple web UI (FastAPI + minimal frontend)
+- [ ] Plotting (IV term structure chart, skew chart)
+- [*] Multi-ticker batching (`oqe ask-many --tickers ...`, comparison table per category)
+- [*] "Skeptic" sub-agent to sanity-check spreads, stale quotes, missing data (`--skeptic` flag, `[ SKEPTIC ]` block)
+- [ ] Replay mode using stored traces
