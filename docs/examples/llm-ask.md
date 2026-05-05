@@ -110,7 +110,58 @@ result = llm_ask("...", provider=make_provider(), tools=tools)
 | `--model NAME` | Model name (overrides `$OQE_LLM_MODEL` and the default). |
 | `--max-iterations N` | Cap on planner/tool/answer cycles (default 6). |
 | `--json` | Append a JSON object with the final answer + tool log. |
+| `--skeptic` | Run the skeptic on the LLM's tool results. Appends a `[ SKEPTIC ]` block. |
+| `--trace` | Open a JSONL run-trace **and** write a `<id>.llm.json` companion so `oqe replay` can re-render later. |
 | `--theme NAME` / `--no-color` / `--cycle-theme` | Same as `oqe ask`. |
+
+## Skeptic on LLM answers
+
+Same `[ SKEPTIC ]` block as `oqe ask --skeptic`. The reviewer walks the
+LLM's tool results and surfaces:
+
+| Code | Trigger |
+| --- | --- |
+| `STALE_SNAPSHOT` | Spot snapshot's `ts` older than 30 minutes. |
+| `ATM_GAP` | Analytics-tool result has `atm_strike` >5% from spot. |
+| `TOOL_ERROR` | A tool returned an `{"error": ...}` payload (critical). |
+| `STALE_DATA` / `PARTIAL_DATA` / `NO_RESULTS` / ... | Forwarded from `meta.warnings` on the polygon tool wrappers. |
+| Analytics flags (e.g. `FILTERED_WIDE_SPREAD`) | Forwarded from analytics tool `flags` arrays. |
+
+```bash
+poetry run oqe llm-ask --skeptic "What's NVDA's ATM IV term structure?"
+```
+
+```text
+... [ ANSWER ] ...
+
+[ SKEPTIC ]
+WARN      STALE_SNAPSHOT            spot snapshot is 47m old (threshold 30m).
+INFO      VENDOR_LIMIT              tool layer flagged VENDOR_LIMIT.
+```
+
+## Replay an LLM answer
+
+```bash
+# Capture
+poetry run oqe llm-ask --trace "What's NVDA's IV term structure?"
+# ... output ...
+# replay companion: ~/.oqe/traces/<id>.llm.json
+
+# Replay later (no API call, no Polygon traffic)
+poetry run oqe replay <trace_id>
+```
+
+`oqe replay` auto-detects the companion shape (`<id>.response.json` for
+the rule-based path, `<id>.llm.json` for LLM mode) and re-renders through
+the same themed blocks. Pivot themes or output format on the replay:
+
+```bash
+poetry run oqe replay --theme matrix <trace_id>
+poetry run oqe replay --json         <trace_id>
+```
+
+If `--skeptic` was set on the original run, the concerns are preserved in
+the companion and re-rendered on replay.
 
 ## Programmatic
 
