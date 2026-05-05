@@ -1,0 +1,21 @@
+# docker compose -f docker/docker-compose.yml run --rm oqe ask "NVDA ATM IV this week vs next week"
+#
+# Mounts your local .env (so POLYGON_API_KEY is picked up) and a named volume
+# for the SQLite cache + JSONL traces so they survive between runs.
+
+services:
+  oqe:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: oqe:latest
+    env_file:
+      - ../.env
+    volumes:
+      - oqe-data:/root/.oqe
+    # Default: print help. Override on the command line, e.g.:
+    #   docker compose run --rm oqe ask "NVDA ATM IV this week"
+    command: ["--help"]
+
+volumes:
+  oqe-data:

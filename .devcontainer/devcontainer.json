@@ -1,0 +1,30 @@
+{
+  "name": "OQE",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.11-bookworm",
+  "features": {
+    "ghcr.io/devcontainers-contrib/features/poetry:2": {}
+  },
+  "postCreateCommand": "poetry install --with dev",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "yzhang.markdown-all-in-one"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/workspaces/options-query-agent/.venv/bin/python",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true
+        }
+      }
+    }
+  },
+  "remoteEnv": {
+    "PYTHONUNBUFFERED": "1"
+  },
+  "mounts": [
+    "source=oqe-data,target=/home/vscode/.oqe,type=volume"
+  ]
+}
