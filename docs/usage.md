@@ -29,6 +29,18 @@ Ask a single natural-language question.
 | `--json` | Emit JSON instead of the text view. |
 | `--trace` | Open a JSONL run-trace under `$OQE_TRACE_DIR` (default `~/.oqe/traces/`). The trace ID is printed in the footer. |
 | `--no-color` | Disable ANSI colour. Auto-disabled when stdout is not a TTY or when `NO_COLOR` is set in the environment. |
+| `--theme NAME` | Pick a colour theme. See `oqe themes list` for the names. Default is `bloomberg` (or `$OQE_THEME`). |
+| `--cycle-theme` | Pick the next theme in rotation each invocation. Cursor is stored at `~/.oqe/theme_cursor` (override with `$OQE_THEME_CURSOR`). |
+
+### `oqe themes list`
+
+Print every bundled theme with its description, each row themed in its own
+palette so you can see what you're choosing.
+
+### `oqe themes preview [--theme NAME | --all]`
+
+Render a sample answer in the chosen theme. `--all` renders the same sample
+once per theme so you can compare them side-by-side.
 
 Exit codes:
 
@@ -93,16 +105,30 @@ execution
 > Show ATM call and put for NVDA next week with bid/ask/mid.
 ```
 
-## Theme
+## Themes
 
-The CLI uses 256-colour ANSI codes inspired by the Bloomberg Terminal:
+Ten bundled palettes (run `oqe themes list` to see them with live samples):
 
-| Element | Colour |
+| Name | Vibe |
 | --- | --- |
-| Status bar / section headers | bold orange (ANSI 208) |
-| Facts keys / column headers | amber (ANSI 214) |
-| Values | terminal default white |
-| Borders / dividers | dim gray (ANSI 240) |
-| Warnings / refusals | bold red (ANSI 196) |
+| `bloomberg` (default) | Orange + amber on black, classic Bloomberg Terminal |
+| `bloomberg_classic` | Deeper, slightly desaturated Bloomberg variant |
+| `matrix` | Phosphor green on black |
+| `amber_crt` | Vintage amber-monochrome CRT |
+| `solarized_dark` | Yellow accent, base0 body, blue highlights |
+| `dracula` | Purple + pink on dark grey |
+| `nord` | Cool frost-blues, low contrast |
+| `cyberpunk` | Neon pink primary, cyan accents |
+| `mono` | Greyscale only - works on any terminal |
+| `paper` | Inverted, dark inks for light terminals |
 
-Set `NO_COLOR=1` or pass `--no-color` to strip ANSI sequences.
+Selection precedence: `--cycle-theme` > `--theme NAME` > `$OQE_THEME` > `bloomberg`.
+
+```bash
+poetry run oqe ask --theme matrix "NVDA ATM IV this week vs next week"
+OQE_THEME=dracula poetry run oqe ask "Show NVDA IV skew next Friday"
+poetry run oqe ask --cycle-theme "Show NVDA IV skew"   # rotates each call
+poetry run oqe themes preview --all                     # see every palette
+```
+
+Set `NO_COLOR=1` or pass `--no-color` to strip ANSI sequences entirely.
