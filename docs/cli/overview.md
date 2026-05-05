@@ -5,19 +5,37 @@ you can call it with `poetry run oqe <command>`.
 
 ```text
 $ poetry run oqe --help
-usage: oqe [-h] {ask,themes} ...
+usage: oqe [-h] {ask,ask-many,llm-ask,mcp-serve,replay,themes} ...
 
 Options Query Engine - ask grounded questions about an options chain (chain
 slice, IV term structure, skew, greeks).
 
 positional arguments:
-  {ask,themes}
+  {ask,ask-many,llm-ask,mcp-serve,replay,themes}
     ask         Ask a single natural-language question.
+    ask-many    Run the same prompt against multiple tickers and compare
+                results.
+    llm-ask     Ask an LLM (Claude or GPT) using OQE tools as its data
+                backend.
+    mcp-serve   Run the OQE Model Context Protocol server over stdio.
+    replay      Re-render a previously stored answer (companion JSON from
+                --trace).
     themes      List or preview the colour themes.
 
 options:
   -h, --help    show this help message and exit
 ```
+
+## Quick subcommand map
+
+| Command | Page |
+| --- | --- |
+| `oqe ask` | This page (below). |
+| `oqe ask-many --tickers NVDA,SPY,QQQ "..."` | [Multi-ticker batching](../examples/batch.md) |
+| `oqe llm-ask "..."` | [LLM-driven agent](../examples/llm-ask.md) |
+| `oqe mcp-serve` | [MCP server (Claude Desktop)](../examples/mcp.md) |
+| `oqe replay <id>` | [Replay mode](../examples/replay.md) |
+| `oqe themes list / preview` | [Themes](themes.md) |
 
 ## `oqe ask "<prompt>"`
 

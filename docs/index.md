@@ -11,6 +11,9 @@ equity option chain — chain slices, IV term structure, skew, basic greeks —
 **grounded in Polygon data**, with a runtime guardrail that refuses to invent
 numbers.
 
+Same tools, four entry points: rule-based CLI, LLM-driven CLI, MCP server
+(Claude Desktop / claude.ai web), and direct Python imports.
+
 <div class="grid cards" markdown>
 
 -   :material-flash: __Fast to try__
@@ -29,6 +32,24 @@ numbers.
     analytics function. The writer raises rather than inventing.
 
     [:octicons-arrow-right-24: Guardrails](architecture/guardrails.md)
+
+-   :material-robot: __LLM-driven__
+
+    ---
+
+    Plug in Claude or GPT and the LLM drives the same OQE tools, streaming
+    its tool calls as it works.
+
+    [:octicons-arrow-right-24: LLM-driven agent](examples/llm-ask.md)
+
+-   :material-link-variant: __MCP server__
+
+    ---
+
+    Connect to Claude Desktop or claude.ai web in two minutes — Claude can
+    call your local OQE tools mid-conversation.
+
+    [:octicons-arrow-right-24: MCP server](examples/mcp.md)
 
 -   :material-palette: __Bloomberg-style CLI__
 
@@ -51,12 +72,29 @@ numbers.
 
 ## Quickstart
 
-=== "CLI"
+=== "Rule-based CLI"
 
     ```bash
     poetry install
-    cp .env.example .env  # edit POLYGON_API_KEY
+    cp .env.example .env  # edit POLYGON_API_KEY=pk_...
     poetry run oqe ask "NVDA ATM IV this week vs next week"
+    ```
+
+=== "LLM-driven CLI"
+
+    ```bash
+    poetry install -E llm   # or -E anthropic / -E openai
+    # add ANTHROPIC_API_KEY or OPENAI_API_KEY to .env
+    poetry run oqe llm-ask "How does NVDA's IV term structure compare to QQQ's?"
+    ```
+
+=== "MCP server (Claude Desktop)"
+
+    ```bash
+    poetry install -E mcp
+    # then point Claude Desktop's claude_desktop_config.json at:
+    #   command: poetry, args: ["run", "oqe", "mcp-serve"]
+    # see the MCP page below for the full snippet.
     ```
 
 === "Python"
@@ -75,6 +113,18 @@ numbers.
     docker compose -f docker/docker-compose.yml run --rm \
       oqe ask "NVDA ATM IV this week vs next week"
     ```
+
+## API keys
+
+| Variable | What for | Where to get it |
+| --- | --- | --- |
+| `POLYGON_API_KEY` | All live data (required) | [polygon.io](https://polygon.io/) |
+| `ANTHROPIC_API_KEY` | `oqe llm-ask --provider anthropic` and the MCP server when chatting via Claude | [console.anthropic.com](https://console.anthropic.com) |
+| `OPENAI_API_KEY` | `oqe llm-ask --provider openai` | [platform.openai.com](https://platform.openai.com) |
+
+Set them in `.env` (auto-loaded) or your shell. See
+[Installation](getting-started/installation.md) for the full env-var
+reference.
 
 ## Sample output
 
@@ -104,6 +154,17 @@ NEXT_IV       0.3457
 ================================================================================
 ```
 
+## Subcommands at a glance
+
+| Command | Purpose |
+| --- | --- |
+| [`oqe ask`](cli/overview.md) | Rule-based agent. Deterministic, fast, no LLM cost. |
+| [`oqe ask-many`](examples/batch.md) | Same prompt across multiple tickers, comparison table. |
+| [`oqe llm-ask`](examples/llm-ask.md) | LLM (Claude / GPT) drives the OQE tools. Streams chain-of-thought. |
+| [`oqe mcp-serve`](examples/mcp.md) | MCP server for Claude Desktop / claude.ai. |
+| [`oqe replay`](examples/replay.md) | Re-render a stored answer offline (rule-based or LLM). |
+| [`oqe themes`](cli/themes.md) | Browse / preview the 10 colour palettes. |
+
 ## What it answers
 
 | Category | Example prompt |
@@ -113,13 +174,18 @@ NEXT_IV       0.3457
 | **Skew** | _"What's the skew slope across strikes for TSLA next week?"_ |
 | **Greeks** | _"What are the greeks of the NVDA 2026-05-16 100C?"_ |
 
-It refuses anything that requires advice, prediction, or execution
-(_"Should I buy NVDA calls?"_) and offers supported rewrites instead.
+The rule-based agent refuses anything that requires advice, prediction, or
+execution (_"Should I buy NVDA calls?"_) and offers supported rewrites
+instead. The LLM-driven agent can reason about open-ended comparisons
+("How does NVDA compare to QQQ?") that the rule-based path doesn't
+template.
 
 ## Where to go next
 
-- [Installation](getting-started/installation.md) — set up the package
+- [Installation](getting-started/installation.md) — set up the package + keys
 - [Your first query](getting-started/first-query.md) — walkthrough
 - [CLI Reference](cli/overview.md) — every flag and subcommand
+- [LLM-driven agent](examples/llm-ask.md) — Claude / GPT with streaming
+- [MCP server](examples/mcp.md) — Claude Desktop / claude.ai integration
 - [Examples cookbook](examples/term-structure.md) — recipes per category
 - [Architecture](architecture/orchestrator.md) — how the pieces fit
