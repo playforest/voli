@@ -161,8 +161,12 @@ def _render_term_structure(state: AgentState) -> AnswerResponse:
         numbers_used.append(float(front_iv))
     if next_iv is not None:
         numbers_used.append(float(next_iv))
+    diff = None
     if front_iv is not None and next_iv is not None:
-        numbers_used.append(float(next_iv - front_iv))
+        # Round to suppress float-precision noise (0.35 - 0.30 = 0.04999...).
+        # The guardrail tolerance (1e-4) absorbs the rounding.
+        diff = round(float(next_iv - front_iv), 4)
+        numbers_used.append(diff)
 
     parts = []
     if intent.ticker:
@@ -170,7 +174,7 @@ def _render_term_structure(state: AgentState) -> AnswerResponse:
     if front_iv is not None and next_iv is not None and atm_strike is not None:
         parts.append(
             f"front IV {float(front_iv)} vs next IV {float(next_iv)} "
-            f"at strike {float(atm_strike)} (diff {float(next_iv - front_iv)})."
+            f"at strike {float(atm_strike)} (diff {diff})."
         )
     elif ts is not None and ts.flags:
         parts.append("term structure unavailable (see Facts.flags).")
