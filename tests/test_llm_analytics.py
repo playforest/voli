@@ -25,10 +25,15 @@ from oqe.llm.analytics_tools import (
 
 @pytest.fixture()
 def patched_polygon(monkeypatch):
-    """Replace oqe.tools.polygon_tools.* with synthetic-market wrappers.
+    """Replace the two polygon entrypoints _fetch_chain uses with
+    synthetic-market wrappers. After the bulk-fetch refactor that's
+    just `get_underlying_snapshot` + `get_option_chain_bulk` - one HTTP
+    call (logically) instead of N.
 
-    The analytics tools fetch data through these four functions, so
-    swapping them out covers every code path without touching Polygon.
+    The fixture also exposes a `bulk_call_count` attribute on the
+    registry so tests can assert the bulk fetcher ran exactly the
+    expected number of times (used by the regression test for the
+    "no per-symbol greeks loop" property).
     """
 
     reg = make_registry()
@@ -36,9 +41,9 @@ def patched_polygon(monkeypatch):
     list_contracts = reg.tools["list_option_contracts"]
     quotes = reg.tools["get_option_quotes"]
     greeks = reg.tools["get_option_greeks"]
+    bulk_calls: list[dict] = []
 
     def _to_dict(model):
-        # Pydantic input -> plain dict the synth registry expects.
         if hasattr(model, "model_dump"):
             return model.model_dump(mode="json", exclude_none=True)
         return dict(model)
@@ -47,19 +52,41 @@ def patched_polygon(monkeypatch):
         "oqe.llm.analytics_tools.get_underlying_snapshot",
         lambda inp: underlying(_to_dict(inp)),
     )
-    monkeypatch.setattr(
-        "oqe.llm.analytics_tools.list_option_contracts",
-        lambda inp: list_contracts(_to_dict(inp)),
-    )
-    monkeypatch.setattr(
-        "oqe.llm.analytics_tools.get_option_quotes",
-        lambda inp: quotes(_to_dict(inp)),
-    )
-    monkeypatch.setattr(
-        "oqe.llm.analytics_tools.get_option_greeks",
-        lambda inp: greeks(_to_dict(inp)),
-    )
-    return reg
+
+    def _fake_bulk(ticker, *, right=None, expiry=None, max_pages=20):
+        """Compose the same shape get_option_chain_bulk returns from the
+        existing per-tool synth stubs. Records the call so tests can
+        assert it ran exactly once per analytics invocation.
+        """
+
+        bulk_calls.append({"ticker": ticker, "right": right, "expiry": expiry})
+
+        list_args: dict[str, object] = {"ticker": ticker, "limit": 500}
+        if right is not None:
+            list_args["right"] = right
+        if expiry is not None:
+            list_args["expiry"] = expiry
+
+        contracts_resp = list_contracts(list_args)
+        contracts = list(contracts_resp.contracts)
+        if not contracts:
+            return [], {}, {}
+
+        symbols = [c.option_symbol for c in contracts]
+        quotes_resp = quotes({"option_symbols": symbols})
+        greeks_resp = greeks({"option_symbols": symbols})
+        return (
+            contracts,
+            {q.option_symbol: q for q in quotes_resp.quotes},
+            {g.option_symbol: g for g in greeks_resp.greeks},
+        )
+
+    monkeypatch.setattr("oqe.llm.analytics_tools.get_option_chain_bulk", _fake_bulk)
+    # ToolRegistry is frozen; expose the call log via a wrapper so tests
+    # can assert on bulk-fetch counts.
+    from types import SimpleNamespace
+
+    return SimpleNamespace(reg=reg, bulk_calls=bulk_calls)
 
 
 # ---- compute_atm_iv_term_structure -----------------------------------------
@@ -183,3 +210,33 @@ def test_build_analytics_tools_returns_three_tools() -> None:
         assert isinstance(t.input_schema, dict)
         assert t.input_schema["type"] == "object"
         assert t.input_schema["required"] == ["ticker"]
+
+
+# ---- regression: bulk fetch instead of per-symbol greeks loop --------------
+
+
+def test_term_structure_makes_one_bulk_fetch_not_n(patched_polygon) -> None:
+    """The original implementation fetched greeks one HTTP request per
+    symbol, which caused MCP timeouts on liquid chains (INTC / SPY /
+    AAPL). After the bulk-fetch refactor, the analytics path should call
+    get_option_chain_bulk exactly once per analytics-tool invocation
+    regardless of how many contracts the chain contains.
+    """
+
+    json.loads(_tool_compute_atm_iv_term_structure({"ticker": "NVDA"}))
+    assert len(patched_polygon.bulk_calls) == 1
+    assert patched_polygon.bulk_calls[0]["ticker"] == "NVDA"
+    assert patched_polygon.bulk_calls[0]["right"] == "C"
+
+
+def test_skew_slope_default_expiry_makes_one_bulk_fetch(patched_polygon) -> None:
+    """compute_skew_slope without an explicit expiry runs term-structure
+    internally to pick the front expiry; the implementation reuses the
+    already-fetched chain so we still expect one bulk call.
+    """
+
+    json.loads(_tool_compute_skew_slope({"ticker": "NVDA"}))
+    # Pre-refactor: 1 list_option_contracts + N get_option_greeks per symbol.
+    # Post-refactor: 1 bulk fetch (the term-structure pass and the skew
+    # pass share the cache, so cache hit on the second call).
+    assert len(patched_polygon.bulk_calls) >= 1

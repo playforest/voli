@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 from collections import defaultdict
@@ -468,5 +469,128 @@ def get_option_greeks(inp: GetOptionGreeksInput) -> GetOptionGreeksOutput:
             meta=_meta(tool_name, inp.asof, warnings, primary_source="polygon"),
             greeks=greeks,
         )
+    finally:
+        pc.close()
+
+
+# ----------------------------------------------------------------------------
+# Bulk chain fetcher
+#
+# Polygon's /v3/snapshot/options/{ticker} endpoint returns contracts WITH
+# greeks WITH quotes in one paginated call. The granular tools above split
+# that into three logical operations - good for the LLM tool surface, bad
+# for analytics performance (per-symbol greeks fetch turns a 5s call into
+# a 45s call for liquid names like INTC / SPY).
+#
+# `get_option_chain_bulk` keeps everything in one round-trip per page:
+# call snapshot once, normalise each row into (contract, quote, greeks),
+# return them indexed by symbol. Used by `oqe.llm.analytics_tools._fetch_chain`
+# so the analytics tools never time out on liquid chains.
+# ----------------------------------------------------------------------------
+
+
+def get_option_chain_bulk(
+    ticker: str,
+    *,
+    right: str | None = None,
+    expiry: str | None = None,
+    max_pages: int = 20,
+) -> tuple[list, dict, dict]:
+    """Fetch the full chain (contracts + quotes + greeks) in one paginated call.
+
+    Returns ``(contracts, quotes_by_symbol, greeks_by_symbol)``.
+
+    Cached together under one key (30s TTL, matching the snapshot tools).
+    A row whose normaliser raises is skipped silently so one bad contract
+    doesn't poison the whole pull.
+    """
+
+    contract_type: str | None = None
+    if right == "C":
+        contract_type = "call"
+    elif right == "P":
+        contract_type = "put"
+
+    tool_name = "get_option_chain_bulk"
+    inputs = {"ticker": ticker, "right": right, "expiry": expiry}
+    key, asof_norm, inputs_json = make_cache_key(tool_name, inputs, asof=None)
+    cache = _get_cache()
+
+    # --- Cache hit --------------------------------------------------------
+    rec = cache.get(key)
+    if rec is not None:
+        cached = json.loads(rec.response_json)
+        # Re-hydrate via the domain models for type safety.
+        from oqe.models import OptionContract, OptionGreeks, OptionQuote
+
+        contracts = [OptionContract(**c) for c in cached["contracts"]]
+        quotes = {k: OptionQuote(**v) for k, v in cached["quotes"].items()}
+        greeks = {k: OptionGreeks(**v) for k, v in cached["greeks"].items()}
+        _trace_tool_call(
+            tool=tool_name,
+            inputs_json=inputs_json,
+            cache_key=key,
+            primary_source="cache",
+            warnings=[],
+            asof_norm=asof_norm,
+        )
+        return contracts, quotes, greeks
+
+    # --- Cache miss: one Polygon call (paginated) -------------------------
+    pc = PolygonClient()
+    try:
+        _first, rows = pc.list_option_chain_snapshot(
+            ticker,
+            OptionChainQuery(
+                contract_type=contract_type,
+                expiration_date=expiry,
+                limit=250,
+                max_pages=max_pages,
+            ),
+        )
+
+        contracts: list = []
+        quotes_by_symbol: dict = {}
+        greeks_by_symbol: dict = {}
+
+        for row in rows:
+            try:
+                c = option_contract_from_snapshot_row(row, fallback_underlying=ticker)
+            except (KeyError, ValueError):
+                continue  # malformed row - skip
+            contracts.append(c)
+
+            # Quotes / greeks are best-effort: a row with missing fields
+            # just doesn't get an entry rather than tanking the whole pull.
+            with contextlib.suppress(KeyError, ValueError, TypeError):
+                quotes_by_symbol[c.option_symbol] = option_quote_from_snapshot_row(row)
+            with contextlib.suppress(KeyError, ValueError, TypeError):
+                greeks_by_symbol[c.option_symbol] = option_greeks_from_snapshot_row(row)
+
+        cache.set(
+            key=key,
+            tool=tool_name,
+            asof=asof_norm,
+            inputs_json=inputs_json,
+            response_json=_stable_json_dumps(
+                {
+                    "contracts": [_dump_model(c) for c in contracts],
+                    "quotes": {k: _dump_model(v) for k, v in quotes_by_symbol.items()},
+                    "greeks": {k: _dump_model(v) for k, v in greeks_by_symbol.items()},
+                }
+            ),
+            ttl_seconds=ttl_for("get_option_quotes", asof_is_latest=True),
+        )
+
+        _trace_tool_call(
+            tool=tool_name,
+            inputs_json=inputs_json,
+            cache_key=key,
+            primary_source="polygon",
+            warnings=[],
+            asof_norm=asof_norm,
+        )
+
+        return contracts, quotes_by_symbol, greeks_by_symbol
     finally:
         pc.close()

@@ -26,17 +26,10 @@ from typing import Any
 from oqe.analytics.greeks import atm_greeks_for_expiry
 from oqe.analytics.iv_metrics import atm_iv_term_structure
 from oqe.analytics.skew import skew_slope
-from oqe.tool_schemas import (
-    GetOptionGreeksInput,
-    GetOptionQuotesInput,
-    GetUnderlyingSnapshotInput,
-    ListOptionContractsInput,
-)
+from oqe.tool_schemas import GetUnderlyingSnapshotInput
 from oqe.tools.polygon_tools import (
-    get_option_greeks,
-    get_option_quotes,
+    get_option_chain_bulk,
     get_underlying_snapshot,
-    list_option_contracts,
 )
 
 from .types import ToolDef
@@ -71,37 +64,35 @@ def _fetch_chain(
     """Return (spot, contracts, greeks_by_symbol, quotes_by_symbol).
 
     `right_word` must be normalised ("call" / "put"). `expiry` is an
-    ISO YYYY-MM-DD string or None. Quotes are only fetched when the
-    caller asks for spread filtering.
+    ISO YYYY-MM-DD string or None.
+
+    Implementation note: previously this fetched contracts, then iterated
+    one HTTP request per symbol to get greeks - 30+ seconds for liquid
+    chains (INTC / SPY / AAPL) which blew past MCP's request timeout.
+    Now uses `get_option_chain_bulk` which pulls contracts + quotes +
+    greeks together from Polygon's chain snapshot in a single paginated
+    call. `include_quotes` only controls whether we *return* quotes to
+    the caller; the bulk fetch grabs them either way (cheap, no extra
+    HTTP) so spread filtering and price questions stay fast.
     """
 
     snap = get_underlying_snapshot(GetUnderlyingSnapshotInput(ticker=ticker))
     if snap is None or getattr(snap, "snapshot", None) is None:
-        # Unknown ticker / no snapshot - signal upstream so the tool can
-        # surface a structured error rather than crashing.
         return 0.0, [], {}, {}
     spot = float(snap.snapshot.spot)
 
-    list_input: dict[str, Any] = {"ticker": ticker, "limit": 500}
     rf = _right_filter(right_word)
-    if rf is not None:
-        list_input["right"] = rf
-    if expiry:
-        list_input["expiry"] = expiry
+    contracts, quotes_by_symbol, greeks_by_symbol = get_option_chain_bulk(
+        ticker=ticker,
+        right=rf,
+        expiry=expiry,
+    )
 
-    contracts_resp = list_option_contracts(ListOptionContractsInput(**list_input))
-    contracts = list(contracts_resp.contracts)
     if not contracts:
         return spot, [], {}, {}
 
-    symbols = [c.option_symbol for c in contracts]
-    greeks_resp = get_option_greeks(GetOptionGreeksInput(option_symbols=symbols))
-    greeks_by_symbol = {g.option_symbol: g for g in greeks_resp.greeks}
-
-    quotes_by_symbol: dict[str, Any] = {}
-    if include_quotes:
-        quotes_resp = get_option_quotes(GetOptionQuotesInput(option_symbols=symbols))
-        quotes_by_symbol = {q.option_symbol: q for q in quotes_resp.quotes}
+    if not include_quotes:
+        quotes_by_symbol = {}
 
     return spot, contracts, greeks_by_symbol, quotes_by_symbol
 
