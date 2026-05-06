@@ -117,6 +117,7 @@ nav:
       - Running the harness: eval/harness.md
       - Dataset format: eval/dataset-format.md
       - Adding cases: eval/adding-cases.md
+      - LLM-as-judge eval: eval/llm-eval.md
   - Contributing:
       - Setup: contributing/setup.md
       - Testing: contributing/testing.md

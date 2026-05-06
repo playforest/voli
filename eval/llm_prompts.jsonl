@@ -1,0 +1,49 @@
+// LLM-as-judge eval dataset.
+// One JSON object per line. `//` comment lines are skipped by the loader.
+//
+// Each row pairs a natural-language prompt (sent to the SUT LLM agent) with
+// a reference fetch that the harness performs directly via OQE's analytics
+// layer — no LLM in the loop on the reference side. A separate judge LLM
+// then grades whether the SUT's answer matches the reference data within
+// the per-row rubric_hint tolerance.
+//
+// All reference tools are deterministic Polygon-backed analytics:
+//   compute_atm_iv_term_structure  -> front_iv, next_iv, atm_strike, expiries
+//   compute_skew_slope             -> skew_slope, expiry, atm_strike
+//   get_atm_greeks                 -> atm.iv/delta/gamma/theta/vega
+//
+// Categories: 10 term_structure, 10 skew, 10 greeks = 30 total.
+//
+// === term_structure (10) ===================================================
+{"id": "ts_001", "category": "term_structure", "prompt": "What's NVDA's ATM IV for this Friday vs next?", "reference_tool": "compute_atm_iv_term_structure", "reference_args": {"ticker": "NVDA"}, "rubric_hint": "Front IV, next IV, and ATM strike must match the reference within 0.5 vol points (0.005) and $1 of strike."}
+{"id": "ts_002", "category": "term_structure", "prompt": "Compare ATM IV for SPY front week vs next week.", "reference_tool": "compute_atm_iv_term_structure", "reference_args": {"ticker": "SPY"}, "rubric_hint": "Front IV, next IV, and ATM strike must match within 0.5 vol points and $1."}
+{"id": "ts_003", "category": "term_structure", "prompt": "Show me QQQ's ATM IV term structure.", "reference_tool": "compute_atm_iv_term_structure", "reference_args": {"ticker": "QQQ"}, "rubric_hint": "Numeric values within 0.5 vol points / $1 of reference."}
+{"id": "ts_004", "category": "term_structure", "prompt": "What does AAPL's near-term IV look like - this week vs next?", "reference_tool": "compute_atm_iv_term_structure", "reference_args": {"ticker": "AAPL"}, "rubric_hint": "Front + next IV within 0.5 vol points; correct ATM strike within $1."}
+{"id": "ts_005", "category": "term_structure", "prompt": "TSLA front-week vs next-week ATM IV?", "reference_tool": "compute_atm_iv_term_structure", "reference_args": {"ticker": "TSLA"}, "rubric_hint": "TSLA is volatile - allow up to 1 vol point of tolerance on IVs and $2.50 on strike."}
+{"id": "ts_006", "category": "term_structure", "prompt": "Show ATM IV term structure for AMZN.", "reference_tool": "compute_atm_iv_term_structure", "reference_args": {"ticker": "AMZN"}, "rubric_hint": "Numeric values within 0.5 vol points / $1."}
+{"id": "ts_007", "category": "term_structure", "prompt": "What's NVDA's ATM put IV for the front two expiries?", "reference_tool": "compute_atm_iv_term_structure", "reference_args": {"ticker": "NVDA", "right": "put"}, "rubric_hint": "Put-side front + next IV within 0.5 vol points; ATM strike within $1."}
+{"id": "ts_008", "category": "term_structure", "prompt": "How does SPY's ATM put IV change between this week and next?", "reference_tool": "compute_atm_iv_term_structure", "reference_args": {"ticker": "SPY", "right": "put"}, "rubric_hint": "Put-side IVs within 0.5 vol points; ATM strike within $1."}
+{"id": "ts_009", "category": "term_structure", "prompt": "MSFT IV term structure please.", "reference_tool": "compute_atm_iv_term_structure", "reference_args": {"ticker": "MSFT"}, "rubric_hint": "Front + next IV within 0.5 vol points; ATM strike within $1."}
+{"id": "ts_010", "category": "term_structure", "prompt": "Tell me META's ATM IV for the next two expiries.", "reference_tool": "compute_atm_iv_term_structure", "reference_args": {"ticker": "META"}, "rubric_hint": "Front + next IV within 0.5 vol points; ATM strike within $5 (META trades at high prices)."}
+// === skew (10) =============================================================
+{"id": "sk_001", "category": "skew", "prompt": "What's NVDA's skew slope for the front expiry?", "reference_tool": "compute_skew_slope", "reference_args": {"ticker": "NVDA"}, "rubric_hint": "Skew slope within 0.001; correct sign (negative for downside skew, positive for upside)."}
+{"id": "sk_002", "category": "skew", "prompt": "Show SPY's IV skew slope.", "reference_tool": "compute_skew_slope", "reference_args": {"ticker": "SPY"}, "rubric_hint": "Slope within 0.001; correct sign."}
+{"id": "sk_003", "category": "skew", "prompt": "Compute the IV-vs-strike slope for QQQ at the front expiry.", "reference_tool": "compute_skew_slope", "reference_args": {"ticker": "QQQ"}, "rubric_hint": "Slope within 0.001; correct sign."}
+{"id": "sk_004", "category": "skew", "prompt": "How steep is AAPL's skew right now?", "reference_tool": "compute_skew_slope", "reference_args": {"ticker": "AAPL"}, "rubric_hint": "Slope within 0.001; agent should describe the sign (downside vs upside skew) correctly."}
+{"id": "sk_005", "category": "skew", "prompt": "TSLA skew slope - is it steep?", "reference_tool": "compute_skew_slope", "reference_args": {"ticker": "TSLA"}, "rubric_hint": "Slope within 0.002 (TSLA can be noisy); correct sign."}
+{"id": "sk_006", "category": "skew", "prompt": "Get AMD's IV skew slope for the nearest expiry.", "reference_tool": "compute_skew_slope", "reference_args": {"ticker": "AMD"}, "rubric_hint": "Slope within 0.001; correct sign."}
+{"id": "sk_007", "category": "skew", "prompt": "What's NVDA's put-side skew slope?", "reference_tool": "compute_skew_slope", "reference_args": {"ticker": "NVDA", "right": "put"}, "rubric_hint": "Put-side slope within 0.001; correct sign."}
+{"id": "sk_008", "category": "skew", "prompt": "Skew slope for INTC near-term?", "reference_tool": "compute_skew_slope", "reference_args": {"ticker": "INTC"}, "rubric_hint": "Slope within 0.001; correct sign."}
+{"id": "sk_009", "category": "skew", "prompt": "What's NFLX's IV skew slope?", "reference_tool": "compute_skew_slope", "reference_args": {"ticker": "NFLX"}, "rubric_hint": "Slope within 0.002; correct sign."}
+{"id": "sk_010", "category": "skew", "prompt": "Calculate Google's (GOOG) IV skew slope front expiry.", "reference_tool": "compute_skew_slope", "reference_args": {"ticker": "GOOG"}, "rubric_hint": "Slope within 0.001; correct sign."}
+// === greeks (10) ===========================================================
+{"id": "gr_001", "category": "greeks", "prompt": "What are NVDA's ATM call greeks for the front expiry?", "reference_tool": "get_atm_greeks", "reference_args": {"ticker": "NVDA"}, "rubric_hint": "iv within 0.005, delta/gamma/theta/vega within 5% relative; ATM strike within $1."}
+{"id": "gr_002", "category": "greeks", "prompt": "Show me SPY's ATM greeks.", "reference_tool": "get_atm_greeks", "reference_args": {"ticker": "SPY"}, "rubric_hint": "iv within 0.005, greeks within 5% relative; ATM strike within $1."}
+{"id": "gr_003", "category": "greeks", "prompt": "ATM greeks for QQQ please.", "reference_tool": "get_atm_greeks", "reference_args": {"ticker": "QQQ"}, "rubric_hint": "iv within 0.005, greeks within 5% relative; strike within $1."}
+{"id": "gr_004", "category": "greeks", "prompt": "Tell me AAPL's at-the-money delta and IV.", "reference_tool": "get_atm_greeks", "reference_args": {"ticker": "AAPL"}, "rubric_hint": "iv within 0.005, delta within 0.05; strike within $1."}
+{"id": "gr_005", "category": "greeks", "prompt": "What's the gamma and theta on TSLA's ATM call?", "reference_tool": "get_atm_greeks", "reference_args": {"ticker": "TSLA"}, "rubric_hint": "gamma within 10% relative, theta within 10% relative; iv within 0.01."}
+{"id": "gr_006", "category": "greeks", "prompt": "AMZN ATM call greeks?", "reference_tool": "get_atm_greeks", "reference_args": {"ticker": "AMZN"}, "rubric_hint": "Greeks within 5% relative; iv within 0.005."}
+{"id": "gr_007", "category": "greeks", "prompt": "What are the greeks on NVDA's ATM put?", "reference_tool": "get_atm_greeks", "reference_args": {"ticker": "NVDA", "right": "put"}, "rubric_hint": "Put delta should be negative; greeks within 5% relative; iv within 0.005."}
+{"id": "gr_008", "category": "greeks", "prompt": "Show MSFT's ATM call greeks.", "reference_tool": "get_atm_greeks", "reference_args": {"ticker": "MSFT"}, "rubric_hint": "iv within 0.005, greeks within 5% relative."}
+{"id": "gr_009", "category": "greeks", "prompt": "META at-the-money greeks?", "reference_tool": "get_atm_greeks", "reference_args": {"ticker": "META"}, "rubric_hint": "iv within 0.005, greeks within 5% relative; strike within $5."}
+{"id": "gr_010", "category": "greeks", "prompt": "Get AMD's ATM call vega and gamma.", "reference_tool": "get_atm_greeks", "reference_args": {"ticker": "AMD"}, "rubric_hint": "vega + gamma within 10% relative."}
