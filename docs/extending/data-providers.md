@@ -216,6 +216,34 @@ end-to-end — it's about 250 lines and shows every piece of a real adapter
 (HTTP client management, normalisation from raw rows, partial-data handling,
 bulk fetch). New providers can mirror its structure almost line-for-line.
 
+## Working example: the yfinance adapter
+
+The repo ships a fully working second provider under
+[`examples/yfinance_provider/`](https://github.com/playforest/voli/tree/main/examples/yfinance_provider).
+It targets [yfinance](https://github.com/ranaroussi/yfinance) (free, no API
+key) and demonstrates everything in this guide end-to-end:
+
+- Implements all four `fetch_*` methods plus the optional bulk fetch.
+- Ships as a separate pip-installable package — `pip install -e ./examples/yfinance_provider/`
+  is enough; no edits to voli core.
+- Auto-discovered via the `voli.data_providers` entry point.
+- Includes offline tests (yfinance is monkey-patched) you can run with
+  `pytest examples/yfinance_provider/tests/`.
+
+Quick smoke test once installed:
+
+```bash
+poetry run python -c "from voli.providers import list_providers; print(list_providers())"
+# -> ['polygon', 'yfinance']
+
+poetry run voli ask --data-provider yfinance "list NVDA calls for the nearest expiry"
+```
+
+It also documents the realistic sharp edges of plugging in a less-capable
+vendor: yfinance only publishes IV (no vendor delta/gamma/theta/vega), so
+the provider returns those fields as `None` and warns `PARTIAL_DATA` —
+exactly the pattern your adapter should follow when your vendor has gaps.
+
 ## See also
 
 - [LLM providers](llm-providers.md) — the same plug-and-play story for

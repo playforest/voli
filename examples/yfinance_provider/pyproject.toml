@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voli-yfinance"
+version = "0.1.0"
+description = "yfinance data provider for Voli — reference adapter showing how to plug a non-Polygon vendor into the DataProvider Protocol."
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Voli example", email = "noreply@example.com"}]
+dependencies = [
+    "voli",
+    "yfinance>=0.2",
+]
+
+[project.entry-points."voli.data_providers"]
+# When this package is pip-installed, voli auto-discovers the provider via
+# this entry point. `voli ask --data-provider yfinance` then works without
+# any monkey-patching or registration code in the user's app.
+yfinance = "voli_yfinance.provider:YFinanceProvider"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["voli_yfinance*"]

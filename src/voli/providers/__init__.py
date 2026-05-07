@@ -177,9 +177,10 @@ def _discover_entry_points() -> None:
             continue
         try:
             obj = ep.load()
-            provider = (
-                obj() if callable(obj) and not hasattr(obj, "fetch_underlying_snapshot") else obj
-            )
+            # Entry-point target may be either a class (to instantiate with no
+            # args) or an already-built instance. Classes are instances of
+            # ``type``; instances aren't.
+            provider = obj() if isinstance(obj, type) else obj
             _REGISTRY[ep.name] = provider
         except Exception:
             # Fail soft - a broken plugin shouldn't crash the host.
