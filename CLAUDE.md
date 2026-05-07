@@ -45,7 +45,7 @@ poetry run pre-commit run --all-files
 **Data Provider Layer** (`providers/`):
 - `__init__.py` - `DataProvider` Protocol + registry + entry-point discovery (group `voli.data_providers`). `register()`, `get()`, `set_active()`, `get_active()`, `list_providers()`. Polygon is pre-registered; third-party providers are loaded lazily.
 - `polygon.py` - `PolygonProvider`, the bundled default. Implements all four `fetch_*` methods plus the optional `fetch_option_chain_bulk`.
-- Adapter authors implement four small fetcher methods returning Voli domain models — Voli core handles cache / meta / trace / guardrail.
+- Adapter authors implement four small fetcher methods returning Voli domain models. Voli core handles cache, meta, trace, and the guardrail.
 
 **Polygon HTTP** (`polygon/`):
 - `client.py` - HTTP client for Polygon.io API with pagination support (used by the bundled provider)
@@ -125,7 +125,7 @@ poetry install --with docs      # mkdocs site
 
 ## Testing
 
-Tests use a repo-local cache (`.pytest_voli_cache.sqlite`) via `conftest.py` - automatically cleaned on each pytest run. No live API calls needed for any tests; they use synthetic/mocked data. Current count: 277 tests. Tests that exercise the Polygon HTTP layer monkey-patch `voli.providers.polygon.PolygonClient` (the runtime call site) — older fixtures patching `voli.tools.polygon_tools.PolygonClient` no longer take effect.
+Tests use a repo-local cache (`.pytest_voli_cache.sqlite`) via `conftest.py`, automatically cleaned on each pytest run. No live API calls needed for any tests; they use synthetic/mocked data. Current count: 282 tests. Tests that exercise the Polygon HTTP layer monkey-patch `voli.providers.polygon.PolygonClient` (the runtime call site); older fixtures patching `voli.tools.polygon_tools.PolygonClient` no longer take effect.
 
 ## Documentation Maintenance
 

@@ -1,14 +1,14 @@
 # voli-yfinance
 
 A reference [`DataProvider`](https://github.com/playforest/voli/blob/main/src/voli/providers/__init__.py)
-implementation backed by [yfinance](https://github.com/ranaroussi/yfinance) —
-the community-maintained Yahoo Finance scraper. Use it as a free, no-API-key
-alternative to the bundled Polygon provider, or as a copy-paste template for
-your own vendor.
+implementation backed by [yfinance](https://github.com/ranaroussi/yfinance),
+the community-maintained Yahoo Finance scraper. Use it as a free,
+no-API-key alternative to the bundled Polygon provider, or as a
+copy-paste template for your own vendor.
 
 ## Install
 
-From a Voli checkout:
+From a voli checkout:
 
 ```bash
 pip install -e ./examples/yfinance_provider/
@@ -39,39 +39,39 @@ poetry run python -c "from voli.providers import list_providers; print(list_prov
 
 | Capability | Status |
 | --- | --- |
-| Spot snapshot | ✅ via `Ticker.fast_info` / `Ticker.history` |
-| Contracts list | ✅ via `Ticker.options` + `Ticker.option_chain(expiry)` |
-| Quotes (bid / ask / last) | ✅ |
-| Implied volatility | ✅ |
-| Vendor delta / gamma / theta / vega | ❌ — yfinance doesn't publish them. Provider returns `None` for those fields and warns `PARTIAL_DATA`. |
-| Historical asof replay | ❌ — yfinance is latest-only. Provider warns `VENDOR_LIMIT` if `asof` is set. |
-| Open interest | available in raw data; not surfaced in this minimal example. |
+| Spot snapshot | yes, via `Ticker.fast_info` / `Ticker.history` |
+| Contracts list | yes, via `Ticker.options` + `Ticker.option_chain(expiry)` |
+| Quotes (bid / ask / last) | yes |
+| Implied volatility | yes |
+| Vendor delta, gamma, theta, vega | no. yfinance doesn't publish them. Provider returns `None` for those fields and warns `PARTIAL_DATA`. |
+| Historical asof replay | no. yfinance is latest-only. Provider warns `VENDOR_LIMIT` if `asof` is set. |
+| Open interest | available in the raw data, not surfaced in this minimal example. |
 
-Term structure, skew, and ATM-IV analytics work because they only need IV.
-ATM-greeks-by-expiry will report partial data because vendor greeks are
+Term structure, skew, and ATM-IV analytics all work because they only need
+IV. ATM-greeks-by-expiry reports partial data because vendor greeks are
 absent.
 
 ## Caveats
 
-- **yfinance breaks periodically.** It scrapes Yahoo Finance, which means
-  Yahoo can break the API at any time. If your `voli ask` suddenly returns
-  empty results, check the [yfinance issue tracker](https://github.com/ranaroussi/yfinance/issues)
-  before blaming Voli.
-- **Rate limits.** Yahoo will throttle aggressive callers. Voli's SQLite
-  TTL cache (30s for quotes/greeks, 6h for contract lists) softens this; for
+- **yfinance breaks periodically.** It scrapes Yahoo Finance, so Yahoo can
+  break the API at any time. If `voli ask` suddenly returns empty results,
+  check the [yfinance issue tracker](https://github.com/ranaroussi/yfinance/issues)
+  before blaming voli.
+- **Rate limits.** Yahoo throttles aggressive callers. Voli's SQLite TTL
+  cache (30s for quotes/greeks, 6h for contract lists) softens this; for
   tighter loops, consider a longer TTL.
 - **Symbol convention.** yfinance returns OCC symbols without the `O:`
   prefix (e.g. `NVDA260516C00100000`). This adapter prepends `O:` so the
-  symbols match Voli's existing convention end-to-end.
+  symbols match voli's existing convention end-to-end.
 
-## Running the offline test
+## Running the offline tests
 
 ```bash
 pip install pytest
 pytest examples/yfinance_provider/tests/ -vv
 ```
 
-The test suite mocks `yfinance.Ticker` so it runs without a network
+The test suite mocks `yfinance.Ticker`, so it runs without a network
 connection.
 
 ## Layout

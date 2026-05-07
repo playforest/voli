@@ -1,12 +1,12 @@
 """yfinance-backed implementation of :class:`voli.providers.DataProvider`.
 
-This is a **reference adapter** — read it end-to-end alongside the bundled
-``voli.providers.polygon`` to see how the same Protocol gets implemented
-against two very different vendors.
+This is a reference adapter. Read it end-to-end alongside the bundled
+``voli.providers.polygon`` to see how the same Protocol is implemented
+against two different vendors.
 
 Caveats with yfinance specifically:
 
-  * Free + no API key, but rate-limited and community-maintained — the
+  * Free, no API key, but rate-limited and community-maintained. The
     underlying scraper occasionally breaks when Yahoo changes their site.
   * Only ``impliedVolatility`` is published; vendor delta/gamma/theta/vega
     are not available, so the greeks fetcher returns those fields as
@@ -344,7 +344,7 @@ class YFinanceProvider:
         expiry: str | None = None,
         max_pages: int = 20,
     ) -> tuple[list[OptionContract], dict[str, OptionQuote], dict[str, OptionGreeks]]:
-        """Single-pass chain fetch — keeps analytics latency reasonable.
+        """Single-pass chain fetch; keeps analytics latency reasonable.
 
         yfinance still costs one HTTP call per expiry (the API doesn't have
         a cross-expiry chain endpoint). The win vs. the per-symbol fallback

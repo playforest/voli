@@ -1,6 +1,6 @@
 # CLI overview
 
-The `voli` script is registered by Poetry — once you've run `poetry install`
+The `voli` script is registered by Poetry; once you've run `poetry install`
 you can call it with `poetry run voli <command>`.
 
 ```text
@@ -154,7 +154,7 @@ See the [Themes page](themes.md) for full coverage.
 | Variable | Purpose | Default |
 | --- | --- | --- |
 | `VOLI_DATA_PROVIDER` | Active data provider name. Polygon ships in core; forks add others via the [`voli.data_providers` entry-point group](../extending/data-providers.md). | `polygon` |
-| `POLYGON_API_KEY` | Polygon REST key. **Required when the active provider is `polygon`.** | — |
+| `POLYGON_API_KEY` | Polygon REST key. **Required when the active provider is `polygon`.** | (none) |
 | `POLYGON_HTTP_DEBUG` | Set to `1` to print every HTTP request/response on stderr. | unset |
 | `VOLI_CACHE_PATH` | SQLite cache file. | `~/.voli/cache.sqlite` |
 | `VOLI_TRACE_DIR` | Where `--trace` writes JSONL files. | `~/.voli/traces/` |
@@ -180,5 +180,5 @@ for every key.
 
 ## Next
 
-- [Themes](themes.md) — pick a palette
-- [Troubleshooting](troubleshooting.md) — common failure modes and fixes
+- [Themes](themes.md): pick a palette.
+- [Troubleshooting](troubleshooting.md): common failure modes and fixes.

@@ -1,15 +1,15 @@
-# Extending Voli — data providers
+# Extending Voli: data providers
 
 Voli ships with a [Polygon.io](https://polygon.io/) data provider. To plug in
 a different vendor (yfinance, Tradier, IBKR, ORATS, Theta Data, a synthetic
-fixture, ...) you implement four small fetcher methods and register them.
-The cache, run-trace, response envelope, and "no invented numbers" guardrail
-all stay in Voli core — your job is just the vendor I/O and normalisation.
+fixture), you implement four small fetcher methods and register them. The
+cache, run-trace, response envelope, and "no invented numbers" guardrail
+stay in voli core; your job is the vendor I/O and normalisation.
 
 ## What you implement
 
 `voli.providers.DataProvider` is a [Protocol](https://docs.python.org/3/library/typing.html#typing.Protocol),
-not an abstract base class — duck-typing works. The full surface:
+not an abstract base class, so duck-typing works. The full surface:
 
 ```python
 from voli.models import OptionContract, OptionGreeks, OptionQuote
@@ -38,8 +38,8 @@ class MyProvider:
         """Return ({symbol: OptionGreeks, ...}, warnings_list)."""
         ...
 
-    # OPTIONAL — implement for fast analytics (one chain pull instead of N
-    # per-symbol calls). Return None if your vendor can't do it in one shot.
+    # Optional. Implement for fast analytics: one chain pull instead of N
+    # per-symbol calls. Return None if your vendor can't do it in one shot.
     def fetch_option_chain_bulk(
         self, ticker, *, right=None, expiry=None, max_pages=20,
     ):
@@ -47,11 +47,11 @@ class MyProvider:
         ...
 ```
 
-Voli's domain models are defined in `voli.models`; warnings are short string
-codes (`"NO_RESULTS"`, `"PARTIAL_DATA"`, `"STALE_DATA"`, `"VENDOR_LIMIT"`)
-documented in `voli.tool_schemas.WarningCode`.
+Voli's domain models live in `voli.models`. Warnings are short string codes
+(`"NO_RESULTS"`, `"PARTIAL_DATA"`, `"STALE_DATA"`, `"VENDOR_LIMIT"`) defined
+in `voli.tool_schemas.WarningCode`.
 
-## Hello-world: a 30-line MockProvider
+## A 30-line MockProvider
 
 Save as `mock_provider.py`:
 
@@ -128,18 +128,17 @@ from voli.tools.polygon_tools import get_underlying_snapshot
 print(get_underlying_snapshot(GetUnderlyingSnapshotInput(ticker="NVDA")))
 ```
 
-Or from the CLI:
+Or from the CLI (after `register()` runs in a `sitecustomize.py` or your
+package init):
 
 ```bash
 VOLI_DATA_PROVIDER=mock poetry run voli ask "spot of NVDA"
-# (after register() runs in a sitecustomize.py or your package init)
 ```
 
 ## Shipping as a pip-installable package
 
-The delightful path. Once your `MyProvider` works in-tree, wrap it in a tiny
-package so users can `pip install voli-yourvendor` and have the provider
-auto-discovered.
+For broader distribution, wrap your provider in a tiny package so users can
+`pip install voli-yourvendor` and have it auto-discovered.
 
 `pyproject.toml`:
 
@@ -178,57 +177,56 @@ poetry run python -c "from voli.providers import list_providers; print(list_prov
 poetry run voli ask --data-provider tradier "30d ATM IV on NVDA"
 ```
 
-The entry-point string can resolve to:
+The entry-point string can resolve to either:
 
-- A **class** — Voli instantiates it with no args and registers the instance.
-- An **instance** — Voli registers it as-is.
+- A **class**, which voli instantiates with no args and registers as an instance.
+- An **instance**, which voli registers as-is.
 
-If the import or instantiation raises, Voli logs nothing and skips the
-provider rather than crashing the CLI — a broken third-party plugin can't
-take down a Polygon user's flow.
+If the import or instantiation raises, voli skips the provider silently
+rather than crashing the CLI, so a broken third-party plugin can't take
+down a Polygon user's flow.
 
 ## Sharp edges
 
-- **OCC vs vendor option symbols.** Voli's analytics expect option symbols in
-  the OCC-like form `O:NVDA260516C00100000` (used by Polygon and most US
-  brokers). If your vendor exposes raw OCC (`NVDA260516C00100000`) prepend
-  the `O:` in your normaliser. If your vendor uses a totally different
-  scheme (e.g. IBKR conid), translate at the provider boundary.
-- **Timestamps must be UTC tz-aware.** `OptionQuote.ts` and friends raise on
-  naive datetimes. Use `datetime.now(timezone.utc)` or `astimezone(UTC)` in
-  your normaliser.
-- **Greeks are optional.** If your vendor doesn't publish vendor greeks, set
-  the fields to `None` and append `"PARTIAL_DATA"` to the warnings list.
-  Don't compute Black-Scholes in the provider — that's Voli's job (mode
-  `vendor_then_bs`, planned for a future release).
+- **OCC vs vendor option symbols.** Voli's analytics expect symbols in the
+  OCC-like form `O:NVDA260516C00100000` (used by Polygon and most US
+  brokers). If your vendor exposes raw OCC (`NVDA260516C00100000`), prepend
+  `O:` in your normaliser. If your vendor uses a different scheme entirely
+  (e.g. IBKR conid), translate at the provider boundary.
+- **Timestamps must be UTC tz-aware.** `OptionQuote.ts` and friends raise
+  on naive datetimes. Use `datetime.now(timezone.utc)` or `astimezone(UTC)`
+  in your normaliser.
+- **Greeks are optional.** If your vendor doesn't publish vendor greeks,
+  set the fields to `None` and append `"PARTIAL_DATA"` to the warnings
+  list. Don't compute Black-Scholes in the provider; that's voli's job
+  (mode `vendor_then_bs`, planned for a future release).
 - **Implement `fetch_option_chain_bulk` if you can.** The analytics layer
   (term structure, skew slope, ATM greeks) issues one bulk call per chain.
-  Per-symbol fallback works but turns sub-second answers into 30+ second
-  ones on liquid names like SPY.
-- **Don't manage caching yourself.** Voli wraps every fetcher in the SQLite
-  TTL cache, keyed on canonicalised inputs. Returning fresh data every call
-  is fine; Voli decides when to skip you.
+  The per-symbol fallback works but turns sub-second answers into 30-plus
+  second ones on liquid names like SPY.
+- **Don't manage caching yourself.** Voli wraps every fetcher in the
+  SQLite TTL cache, keyed on canonicalised inputs. Returning fresh data
+  every call is fine; voli decides when to skip you.
 
 ## Reference: the bundled Polygon provider
 
 Read [`src/voli/providers/polygon.py`](https://github.com/playforest/voli/blob/main/src/voli/providers/polygon.py)
-end-to-end — it's about 250 lines and shows every piece of a real adapter
-(HTTP client management, normalisation from raw rows, partial-data handling,
-bulk fetch). New providers can mirror its structure almost line-for-line.
+end-to-end. It's about 250 lines and covers every piece of a real adapter:
+HTTP client management, normalisation from raw rows, partial-data handling,
+and bulk fetch. New providers can mirror its structure almost line for line.
 
 ## Working example: the yfinance adapter
 
 The repo ships a fully working second provider under
 [`examples/yfinance_provider/`](https://github.com/playforest/voli/tree/main/examples/yfinance_provider).
 It targets [yfinance](https://github.com/ranaroussi/yfinance) (free, no API
-key) and demonstrates everything in this guide end-to-end:
+key) and covers all four `fetch_*` methods plus the bulk fetch.
 
-- Implements all four `fetch_*` methods plus the optional bulk fetch.
-- Ships as a separate pip-installable package — `pip install -e ./examples/yfinance_provider/`
-  is enough; no edits to voli core.
-- Auto-discovered via the `voli.data_providers` entry point.
-- Includes offline tests (yfinance is monkey-patched) you can run with
-  `pytest examples/yfinance_provider/tests/`.
+It ships as a separate pip-installable package
+(`pip install -e ./examples/yfinance_provider/`), with no edits to voli
+core, and auto-registers via the `voli.data_providers` entry point.
+Offline tests (with `yfinance.Ticker` monkey-patched) live under
+`examples/yfinance_provider/tests/`.
 
 Quick smoke test once installed:
 
@@ -239,15 +237,16 @@ poetry run python -c "from voli.providers import list_providers; print(list_prov
 poetry run voli ask --data-provider yfinance "list NVDA calls for the nearest expiry"
 ```
 
-It also documents the realistic sharp edges of plugging in a less-capable
-vendor: yfinance only publishes IV (no vendor delta/gamma/theta/vega), so
-the provider returns those fields as `None` and warns `PARTIAL_DATA` —
-exactly the pattern your adapter should follow when your vendor has gaps.
+The example also illustrates a realistic gap: yfinance only publishes IV
+(no vendor delta, gamma, theta, or vega), so the provider returns those
+fields as `None` and warns `PARTIAL_DATA`. That's the pattern to follow
+whenever your vendor doesn't expose a field voli's models support.
 
 ## See also
 
-- [LLM providers](llm-providers.md) — the same plug-and-play story for
-  Anthropic / OpenAI / your-LLM-of-choice.
-- [Architecture: orchestrator](../architecture/orchestrator.md) — where the
+- [LLM providers](llm-providers.md): the same plug-in mechanism for the
+  LLM layer.
+- [Architecture: orchestrator](../architecture/orchestrator.md): where the
   provider sits in the request lifecycle.
-- [`voli.providers` source](https://github.com/playforest/voli/blob/main/src/voli/providers/__init__.py) — the full Protocol + registry implementation.
+- [`voli.providers` source](https://github.com/playforest/voli/blob/main/src/voli/providers/__init__.py):
+  the full Protocol and registry implementation.

@@ -1,8 +1,8 @@
-# Extending Voli — LLM providers
+# Extending Voli: LLM providers
 
 `voli llm-ask` and `voli mcp-serve` use a small Protocol to talk to whatever
-LLM you point them at. Anthropic and OpenAI ship in core; adding a third
-(Gemini, Grok, Mistral, a local Ollama, ...) is a single-file job.
+LLM you point them at. Anthropic and OpenAI ship in core. Adding a third
+(Gemini, Grok, Mistral, a local Ollama) is a single-file job.
 
 ## What you implement
 
@@ -34,9 +34,9 @@ class LLMProvider(ABC):
 ```
 
 The tool-use loop in `voli.llm.agent` calls these in turn until `step()`
-ends with a non-tool stop reason. Events you yield are the **neutral** type
-set in `voli.llm.types` — the agent loop never sees Anthropic or OpenAI
-SDK objects.
+ends with a non-tool stop reason. The events you yield use the neutral
+type set in `voli.llm.types`, so the agent loop never sees Anthropic or
+OpenAI SDK objects directly.
 
 ## Reference implementations
 
@@ -48,14 +48,14 @@ The two bundled providers are the canonical examples:
 | [`src/voli/llm/openai_provider.py`](https://github.com/playforest/voli/blob/main/src/voli/llm/openai_provider.py) | Same surface against the OpenAI Responses API; arguments arrive as JSON strings instead of dicts. |
 
 A new provider should mirror their structure. Most of the work is mapping
-the vendor's streaming event shape into Voli's `TextDelta` /
-`ToolCallStart` / `StepComplete` events.
+the vendor's streaming event shape into Voli's `TextDelta`,
+`ToolCallStart`, and `StepComplete` events.
 
 ## Wiring it up
 
-Two paths, same as data providers:
+Two paths, the same as for data providers.
 
-### Option 1 — ship as a pip-installable package (recommended)
+### Option 1: ship as a pip-installable package (recommended)
 
 Expose your provider via the `voli.llm_providers` entry-point group; voli
 auto-discovers it.
@@ -93,33 +93,33 @@ Voli imports the entry-point class lazily and instantiates it with
 import or instantiation raises, voli skips the provider and surfaces a
 clean error rather than crashing.
 
-### Option 2 — drop a class into a fork
+### Option 2: drop a class into a fork
 
 If you don't want to package separately, edit
 [`voli.llm.provider.make_provider`](https://github.com/playforest/voli/blob/main/src/voli/llm/provider.py)
 to add a new branch. The CLI flag (`--provider`) and env var
-(`$VOLI_LLM_PROVIDER`) will accept the new name immediately.
+(`$VOLI_LLM_PROVIDER`) accept the new name immediately.
 
 ## Sharp edges
 
 - **Stream text first, tool calls second, then `StepComplete`.** The agent
   loop assumes this ordering. Buffering everything until end of turn works
-  too — but the live tool-call rendering in the CLI relies on the streaming
+  too, but the live tool-call rendering in the CLI relies on the streaming
   order to feel responsive.
 - **Tool args must arrive as a plain `dict`.** The Anthropic SDK gives you
-  a dict already; the OpenAI Responses API gives you a JSON string — see
+  a dict already; the OpenAI Responses API gives you a JSON string. See
   `_to_neutral_arguments` in `provider.py` for the canonical conversion.
 - **Lazy-import the SDK.** Voli's lean install doesn't include any LLM
   SDKs. Put `from anthropic import ...` inside the provider methods (or at
   the top of the provider module) so a user without your SDK installed can
   still run `voli ask` without a `ModuleNotFoundError` on import.
 - **`stop_reason` matters.** If you emit `stop_reason="tool_use"` the agent
-  will execute tools and call `submit_tool_results`. Any other value ends
-  the loop.
+  executes tools and calls `submit_tool_results`. Any other value ends the
+  loop.
 
 ## See also
 
-- [Data providers](data-providers.md) — same plug-and-play story for
+- [Data providers](data-providers.md): the same plug-in mechanism for
   vendor-side options data.
-- [LLM-driven agent](../examples/llm-ask.md) — what the loop does once a
+- [LLM-driven agent](../examples/llm-ask.md): what the loop does once a
   provider is wired in.

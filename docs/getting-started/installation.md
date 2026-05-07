@@ -185,7 +185,7 @@ If that prints `0 failed`, you're ready to ask real questions.
 
 ## Next
 
-- [Your first query](first-query.md) — a walkthrough
-- [Concepts](concepts.md) — what the agent does and what it refuses
-- [LLM-driven agent](../examples/llm-ask.md) — Claude / GPT with streaming
-- [MCP server](../examples/mcp.md) — Claude Desktop / claude.ai integration
+- [Your first query](first-query.md): a walkthrough.
+- [Concepts](concepts.md): what the agent does and what it refuses.
+- [LLM-driven agent](../examples/llm-ask.md): Claude / GPT with streaming.
+- [MCP server](../examples/mcp.md): Claude Desktop / claude.ai integration.

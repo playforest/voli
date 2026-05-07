@@ -7,15 +7,16 @@ hide:
 # Voli
 
 A Python library and CLI that answers natural-language questions about an
-equity option chain — chain slices, IV term structure, skew, basic greeks —
+equity option chain (chain slices, IV term structure, skew, basic greeks)
 with a runtime guardrail that refuses to invent numbers.
 
-Same tools, four entry points: rule-based CLI, LLM-driven CLI, MCP server
-(Claude Desktop / claude.ai web), and direct Python imports.
+The same underlying tools are exposed through four entry points: a
+rule-based CLI, an LLM-driven CLI, an MCP server (Claude Desktop /
+claude.ai web), and a Python library you can import directly.
 
 **Pluggable data and LLM providers.** Polygon ships as the default data
-provider, with Anthropic + OpenAI for the LLM layer. Forks can add yfinance,
-Tradier, Gemini, etc. behind small Protocols — see
+provider, with Anthropic and OpenAI for the LLM layer. Forks can add
+yfinance, Tradier, Gemini, etc. behind small Protocols. See
 [Extending Voli](extending/data-providers.md).
 
 <div class="grid cards" markdown>
@@ -59,8 +60,8 @@ Tradier, Gemini, etc. behind small Protocols — see
 
     ---
 
-    Connect to Claude Desktop or claude.ai web in two minutes — Claude can
-    call your local Voli tools mid-conversation.
+    Connect to Claude Desktop or claude.ai web in two minutes; Claude can
+    then call your local Voli tools mid-conversation.
 
     [:octicons-arrow-right-24: MCP server](examples/mcp.md)
 
@@ -195,10 +196,10 @@ template.
 
 ## Where to go next
 
-- [Installation](getting-started/installation.md) — set up the package + keys
-- [Your first query](getting-started/first-query.md) — walkthrough
-- [CLI Reference](cli/overview.md) — every flag and subcommand
-- [LLM-driven agent](examples/llm-ask.md) — Claude / GPT with streaming
-- [MCP server](examples/mcp.md) — Claude Desktop / claude.ai integration
-- [Examples cookbook](examples/term-structure.md) — recipes per category
-- [Architecture](architecture/orchestrator.md) — how the pieces fit
+- [Installation](getting-started/installation.md): set up the package and keys.
+- [Your first query](getting-started/first-query.md): walkthrough.
+- [CLI Reference](cli/overview.md): every flag and subcommand.
+- [LLM-driven agent](examples/llm-ask.md): Claude / GPT with streaming.
+- [MCP server](examples/mcp.md): Claude Desktop / claude.ai integration.
+- [Examples cookbook](examples/term-structure.md): recipes per category.
+- [Architecture](architecture/orchestrator.md): how the pieces fit.
