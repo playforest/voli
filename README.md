@@ -4,8 +4,9 @@
 > equity option chain (chain slices, IV term structure, skew, greeks)
 > with a "no invented numbers" guarantee.
 >
-> Same tools, four entry points: rule-based CLI, LLM-driven CLI, MCP
-> server (Claude Desktop / claude.ai), and direct Python imports.
+> The same underlying tools are exposed through four entry points: a
+> rule-based CLI, an LLM-driven CLI, an MCP server (Claude Desktop /
+> claude.ai), and a Python library you can import directly.
 >
 > **Pluggable data providers** (Polygon ships as the default) and
 > **pluggable LLM providers** (Anthropic + OpenAI ship in core). Forks
