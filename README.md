@@ -1,7 +1,7 @@
 # Voli
 
 > A Python library + CLI that answers natural-language questions about an
-> equity option chain — chain slices, IV term structure, skew, greeks —
+> equity option chain (chain slices, IV term structure, skew, greeks)
 > with a "no invented numbers" guarantee.
 >
 > Same tools, four entry points: rule-based CLI, LLM-driven CLI, MCP
@@ -9,12 +9,12 @@
 >
 > **Pluggable data providers** (Polygon ships as the default) and
 > **pluggable LLM providers** (Anthropic + OpenAI ship in core). Forks
-> can add yfinance, Tradier, Gemini, etc. with a few small files —
-> see [Extending Voli](docs/extending/data-providers.md).
+> can add yfinance, Tradier, Gemini, etc. with a few small files. See
+> [Extending Voli](docs/extending/data-providers.md).
 
 ## See it in action
 
-Five questions. Five different output shapes. All grounded — no fabricated numbers.
+A handful of examples below to show the range of questions voli handles and what the output looks like. Every number in the output traces back to a tool call.
 
 ### 1. ATM IV across two expiries
 
@@ -44,9 +44,9 @@ NEXT_IV       0.3457
 ================================================================================
 ```
 
-Every number in the summary traces back to a `[ FACTS ]` row — that's the
-no-invented-numbers guardrail. Try editing the writer to make up a number;
-it raises.
+Every number in the summary traces back to a `[ FACTS ]` row, which is the
+no-invented-numbers guardrail at work. Try editing the writer to make up a
+number and it raises.
 
 ### 2. Skew slope across strikes
 
@@ -102,7 +102,7 @@ voli llm-ask "How does NVDA's IV term structure compare to QQQ's?"
 NVDA's near-term ATM IV is roughly 60% higher than QQQ's: 33.18% vs 21.02%
 for the 2026-05-09 expiry, and 34.57% vs 22.40% for 2026-05-16. Both names
 show a similar ~1.4-point premium front-to-next, but as a percentage that's
-mild for NVDA (4.2%) and slightly elevated for QQQ (6.6%) — the relative
+mild for NVDA (4.2%) and slightly elevated for QQQ (6.6%), so the relative
 term-structure premium signal points to QQQ, not NVDA.
 ```
 
@@ -123,7 +123,7 @@ CONTRACTS_COUNT  500
 EXPIRIES_USED    2026-05-08, 2026-05-11, 2026-05-13, 2026-05-15, 2026-05-18
 ```
 
-Same pipeline, different vendor — `source=yfinance` instead of
+Same pipeline, different vendor: `source=yfinance` instead of
 `source=polygon`. A fork ships a new vendor by writing four small fetcher
 methods. See [Extending Voli](docs/extending/data-providers.md).
 
@@ -134,7 +134,7 @@ voli mcp-serve                # exposes the same tools over MCP stdio
 ```
 
 Wire the one-liner into Claude Desktop's `claude_desktop_config.json` and
-ask options questions in chat — Claude calls the Voli tools mid-conversation
+ask options questions in chat. Claude calls the Voli tools mid-conversation
 and answers grounded in the same Polygon data the CLI uses.
 
 ## Why Voli?
@@ -148,8 +148,8 @@ and answers grounded in the same Polygon data the CLI uses.
 - **Pluggable.** Data providers (Polygon, yfinance, …) and LLM providers
   (Anthropic, OpenAI, …) sit behind small Protocols. A fork ships a new
   vendor by writing four fetchers + an entry-point line.
-- **Reproducible.** SQLite TTL cache, JSONL run-trace, replay mode — same
-  prompt + same cache window = same answer, every time.
+- **Reproducible.** SQLite TTL cache, JSONL run-trace, replay mode. Same
+  prompt + same cache window gives the same answer, every time.
 - **Reproducible eval.** 20-case JSONL dataset; the runner exits non-zero
   on any regression in tool sequence, table type, Facts keys, or numeric
   metrics.
@@ -176,7 +176,7 @@ Edit `.env`:
 # Required for live Polygon queries
 POLYGON_API_KEY=pk_your_polygon_key
 
-# Optional — only needed for `voli llm-ask` and the MCP server
+# Optional, only needed for `voli llm-ask` and the MCP server
 ANTHROPIC_API_KEY=sk-ant-your_anthropic_key   # for Claude
 OPENAI_API_KEY=sk-your_openai_key             # for GPT
 ```
@@ -186,13 +186,13 @@ environment wins over `.env`.
 
 ### 3. Run the entry point you want
 
-**Rule-based CLI** — always available:
+**Rule-based CLI**, always available:
 
 ```bash
 poetry run voli ask "NVDA ATM IV this week vs next week"
 ```
 
-**LLM-driven CLI** — install a provider extra first:
+**LLM-driven CLI**, install a provider extra first:
 
 ```bash
 poetry install -E anthropic                 # or -E openai, or -E llm for both
@@ -220,7 +220,7 @@ Then add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-Restart Claude Desktop — the Voli tools appear in the Available Tools panel.
+Restart Claude Desktop. The Voli tools appear in the Available Tools panel.
 
 **Direct Python**:
 
@@ -284,7 +284,7 @@ voli replay 20260507T103717Z_a1b2c3d4
 
 ## Pluggable providers
 
-Voli is **vendor-agnostic by design** — Polygon ships as the bundled default
+Voli is **vendor-agnostic by design**. Polygon ships as the bundled default
 but the data-fetch layer sits behind a small Protocol. Same story for the
 LLM layer (Anthropic + OpenAI ship in core).
 
@@ -297,14 +297,14 @@ To **add a new data vendor** (yfinance, Tradier, IBKR, …) write four
 fetcher methods returning Voli domain models, register via a
 `voli.data_providers` entry point, ship as `pip install voli-yourvendor`.
 A complete working example lives in
-[`examples/yfinance_provider/`](examples/yfinance_provider/) — read it
+[`examples/yfinance_provider/`](examples/yfinance_provider/); read it
 end-to-end. Full how-to:
-[Extending Voli — data providers](docs/extending/data-providers.md).
+[the data providers extension guide](docs/extending/data-providers.md).
 
 To **add a new LLM** (Gemini, Grok, local Ollama, …) implement
 `voli.llm.provider.LLMProvider` (mirrors the existing `anthropic_provider.py`
 / `openai_provider.py`). See
-[Extending Voli — LLM providers](docs/extending/llm-providers.md).
+[the LLM providers extension guide](docs/extending/llm-providers.md).
 
 ```bash
 # List installed data providers
@@ -363,4 +363,5 @@ poetry run mkdocs serve
 
 ## License
 
-Not yet decided. See repository for details.
+[MIT](LICENSE). Use it freely for any purpose, commercial or otherwise; the
+only requirement is preserving the copyright notice.

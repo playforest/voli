@@ -20,8 +20,10 @@ target-version = ["py311"]
 [tool.poetry]
 name = "voli"
 version = "0.1.0"
-description = "Voli — grounded Q&A and analytics over equity option chains."
+description = "Voli: grounded Q&A and analytics over equity option chains."
 authors = ["Your Name <you@example.com>"]
+license = "MIT"
+readme = "README.md"
 packages = [{ include = "voli", from = "src" }]
 
 [tool.poetry.dependencies]
