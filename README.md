@@ -1,17 +1,17 @@
 # Voli
 
-> A Python library + CLI that answers natural-language questions about an
-> equity option chain (chain slices, IV term structure, skew, greeks)
-> with a "no invented numbers" guarantee.
->
-> The same underlying tools are exposed through four entry points: a
-> rule-based CLI, an LLM-driven CLI, an MCP server (Claude Desktop /
-> claude.ai), and a Python library you can import directly.
->
-> **Pluggable data providers** (Polygon ships as the default) and
-> **pluggable LLM providers** (Anthropic + OpenAI ship in core). Forks
-> can add yfinance, Tradier, Gemini, etc. with a few small files. See
-> [Extending Voli](docs/extending/data-providers.md).
+A Python library + CLI that answers natural-language questions about an
+equity option chain (chain slices, IV term structure, skew, greeks)
+with a "no invented numbers" guarantee.
+
+The same underlying tools are exposed through four entry points: a
+rule-based CLI, an LLM-driven CLI, an MCP server (Claude Desktop /
+claude.ai), and a Python library you can import directly.
+
+**Pluggable data providers** (Polygon ships as the default) and
+**pluggable LLM providers** (Anthropic + OpenAI ship in core). Forks
+can add yfinance, Tradier, Gemini, etc. with a few small files. See
+[Extending Voli](docs/extending/data-providers.md).
 
 ## See it in action
 
