@@ -83,7 +83,11 @@ def make_provider(name: str | None = None, *, model: str | None = None) -> LLMPr
     """Factory that returns the configured provider instance.
 
     Lazy-imports the concrete provider so callers don't pay the dep cost
-    for the one they're not using.
+    for the one they're not using. Bundled providers (``anthropic``,
+    ``openai``) resolve directly; any other name is looked up via the
+    ``voli.llm_providers`` entry-point group, so a fork can ship
+    ``pip install voli-gemini`` and have ``--provider gemini`` light up
+    automatically.
     """
 
     name = (name or get_default_provider_name()).lower()
@@ -95,7 +99,75 @@ def make_provider(name: str | None = None, *, model: str | None = None) -> LLMPr
         from .openai_provider import OpenAIProvider
 
         return OpenAIProvider(model=model)
-    raise ValueError(f"Unknown LLM provider {name!r}. Expected 'anthropic' or 'openai'.")
+
+    # Third-party providers via entry points.
+    cls = _load_entry_point_provider(name)
+    if cls is not None:
+        return cls(model=model)
+
+    available = ", ".join(["anthropic", "openai", *sorted(_entry_point_provider_names())])
+    raise ValueError(
+        f"Unknown LLM provider {name!r}. Available: {available}. "
+        "Install a provider package (e.g. pip install voli-gemini) or "
+        "see docs/extending/llm-providers.md."
+    )
+
+
+def list_llm_providers() -> list[str]:
+    """Return the names of all currently resolvable LLM providers.
+
+    Includes the two bundled providers plus any installed via the
+    ``voli.llm_providers`` entry-point group.
+    """
+
+    return sorted({"anthropic", "openai", *_entry_point_provider_names()})
+
+
+# ---------------------------------------------------------------------------
+# Entry-point discovery (mirrors voli.providers for data providers)
+# ---------------------------------------------------------------------------
+
+_ENTRY_POINT_GROUP = "voli.llm_providers"
+_entry_points_cache: dict[str, type[LLMProvider]] | None = None
+
+
+def _entry_points() -> dict[str, type[LLMProvider]]:
+    """Return ``{name: class}`` from the ``voli.llm_providers`` group.
+
+    Cached for the process lifetime; failures during ``ep.load()`` are
+    swallowed so a broken third-party plugin can't take down the CLI.
+    """
+
+    global _entry_points_cache
+    if _entry_points_cache is not None:
+        return _entry_points_cache
+    try:
+        from importlib.metadata import entry_points
+    except ImportError:  # pragma: no cover
+        _entry_points_cache = {}
+        return _entry_points_cache
+    try:
+        eps = entry_points(group=_ENTRY_POINT_GROUP)
+    except TypeError:
+        eps = entry_points().get(_ENTRY_POINT_GROUP, [])  # type: ignore[attr-defined]
+    out: dict[str, type[LLMProvider]] = {}
+    for ep in eps:
+        try:
+            obj = ep.load()
+            if isinstance(obj, type):
+                out[ep.name] = obj
+        except Exception:  # noqa: BLE001
+            continue
+    _entry_points_cache = out
+    return out
+
+
+def _load_entry_point_provider(name: str) -> type[LLMProvider] | None:
+    return _entry_points().get(name)
+
+
+def _entry_point_provider_names() -> list[str]:
+    return list(_entry_points().keys())
 
 
 def _to_neutral_arguments(raw: Any) -> dict[str, Any]:

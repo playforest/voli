@@ -51,33 +51,54 @@ A new provider should mirror their structure. Most of the work is mapping
 the vendor's streaming event shape into Voli's `TextDelta` /
 `ToolCallStart` / `StepComplete` events.
 
-## Wiring it up today
+## Wiring it up
 
-`voli.llm.provider.make_provider` is the factory the CLI calls. Today it
-hard-codes the two bundled providers:
+Two paths, same as data providers:
 
-```python
-def make_provider(name: str | None = None, *, model: str | None = None) -> LLMProvider:
-    name = (name or get_default_provider_name()).lower()
-    if name == "anthropic":
-        from .anthropic_provider import AnthropicProvider
-        return AnthropicProvider(model=model)
-    if name == "openai":
-        from .openai_provider import OpenAIProvider
-        return OpenAIProvider(model=model)
-    raise ValueError(f"Unknown LLM provider {name!r}. ...")
+### Option 1 — ship as a pip-installable package (recommended)
+
+Expose your provider via the `voli.llm_providers` entry-point group; voli
+auto-discovers it.
+
+`pyproject.toml`:
+
+```toml
+[project]
+name = "voli-gemini"
+version = "0.1.0"
+dependencies = ["voli>=0.1", "google-genai>=0.3"]
+
+[project.entry-points."voli.llm_providers"]
+gemini = "voli_gemini.provider:GeminiProvider"
 ```
 
-To add a third in a fork, drop your `MyLLMProvider` class in a new module
-and add a branch to `make_provider`. The CLI flag (`--provider`) and env
-var (`$VOLI_LLM_PROVIDER`) will accept the new name.
+Or with Poetry:
 
-!!! info "Roadmap: entry-point discovery for LLM providers"
+```toml
+[tool.poetry.plugins."voli.llm_providers"]
+gemini = "voli_gemini.provider:GeminiProvider"
+```
 
-    The data-provider layer auto-discovers any package exposing a
-    [`voli.data_providers` entry point](data-providers.md#shipping-as-a-pip-installable-package);
-    the LLM layer doesn't yet but will mirror that pattern in a future
-    release. Track the work in the project README.
+After `pip install voli-gemini`:
+
+```bash
+poetry run python -c "from voli.llm.provider import list_llm_providers; print(list_llm_providers())"
+# -> ['anthropic', 'gemini', 'openai']
+
+poetry run voli llm-ask --provider gemini "How does NVDA's IV term structure compare to QQQ's?"
+```
+
+Voli imports the entry-point class lazily and instantiates it with
+``model=model`` (the value of ``--model`` or ``$VOLI_LLM_MODEL``). If the
+import or instantiation raises, voli skips the provider and surfaces a
+clean error rather than crashing.
+
+### Option 2 — drop a class into a fork
+
+If you don't want to package separately, edit
+[`voli.llm.provider.make_provider`](https://github.com/playforest/voli/blob/main/src/voli/llm/provider.py)
+to add a new branch. The CLI flag (`--provider`) and env var
+(`$VOLI_LLM_PROVIDER`) will accept the new name immediately.
 
 ## Sharp edges
 

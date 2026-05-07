@@ -60,11 +60,19 @@ class OptionQuote(StrictModel):
     ts: datetime
     source: DataSource
 
-    @model_validator(mode="after")
-    def _compute_mid_if_missing(self) -> OptionQuote:
-        if self.mid is None and self.bid is not None and self.ask is not None:
-            return self.model_copy(update={"mid": (self.bid + self.ask) / 2.0})
-        return self
+    @model_validator(mode="before")
+    @classmethod
+    def _compute_mid_if_missing(cls, data):
+        # Auto-fill `mid` when caller passes bid+ask but no explicit mid. Runs
+        # `mode="before"` so we can mutate the input dict — the equivalent
+        # `mode="after"` pattern returning `model_copy(...)` is silently
+        # discarded by pydantic >= 2.10 on frozen models.
+        if isinstance(data, dict) and data.get("mid") is None:
+            bid = data.get("bid")
+            ask = data.get("ask")
+            if bid is not None and ask is not None:
+                data["mid"] = (float(bid) + float(ask)) / 2.0
+        return data
 
     @field_validator("ts")
     @classmethod

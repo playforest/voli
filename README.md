@@ -150,8 +150,6 @@ and answers grounded in the same Polygon data the CLI uses.
   vendor by writing four fetchers + an entry-point line.
 - **Reproducible.** SQLite TTL cache, JSONL run-trace, replay mode — same
   prompt + same cache window = same answer, every time.
-- **Bloomberg-style CLI.** Twelve bundled colour themes; defaults to
-  Bloomberg-Terminal-inspired orange/amber on black.
 - **Reproducible eval.** 20-case JSONL dataset; the runner exits non-zero
   on any regression in tool sequence, table type, Facts keys, or numeric
   metrics.
