@@ -113,6 +113,9 @@ nav:
       - Data model: architecture/data-model.md
       - Caching: architecture/caching.md
       - Guardrails: architecture/guardrails.md
+  - Extending Voli:
+      - Data providers: extending/data-providers.md
+      - LLM providers: extending/llm-providers.md
   - Eval Harness:
       - Running the harness: eval/harness.md
       - Dataset format: eval/dataset-format.md

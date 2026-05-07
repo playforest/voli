@@ -96,6 +96,7 @@ in your shell environment wins over `.env`, and `.env` wins over
 
 | Variable | Effect | Default |
 | --- | --- | --- |
+| `VOLI_DATA_PROVIDER` | Active data provider name (Polygon ships in core; forks add others via the [`voli.data_providers` entry-point group](../extending/data-providers.md)) | `polygon` |
 | `POLYGON_HTTP_DEBUG` | Print every Polygon HTTP request on stderr | unset |
 | `VOLI_CACHE_PATH` | SQLite cache file | `~/.voli/cache.sqlite` |
 | `VOLI_TRACE_DIR` | Where `--trace` writes JSONL + companion files | `~/.voli/traces/` |
@@ -144,12 +145,13 @@ in your shell environment wins over `.env`, and `.env` wins over
     ```
 
     ```text
-    .................................................. [ 19%]
-    .................................................. [ 39%]
-    .................................................. [ 59%]
-    .................................................. [ 79%]
-    ....................................                [100%]
-    253 passed in 1.7s
+    .................................................. [ 18%]
+    .................................................. [ 36%]
+    .................................................. [ 54%]
+    .................................................. [ 72%]
+    .................................................. [ 90%]
+    ...........................                         [100%]
+    277 passed in 1.4s
     ```
 
 ## Try it offline (no API key required)

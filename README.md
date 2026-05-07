@@ -2,10 +2,15 @@
 
 > A Python library + CLI that answers natural-language questions about an
 > equity option chain — chain slices, IV term structure, skew, greeks —
-> grounded in Polygon data, with a "no invented numbers" guarantee.
+> with a "no invented numbers" guarantee.
 >
 > Same tools, four entry points: rule-based CLI, LLM-driven CLI, MCP
 > server (Claude Desktop / claude.ai), and direct Python imports.
+>
+> **Pluggable data providers** (Polygon ships as the default) and
+> **pluggable LLM providers** (Anthropic + OpenAI ship in core). Forks
+> can add yfinance, Tradier, Gemini, etc. with a few small files —
+> see [Extending Voli](docs/extending/data-providers.md).
 
 ```text
 ================================================================================
@@ -38,6 +43,9 @@ NEXT_IV       0.3457
 - **Grounded.** Every numeric claim in the answer must come from a tool call
   or a centralised analytics function — the writer enforces a runtime
   guardrail and refuses to emit invented numbers.
+- **Pluggable.** Data providers live behind a small Protocol — Polygon ships
+  as the default; forks can add yfinance, Tradier, IBKR, ORATS by writing
+  four functions. LLM providers (Anthropic + OpenAI) plug in the same way.
 - **Deterministic** rule-based path. A heuristic planner produces the same
   plan for the same prompt; analytics are pure functions over the chain
   snapshot. Same prompt + same cache window = same answer.
@@ -104,7 +112,7 @@ environment wins over `.env`.
     ```
 
     The LLM sees seven tools (term structure / skew / ATM greeks shortcuts
-    plus the four raw Polygon tools) and streams its tool calls live.
+    plus the four raw chain tools) and streams its tool calls live.
 
 === "MCP server (Claude Desktop / claude.ai)"
 
@@ -164,6 +172,7 @@ Common flags across the answer commands:
 | `--trace` | JSONL flight recorder + replay companion. |
 | `--skeptic` | Append a `[ SKEPTIC ]` block flagging stale data, wide spreads, etc. |
 | `--plot PATH` | Save a category-specific PNG chart (requires `-E plot`). |
+| `--data-provider NAME` | Pick a non-default data provider (default `polygon`, or `$VOLI_DATA_PROVIDER`). |
 
 ## Optional extras
 
@@ -176,10 +185,37 @@ Common flags across the answer commands:
 | `mcp` | `voli mcp-serve` (Claude Desktop / claude.ai) | `poetry install -E mcp` |
 | `docs` | `mkdocs serve` for the doc site | `poetry install --with docs` |
 
+## Pluggable providers
+
+Voli is **vendor-agnostic by design** — Polygon ships as the bundled default
+but the data-fetch layer sits behind a small Protocol. Same story for the
+LLM layer (Anthropic + OpenAI ship in core).
+
+| Layer | Default | Pick a different one with |
+| --- | --- | --- |
+| Data | `polygon` (Polygon.io) | `voli ask --data-provider NAME` or `$VOLI_DATA_PROVIDER` |
+| LLM | auto-detect (Anthropic if key set, else OpenAI) | `voli llm-ask --provider {anthropic,openai}` or `$VOLI_LLM_PROVIDER` |
+
+To **add a new data vendor** (yfinance, Tradier, IBKR, ...) write four
+fetcher methods returning Voli domain models, register via a
+`voli.data_providers` entry point, ship as `pip install voli-yourvendor`.
+Full how-to: [Extending Voli — data providers](docs/extending/data-providers.md).
+
+To **add a new LLM** (Gemini, Grok, local Ollama, ...) implement
+`voli.llm.provider.Provider` (mirrors the existing `anthropic_provider.py`
+/ `openai_provider.py`). See
+[Extending Voli — LLM providers](docs/extending/llm-providers.md).
+
+```bash
+# List installed data providers
+poetry run python -c "from voli.providers import list_providers; print(list_providers())"
+# -> ['polygon']
+```
+
 ## Daily commands
 
 ```bash
-# Run all 253 tests (offline, no API key needed)
+# Run all 277 tests (offline, no API key needed)
 poetry run python -m pytest
 
 # Lint + format
@@ -212,15 +248,16 @@ poetry run mkdocs serve
 | --- | --- |
 | `src/voli/agent/` | Rule-based planner → executor → writer. |
 | `src/voli/analytics/` | Pure-function metrics: term structure, skew slope, ATM greeks. |
-| `src/voli/polygon/` | HTTP client + response normalisation. |
-| `src/voli/tools/` | High-level tool wrappers (Polygon-backed). |
+| `src/voli/providers/` | `DataProvider` Protocol + entry-point registry; bundled Polygon implementation. |
+| `src/voli/polygon/` | Polygon HTTP client + response normalisation (used by the bundled provider). |
+| `src/voli/tools/` | Cache + meta + trace orchestration around the active provider. |
 | `src/voli/llm/` | Provider-agnostic LLM agent (Anthropic + OpenAI). |
 | `src/voli/mcp_server.py` | MCP server (stdio) for Claude Desktop / claude.ai. |
 | `src/voli/eval/` | Evaluation harness (synthetic registry + runner). |
 | `src/voli/cli.py` | Command-line entrypoint. |
 | `src/voli/cli_render.py` | Themed ANSI renderer + 10 palettes. |
 | `eval/prompts.jsonl` | 20-case regression dataset. |
-| `tests/` | pytest suite (253 tests, no live API needed). |
+| `tests/` | pytest suite (277 tests, no live API needed). |
 | `docs/` | MkDocs Material doc site. |
 
 ## License

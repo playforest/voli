@@ -74,6 +74,7 @@ options:
 | `--asof ISO8601` | UTC timestamp for as-of replay. Best-effort: not every snapshot endpoint supports historical replay. Always disclosed in the status bar. |
 | `--json` | Emit a JSON object (see [Your first query](../getting-started/first-query.md#same-query-different-shapes)). |
 | `--trace` | Open a JSONL run-trace under `$VOLI_TRACE_DIR` (default `~/.voli/traces/`). The trace ID appears in the footer. |
+| `--data-provider NAME` | Override the active data provider for this command (default `polygon`, env `$VOLI_DATA_PROVIDER`). See [Extending Voli](../extending/data-providers.md). Available on `ask`, `ask-many`, `llm-ask`, `mcp-serve`. |
 | `--theme NAME` | Pick a [bundled palette](themes.md). |
 | `--cycle-theme` | Rotate to the next theme each invocation. Cursor stored at `~/.voli/theme_cursor`. |
 | `--no-color` | Disable ANSI colour. Auto-disabled when stdout is not a TTY. |
@@ -152,7 +153,8 @@ See the [Themes page](themes.md) for full coverage.
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-| `POLYGON_API_KEY` | Polygon REST key. **Required for live queries.** | — |
+| `VOLI_DATA_PROVIDER` | Active data provider name. Polygon ships in core; forks add others via the [`voli.data_providers` entry-point group](../extending/data-providers.md). | `polygon` |
+| `POLYGON_API_KEY` | Polygon REST key. **Required when the active provider is `polygon`.** | — |
 | `POLYGON_HTTP_DEBUG` | Set to `1` to print every HTTP request/response on stderr. | unset |
 | `VOLI_CACHE_PATH` | SQLite cache file. | `~/.voli/cache.sqlite` |
 | `VOLI_TRACE_DIR` | Where `--trace` writes JSONL files. | `~/.voli/traces/` |

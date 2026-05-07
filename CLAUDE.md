@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Voli - A Python library for querying options chain data from Polygon.io with built-in caching, reproducibility, and analytics metrics computation.
+Voli - A Python library for querying options chain data with built-in caching, reproducibility, and analytics metrics computation. Vendor-agnostic: bundled with a Polygon.io data provider, but the data-fetch layer sits behind a `DataProvider` Protocol so forks can plug in yfinance / Tradier / IBKR / etc. via a `voli.data_providers` entry point. Same shape on the LLM side (Anthropic + OpenAI bundled).
 
 ## Commands
 
@@ -42,10 +42,15 @@ poetry run pre-commit run --all-files
 - All timestamps must be UTC timezone-aware
 - `StrictModel` base class enforces `extra="forbid"` and `frozen=True`
 
-**Polygon Integration** (`polygon/`):
-- `client.py` - HTTP client for Polygon.io API with pagination support
+**Data Provider Layer** (`providers/`):
+- `__init__.py` - `DataProvider` Protocol + registry + entry-point discovery (group `voli.data_providers`). `register()`, `get()`, `set_active()`, `get_active()`, `list_providers()`. Polygon is pre-registered; third-party providers are loaded lazily.
+- `polygon.py` - `PolygonProvider`, the bundled default. Implements all four `fetch_*` methods plus the optional `fetch_option_chain_bulk`.
+- Adapter authors implement four small fetcher methods returning Voli domain models — Voli core handles cache / meta / trace / guardrail.
+
+**Polygon HTTP** (`polygon/`):
+- `client.py` - HTTP client for Polygon.io API with pagination support (used by the bundled provider)
 - `normalise.py` - Transforms raw Polygon responses into domain models
-- `tools.py` - High-level functions: `get_underlying_snapshot_from_options()`, `list_option_contracts_from_options_snapshot()`, `get_option_quotes_from_contract_snapshots()`, `get_option_greeks_from_contract_snapshots()`
+- `tools.py` - Lower-level helpers used by the provider
 
 **Caching System** (`cache.py`):
 - SQLite-based cache with TTL expiration
@@ -83,6 +88,7 @@ poetry run pre-commit run --all-files
 **CLI** (`cli.py` + `cli_render.py`):
 - Subcommands: `ask`, `ask-many`, `llm-ask`, `mcp-serve`, `replay`, `themes`
 - 12 Bloomberg-style colour themes; `--theme NAME` / `--cycle-theme` / `--no-color`
+- `--data-provider NAME` flag on `ask` / `ask-many` / `llm-ask` / `mcp-serve` (default `polygon`, env `$VOLI_DATA_PROVIDER`)
 - `cli_render.py` renders all output through one themed pipeline
 
 ### Key Design Patterns
@@ -95,9 +101,10 @@ poetry run pre-commit run --all-files
 ### Environment Variables
 
 ```
-POLYGON_API_KEY=<your_key>      # Required for live Polygon data
-ANTHROPIC_API_KEY=<your_key>    # Required for `voli llm-ask --provider anthropic` + MCP via Claude
-OPENAI_API_KEY=<your_key>       # Required for `voli llm-ask --provider openai`
+POLYGON_API_KEY=<your_key>       # Required when active data provider is polygon (the default)
+ANTHROPIC_API_KEY=<your_key>     # Required for `voli llm-ask --provider anthropic` + MCP via Claude
+OPENAI_API_KEY=<your_key>        # Required for `voli llm-ask --provider openai`
+VOLI_DATA_PROVIDER=<name>        # Active data provider name (default: polygon)
 VOLI_LLM_PROVIDER=<name>         # Default LLM provider when --provider not passed
 VOLI_LLM_MODEL=<name>            # Default model name when --model not passed
 VOLI_CACHE_PATH=<path>           # Override default cache location
@@ -118,7 +125,7 @@ poetry install --with docs      # mkdocs site
 
 ## Testing
 
-Tests use a repo-local cache (`.pytest_voli_cache.sqlite`) via `conftest.py` - automatically cleaned on each pytest run. No live API calls needed for any tests; they use synthetic/mocked data. Current count: 253 tests.
+Tests use a repo-local cache (`.pytest_voli_cache.sqlite`) via `conftest.py` - automatically cleaned on each pytest run. No live API calls needed for any tests; they use synthetic/mocked data. Current count: 277 tests. Tests that exercise the Polygon HTTP layer monkey-patch `voli.providers.polygon.PolygonClient` (the runtime call site) — older fixtures patching `voli.tools.polygon_tools.PolygonClient` no longer take effect.
 
 ## Documentation Maintenance
 

@@ -8,11 +8,15 @@ hide:
 
 A Python library and CLI that answers natural-language questions about an
 equity option chain — chain slices, IV term structure, skew, basic greeks —
-**grounded in Polygon data**, with a runtime guardrail that refuses to invent
-numbers.
+with a runtime guardrail that refuses to invent numbers.
 
 Same tools, four entry points: rule-based CLI, LLM-driven CLI, MCP server
 (Claude Desktop / claude.ai web), and direct Python imports.
+
+**Pluggable data and LLM providers.** Polygon ships as the default data
+provider, with Anthropic + OpenAI for the LLM layer. Forks can add yfinance,
+Tradier, Gemini, etc. behind small Protocols — see
+[Extending Voli](extending/data-providers.md).
 
 <div class="grid cards" markdown>
 
@@ -23,6 +27,15 @@ Same tools, four entry points: rule-based CLI, LLM-driven CLI, MCP server
     Install with Poetry, drop a Polygon key in `.env`, ask a question.
 
     [:octicons-arrow-right-24: Installation](getting-started/installation.md)
+
+-   :material-puzzle: __Pluggable providers__
+
+    ---
+
+    Polygon by default; swap in yfinance / Tradier / IBKR by writing four
+    small functions. Same story for the LLM layer.
+
+    [:octicons-arrow-right-24: Extending Voli](extending/data-providers.md)
 
 -   :material-target: __Grounded answers__
 
