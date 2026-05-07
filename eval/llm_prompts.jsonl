@@ -2,8 +2,8 @@
 // One JSON object per line. `//` comment lines are skipped by the loader.
 //
 // Each row pairs a natural-language prompt (sent to the SUT LLM agent) with
-// a reference fetch that the harness performs directly via OQE's analytics
-// layer — no LLM in the loop on the reference side. A separate judge LLM
+// a reference fetch that the harness performs directly via Voli's analytics
+// layer (no LLM in the loop on the reference side). A separate judge LLM
 // then grades whether the SUT's answer matches the reference data within
 // the per-row rubric_hint tolerance.
 //

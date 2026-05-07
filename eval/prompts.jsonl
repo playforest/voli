@@ -1,6 +1,6 @@
-// OQE evaluation dataset.
+// Voli evaluation dataset.
 // One JSON object per line. `//` comment lines are skipped by the loader.
-// Expected metrics correspond to the synthetic surface in oqe.eval.synth_market:
+// Expected metrics correspond to the synthetic surface in voli.eval.synth_market:
 //   spot = round multiple of 5; ATM IV = 0.30 (front call), 0.35 (next call),
 //   +0.03 for puts, +0.002 per strike-pt away from spot.
 {"id": "tc_001", "prompt": "NVDA ATM IV this week vs next week.", "expected_supported": true, "expected_category": "term_structure", "expected_ticker": "NVDA", "expected_tools": ["get_underlying_snapshot", "list_option_contracts", "get_option_greeks"], "expected_compute": "term_structure", "expected_table_type": "term_structure", "must_contain_in_summary": ["NVDA", "ATM IV", "term structure"], "must_have_facts_keys": ["ticker", "spot", "atm_strike", "front_iv", "next_iv", "front_expiry", "next_expiry"], "expected_metrics": {"atm_strike": 100.0, "front_iv": 0.30, "next_iv": 0.35}, "metrics_tolerance": 1e-6}
