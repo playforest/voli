@@ -37,7 +37,7 @@ def test_get_option_greeks_cache_hit_second_call(monkeypatch: pytest.MonkeyPatch
         def close(self) -> None:
             return None
 
-    monkeypatch.setattr(pt, "PolygonClient", FakePolygonClient)
+    monkeypatch.setattr("voli.providers.polygon.PolygonClient", FakePolygonClient)
 
     s1 = "O:NVDA251219C00100000"
     s2 = "O:NVDA251219P00100000"

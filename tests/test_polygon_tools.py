@@ -106,7 +106,7 @@ class FakePolygonClient:
 
 
 def _install_fake_client(monkeypatch):
-    monkeypatch.setattr(pt, "PolygonClient", FakePolygonClient)
+    monkeypatch.setattr("voli.providers.polygon.PolygonClient", FakePolygonClient)
 
 
 # --- tests ---

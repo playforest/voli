@@ -35,7 +35,7 @@ def test_underlying_trace_logs_polygon_then_cache(
         def close(self) -> None:
             return None
 
-    monkeypatch.setattr(pt, "PolygonClient", FakePolygonClient)
+    monkeypatch.setattr("voli.providers.polygon.PolygonClient", FakePolygonClient)
 
     start_trace("trace_demo")
 

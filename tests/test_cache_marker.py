@@ -70,7 +70,7 @@ class _FakeClient:
 def test_bulk_fetch_reports_polygon_then_cache(monkeypatch, tmp_path) -> None:
     """First call goes to Polygon, second hits the in-process cache."""
 
-    monkeypatch.setattr(pt, "PolygonClient", _FakeClient)
+    monkeypatch.setattr("voli.providers.polygon.PolygonClient", _FakeClient)
     _FakeClient.calls = 0
 
     # Force a fresh cache file so prior tests can't influence the source.

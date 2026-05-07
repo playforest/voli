@@ -31,7 +31,7 @@ def test_get_underlying_snapshot_cache_hit_second_call(
         def close(self) -> None:
             return None
 
-    monkeypatch.setattr(pt, "PolygonClient", FakePolygonClient)
+    monkeypatch.setattr("voli.providers.polygon.PolygonClient", FakePolygonClient)
 
     inp = GetUnderlyingSnapshotInput(ticker="NVDA", asof=None)
 

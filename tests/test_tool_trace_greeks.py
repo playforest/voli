@@ -38,7 +38,7 @@ def test_greeks_trace_logs_polygon_then_cache(monkeypatch: pytest.MonkeyPatch, t
         def close(self) -> None:
             return None
 
-    monkeypatch.setattr(pt, "PolygonClient", FakePolygonClient)
+    monkeypatch.setattr("voli.providers.polygon.PolygonClient", FakePolygonClient)
 
     s1 = "O:NVDA251219C00100000"
     s2 = "O:NVDA251219P00100000"

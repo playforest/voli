@@ -76,6 +76,26 @@ def _add_theme_flags(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_data_provider_flag(parser: argparse.ArgumentParser) -> None:
+    """Shared --data-provider block.
+
+    Pluggable via the ``voli.data_providers`` entry-point group, so a fork can
+    ship ``voli-tradier`` and have ``--data-provider tradier`` light up after
+    ``pip install``.
+    """
+
+    parser.add_argument(
+        "--data-provider",
+        default=None,
+        metavar="NAME",
+        help=(
+            "Data provider for vendor I/O. Default: $VOLI_DATA_PROVIDER, or 'polygon'. "
+            "List installed providers with: "
+            'python -c "from voli.providers import list_providers; print(list_providers())"'
+        ),
+    )
+
+
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="voli",
@@ -121,6 +141,7 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Save a category-specific PNG chart to PATH (requires `pip install matplotlib` "
         "or `poetry install -E plot`).",
     )
+    _add_data_provider_flag(ask)
     _add_theme_flags(ask)
 
     # ---- ask-many ---------------------------------------------------------
@@ -138,6 +159,7 @@ def _build_parser() -> argparse.ArgumentParser:
     ask_many.add_argument("--json", action="store_true")
     ask_many.add_argument("--trace", action="store_true")
     ask_many.add_argument("--skeptic", action="store_true")
+    _add_data_provider_flag(ask_many)
     _add_theme_flags(ask_many)
 
     # ---- llm-ask ---------------------------------------------------------
@@ -178,6 +200,7 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Open a JSONL run-trace and write a <trace_id>.llm.json "
         "companion so 'voli replay' can re-render the answer offline.",
     )
+    _add_data_provider_flag(llm)
     _add_theme_flags(llm)
 
     # ---- mcp-serve --------------------------------------------------------
@@ -188,8 +211,9 @@ def _build_parser() -> argparse.ArgumentParser:
     mcp_serve.add_argument(
         "--raw-only",
         action="store_true",
-        help="Expose only the four raw Polygon tools (skip the analytics layer).",
+        help="Expose only the four raw chain tools (skip the analytics layer).",
     )
+    _add_data_provider_flag(mcp_serve)
 
     # ---- replay -----------------------------------------------------------
     replay = sub.add_parser(
@@ -235,6 +259,14 @@ def main(
     parser = _build_parser()
     args = parser.parse_args(argv)
     out = out or sys.stdout
+
+    # Pin the active data provider for this process if --data-provider was set.
+    # Subcommands without the flag (e.g. replay, themes) leave the default in place.
+    provider_name = getattr(args, "data_provider", None)
+    if provider_name:
+        from voli import providers as _providers
+
+        _providers.set_active(provider_name)
 
     if args.command == "ask":
         return _cmd_ask(args, registry=registry, out=out)
@@ -608,17 +640,20 @@ def _cmd_mcp_serve(args: argparse.Namespace, *, out) -> int:
     to chain the primitives itself.
     """
 
+    # MCP stdio reserves stdout for JSON-RPC; route any error banner to
+    # stderr so a startup failure doesn't poison the wire protocol with
+    # non-JSON lines that the client will reject one by one.
     try:
         from .mcp_server import serve
     except ImportError as exc:
-        return _render_error(args, exc, out=out)
+        return _render_error(args, exc, out=sys.stderr)
 
     try:
         serve(include_analytics=not args.raw_only)
     except KeyboardInterrupt:
         return 0
     except Exception as exc:  # pragma: no cover - hard to provoke without a client
-        return _render_error(args, exc, out=out)
+        return _render_error(args, exc, out=sys.stderr)
     return 0
 
 

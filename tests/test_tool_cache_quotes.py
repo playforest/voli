@@ -37,7 +37,7 @@ def test_get_option_quotes_cache_hit_second_call(monkeypatch: pytest.MonkeyPatch
         def close(self) -> None:
             return None
 
-    monkeypatch.setattr(pt, "PolygonClient", FakePolygonClient)
+    monkeypatch.setattr("voli.providers.polygon.PolygonClient", FakePolygonClient)
 
     # include a duplicate symbol to prove we don't double-call vendor
     s1 = "O:NVDA251219C00100000"

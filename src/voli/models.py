@@ -8,7 +8,10 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 Right = Literal["C", "P"]
-DataSource = Literal["polygon", "cache", "synthetic"]
+# DataSource is a free string so third-party providers (yfinance, tradier, ...)
+# can stamp their own name without widening a Literal here. Voli's bundled
+# Polygon provider sets source="polygon"; the cache layer overrides to "cache".
+DataSource = str
 
 
 def utc_now() -> datetime:
