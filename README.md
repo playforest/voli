@@ -140,18 +140,18 @@ and answers grounded in the same Polygon data the CLI uses.
 
 ## Why Voli?
 
-- **Grounded.** Every numeric token in the summary must come from a tool
+- **Grounded:** Every numeric token in the summary must come from a tool
   call or a centralised analytics function. The writer raises rather than
   inventing.
-- **Deterministic + LLM-driven side by side.** The rule-based path gives
+- **Deterministic + LLM-driven side by side:** The rule-based path gives
   the same answer for the same prompt + cache window. The LLM path drives
   the same tools for free-form questions.
-- **Pluggable.** Data providers (Polygon, yfinance, …) and LLM providers
+- **Pluggable:** Data providers (Polygon, yfinance, …) and LLM providers
   (Anthropic, OpenAI, …) sit behind small Protocols. A fork ships a new
   vendor by writing four fetchers + an entry-point line.
-- **Reproducible.** SQLite TTL cache, JSONL run-trace, replay mode. Same
+- **Reproducible:** SQLite TTL cache, JSONL run-trace, replay mode. Same
   prompt + same cache window gives the same answer, every time.
-- **Reproducible eval.** 20-case JSONL dataset; the runner exits non-zero
+- **Reproducible eval:** 20-case JSONL dataset; the runner exits non-zero
   on any regression in tool sequence, table type, Facts keys, or numeric
   metrics.
 
