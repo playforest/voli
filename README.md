@@ -12,6 +12,16 @@
 > can add yfinance, Tradier, Gemini, etc. with a few small files —
 > see [Extending Voli](docs/extending/data-providers.md).
 
+## See it in action
+
+Five questions. Five different output shapes. All grounded — no fabricated numbers.
+
+### 1. ATM IV across two expiries
+
+```bash
+voli ask "NVDA ATM IV this week vs next week"
+```
+
 ```text
 ================================================================================
  VOLI | TICKER: NVDA | CATEGORY: TERM_STRUCTURE | OK
@@ -27,37 +37,124 @@ EXPIRY      |  ATM_STRIKE  |  ATM_IV
 2026-05-16  |         200  |  0.3457
 
 [ FACTS ]
-TICKER        NVDA
 SPOT          value=199.8450  ts=2026-05-05T13:09:04Z  source=polygon
-RIGHT_USED    call
 ATM_STRIKE    200
-FRONT_EXPIRY  2026-05-09
-NEXT_EXPIRY   2026-05-16
 FRONT_IV      0.3318
 NEXT_IV       0.3457
 ================================================================================
 ```
 
+Every number in the summary traces back to a `[ FACTS ]` row — that's the
+no-invented-numbers guardrail. Try editing the writer to make up a number;
+it raises.
+
+### 2. Skew slope across strikes
+
+```bash
+voli ask "Show NVDA IV skew for next Friday"
+```
+
+```text
+[ SUMMARY ]
+NVDA skew slope: OLS slope -0.0021 (IV vs strike) at front expiry 2026-05-16.
+
+[ SKEW ]
+FRONT_EXPIRY  |  ATM_STRIKE  |    SLOPE
+----------------------------------------
+2026-05-16    |         200  |  -0.0021
+```
+
+Negative slope = downside protection bid (typical for index ETFs). Switch
+ticker to `TSLA` and watch the slope deepen.
+
+### 3. Compare a watchlist in one call
+
+```bash
+voli ask-many --tickers NVDA,SPY,QQQ "ATM IV this week vs next week"
+```
+
+```text
+[ TERM STRUCTURE COMPARISON ]
+TICKER  |  ATM_STRIKE  |  FRONT_IV  |  NEXT_IV  |    DIFF  |  STATUS
+--------------------------------------------------------------------
+NVDA    |         200  |    0.3318  |   0.3457  |  0.0139  |  OK
+SPY     |         500  |    0.1820  |   0.1935  |  0.0115  |  OK
+QQQ     |         400  |    0.2102  |   0.2240  |  0.0138  |  OK
+```
+
+Same prompt, three tickers, one comparison table. The renderer auto-picks
+columns based on the dominant question category.
+
+### 4. Free-form question with an LLM driving the tools
+
+```bash
+voli llm-ask "How does NVDA's IV term structure compare to QQQ's?"
+```
+
+```text
+[ TOOL CALL ] compute_atm_iv_term_structure(ticker=NVDA)
+[ TOOL OK   (polygon) ] {"front_iv": 0.3318, "next_iv": 0.3457, ...}
+
+[ TOOL CALL ] compute_atm_iv_term_structure(ticker=QQQ)
+[ TOOL OK   (cache) ]   {"front_iv": 0.2102, "next_iv": 0.2240, ...}
+
+[ ANSWER ]
+NVDA's near-term ATM IV is roughly 60% higher than QQQ's: 33.18% vs 21.02%
+for the 2026-05-09 expiry, and 34.57% vs 22.40% for 2026-05-16. Both names
+show a similar ~1.4-point premium front-to-next, but as a percentage that's
+mild for NVDA (4.2%) and slightly elevated for QQQ (6.6%) — the relative
+term-structure premium signal points to QQQ, not NVDA.
+```
+
+Live tool-call streaming. Each `(polygon)` / `(cache)` marker tells you
+whether the data was fresh or served from the local TTL cache.
+
+### 5. Swap data vendor with one flag
+
+```bash
+pip install -e ./examples/yfinance_provider/
+voli ask --data-provider yfinance "list NVDA calls for the nearest expiry"
+```
+
+```text
+[ FACTS ]
+SPOT             value=207.8300  ts=2026-05-07T10:37:31Z  source=yfinance
+CONTRACTS_COUNT  500
+EXPIRIES_USED    2026-05-08, 2026-05-11, 2026-05-13, 2026-05-15, 2026-05-18
+```
+
+Same pipeline, different vendor — `source=yfinance` instead of
+`source=polygon`. A fork ships a new vendor by writing four small fetcher
+methods. See [Extending Voli](docs/extending/data-providers.md).
+
+### And in Claude Desktop / claude.ai web
+
+```bash
+voli mcp-serve                # exposes the same tools over MCP stdio
+```
+
+Wire the one-liner into Claude Desktop's `claude_desktop_config.json` and
+ask options questions in chat — Claude calls the Voli tools mid-conversation
+and answers grounded in the same Polygon data the CLI uses.
+
 ## Why Voli?
 
-- **Grounded.** Every numeric claim in the answer must come from a tool call
-  or a centralised analytics function — the writer enforces a runtime
-  guardrail and refuses to emit invented numbers.
-- **Pluggable.** Data providers live behind a small Protocol — Polygon ships
-  as the default; forks can add yfinance, Tradier, IBKR, ORATS by writing
-  four functions. LLM providers (Anthropic + OpenAI) plug in the same way.
-- **Deterministic** rule-based path. A heuristic planner produces the same
-  plan for the same prompt; analytics are pure functions over the chain
-  snapshot. Same prompt + same cache window = same answer.
-- **LLM-driven** path. Claude or GPT can drive the same toolset for free-form
-  questions; the LLM streams its tool calls live as it works.
-- **Bloomberg-style CLI.** Twelve bundled colour themes; defaults to a
+- **Grounded.** Every numeric token in the summary must come from a tool
+  call or a centralised analytics function. The writer raises rather than
+  inventing.
+- **Deterministic + LLM-driven side by side.** The rule-based path gives
+  the same answer for the same prompt + cache window. The LLM path drives
+  the same tools for free-form questions.
+- **Pluggable.** Data providers (Polygon, yfinance, …) and LLM providers
+  (Anthropic, OpenAI, …) sit behind small Protocols. A fork ships a new
+  vendor by writing four fetchers + an entry-point line.
+- **Reproducible.** SQLite TTL cache, JSONL run-trace, replay mode — same
+  prompt + same cache window = same answer, every time.
+- **Bloomberg-style CLI.** Twelve bundled colour themes; defaults to
   Bloomberg-Terminal-inspired orange/amber on black.
-- **MCP server**. Connect to Claude Desktop or claude.ai web in two minutes
-  and ask options questions in chat.
-- **Reproducible eval.** A 20-case JSONL dataset and a runner that scores
-  per-case checks (tool sequence, table type, Facts keys, numeric metrics)
-  and exits non-zero on any regression.
+- **Reproducible eval.** 20-case JSONL dataset; the runner exits non-zero
+  on any regression in tool sequence, table type, Facts keys, or numeric
+  metrics.
 
 ## Quickstart
 
@@ -81,7 +178,7 @@ Edit `.env`:
 # Required for live Polygon queries
 POLYGON_API_KEY=pk_your_polygon_key
 
-# Optional - only needed for `voli llm-ask` and the MCP server
+# Optional — only needed for `voli llm-ask` and the MCP server
 ANTHROPIC_API_KEY=sk-ant-your_anthropic_key   # for Claude
 OPENAI_API_KEY=sk-your_openai_key             # for GPT
 ```
@@ -89,66 +186,53 @@ OPENAI_API_KEY=sk-your_openai_key             # for GPT
 The CLI loads `.env` automatically on startup. Anything in your shell
 environment wins over `.env`.
 
-### 3. Pick the entry point you want
+### 3. Run the entry point you want
 
-=== "Rule-based CLI"
+**Rule-based CLI** — always available:
 
-    Always available, no extra installs needed:
+```bash
+poetry run voli ask "NVDA ATM IV this week vs next week"
+```
 
-    ```bash
-    poetry run voli ask "NVDA ATM IV this week vs next week"
-    ```
+**LLM-driven CLI** — install a provider extra first:
 
-=== "LLM-driven CLI"
+```bash
+poetry install -E anthropic                 # or -E openai, or -E llm for both
+poetry run voli llm-ask "How does NVDA compare to QQQ?"
+```
 
-    Pick a provider and install its extra:
+**MCP server** for Claude Desktop / claude.ai:
 
-    ```bash
-    poetry install -E anthropic   # Claude (Sonnet 4.6 by default)
-    poetry install -E openai      # GPT (gpt-4.1-mini by default)
-    poetry install -E llm         # both
+```bash
+poetry install -E mcp
+```
 
-    poetry run voli llm-ask "How does NVDA's IV term structure compare to QQQ's?"
-    ```
+Then add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
-    The LLM sees seven tools (term structure / skew / ATM greeks shortcuts
-    plus the four raw chain tools) and streams its tool calls live.
-
-=== "MCP server (Claude Desktop / claude.ai)"
-
-    Install the MCP extra:
-
-    ```bash
-    poetry install -E mcp
-    ```
-
-    Then add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
-
-    ```json
-    {
-      "mcpServers": {
-        "voli": {
-          "command": "poetry",
-          "args": ["run", "voli", "mcp-serve"],
-          "cwd": "/absolute/path/to/voli",
-          "env": {"POLYGON_API_KEY": "pk_your_key"}
-        }
-      }
+```json
+{
+  "mcpServers": {
+    "voli": {
+      "command": "poetry",
+      "args": ["run", "voli", "mcp-serve"],
+      "cwd": "/absolute/path/to/voli",
+      "env": {"POLYGON_API_KEY": "pk_your_key"}
     }
-    ```
+  }
+}
+```
 
-    Restart Claude Desktop. The Voli tools now appear in the **Available
-    Tools** panel and Claude can call them mid-conversation.
+Restart Claude Desktop — the Voli tools appear in the Available Tools panel.
 
-=== "Python"
+**Direct Python**:
 
-    ```python
-    from voli.agent import answer_question
+```python
+from voli.agent import answer_question
 
-    resp = answer_question("NVDA ATM IV this week vs next week")
-    print(resp.summary)
-    print(resp.facts["front_iv"], resp.facts["next_iv"])
-    ```
+resp = answer_question("NVDA ATM IV this week vs next week")
+print(resp.summary)
+print(resp.facts["front_iv"], resp.facts["next_iv"])
+```
 
 ## Subcommand summary
 
@@ -174,6 +258,21 @@ Common flags across the answer commands:
 | `--plot PATH` | Save a category-specific PNG chart (requires `-E plot`). |
 | `--data-provider NAME` | Pick a non-default data provider (default `polygon`, or `$VOLI_DATA_PROVIDER`). |
 
+A few combinations worth keeping handy:
+
+```bash
+# Cycle the theme on every call (great for screenshots)
+voli ask --cycle-theme "Show NVDA IV skew next Friday"
+
+# JSON for piping into jq / scripts
+voli ask --json "NVDA ATM IV this week vs next week" \
+  | jq '{front: .facts.front_iv, next: .facts.next_iv}'
+
+# Open a JSONL trace + replay companion (offline rendering later)
+voli ask --trace "Show greeks of the NVDA 2026-05-16 200C"
+voli replay 20260507T103717Z_a1b2c3d4
+```
+
 ## Optional extras
 
 | Extra | Enables | Install |
@@ -196,20 +295,23 @@ LLM layer (Anthropic + OpenAI ship in core).
 | Data | `polygon` (Polygon.io) | `voli ask --data-provider NAME` or `$VOLI_DATA_PROVIDER` |
 | LLM | auto-detect (Anthropic if key set, else OpenAI) | `voli llm-ask --provider {anthropic,openai}` or `$VOLI_LLM_PROVIDER` |
 
-To **add a new data vendor** (yfinance, Tradier, IBKR, ...) write four
+To **add a new data vendor** (yfinance, Tradier, IBKR, …) write four
 fetcher methods returning Voli domain models, register via a
 `voli.data_providers` entry point, ship as `pip install voli-yourvendor`.
-Full how-to: [Extending Voli — data providers](docs/extending/data-providers.md).
+A complete working example lives in
+[`examples/yfinance_provider/`](examples/yfinance_provider/) — read it
+end-to-end. Full how-to:
+[Extending Voli — data providers](docs/extending/data-providers.md).
 
-To **add a new LLM** (Gemini, Grok, local Ollama, ...) implement
-`voli.llm.provider.Provider` (mirrors the existing `anthropic_provider.py`
+To **add a new LLM** (Gemini, Grok, local Ollama, …) implement
+`voli.llm.provider.LLMProvider` (mirrors the existing `anthropic_provider.py`
 / `openai_provider.py`). See
 [Extending Voli — LLM providers](docs/extending/llm-providers.md).
 
 ```bash
 # List installed data providers
 poetry run python -c "from voli.providers import list_providers; print(list_providers())"
-# -> ['polygon']
+# -> ['polygon', 'yfinance']    # after pip install -e ./examples/yfinance_provider/
 ```
 
 ## Daily commands
@@ -234,8 +336,8 @@ poetry run mkdocs serve   # -> http://127.0.0.1:8000
 ## Documentation
 
 Full docs (CLI reference, Python API, examples cookbook for every
-subcommand including LLM mode and MCP, architecture, contributing guide)
-live in `docs/` as a MkDocs Material site:
+subcommand including LLM mode and MCP, architecture, how-to-extend
+guides, contributing guide) live in `docs/` as a MkDocs Material site:
 
 ```bash
 poetry install --with docs
@@ -256,6 +358,7 @@ poetry run mkdocs serve
 | `src/voli/eval/` | Evaluation harness (synthetic registry + runner). |
 | `src/voli/cli.py` | Command-line entrypoint. |
 | `src/voli/cli_render.py` | Themed ANSI renderer + 10 palettes. |
+| `examples/yfinance_provider/` | Reference second `DataProvider` implementation (yfinance). |
 | `eval/prompts.jsonl` | 20-case regression dataset. |
 | `tests/` | pytest suite (277 tests, no live API needed). |
 | `docs/` | MkDocs Material doc site. |
