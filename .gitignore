@@ -225,3 +225,7 @@ site/
 # Anything matching *_SETUP.md or *.local.md stays untracked.
 *_SETUP.md
 *.local.md
+
+# Personal scratch / planning file kept locally only.
+todo.md
+TODO.md
