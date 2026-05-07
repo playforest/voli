@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from oqe.analytics.iv_metrics import (
+from voli.analytics.iv_metrics import (
     atm_iv_term_structure,
     is_quote_spread_too_wide,
     is_spread_too_wide,
@@ -12,7 +12,7 @@ from oqe.analytics.iv_metrics import (
     relative_spread,
     select_atm_strike,
 )
-from oqe.analytics.skew import skew_slope, strike_iv_pairs
+from voli.analytics.skew import skew_slope, strike_iv_pairs
 
 
 @dataclass(frozen=True)

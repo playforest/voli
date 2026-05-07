@@ -16,9 +16,9 @@ from typing import Any
 
 import pytest
 
-from oqe.agent.executor import ToolRegistry
-from oqe.cli import main
-from oqe.llm import (
+from voli.agent.executor import ToolRegistry
+from voli.cli import main
+from voli.llm import (
     AgentConfig,
     LLMProvider,
     StepComplete,
@@ -29,7 +29,7 @@ from oqe.llm import (
     build_default_tools,
     llm_ask,
 )
-from oqe.llm.agent import collect
+from voli.llm.agent import collect
 
 # ---- stub provider ---------------------------------------------------------
 
@@ -213,11 +213,11 @@ def test_default_tools_dispatch_against_synthetic_market(monkeypatch) -> None:
     we can verify build_default_tools() actually returns usable callables.
     """
 
-    from oqe.eval.synth_market import make_registry as _mk
+    from voli.eval.synth_market import make_registry as _mk
 
     reg: ToolRegistry = _mk()
 
-    # The default tools call oqe.tools.polygon_tools functions; rather than
+    # The default tools call voli.tools.polygon_tools functions; rather than
     # rewire them, we drive llm_ask's tool dispatch directly. Use raw-only
     # mode so the wrapping below has a 1:1 name -> synth map. Analytics
     # tools are exercised in tests/test_llm_analytics.py.
@@ -318,14 +318,14 @@ def test_cli_llm_ask_with_invalid_provider_name(monkeypatch) -> None:
 
 
 def test_lazy_imports_keep_lean_install_working(monkeypatch) -> None:
-    """Importing oqe.llm should not require anthropic/openai to be importable.
+    """Importing voli.llm should not require anthropic/openai to be importable.
     The provider modules import their SDKs lazily inside _require_sdk.
     """
 
     import importlib
 
-    # Remove the SDKs from sys.modules; oqe.llm import shouldn't trip on it.
+    # Remove the SDKs from sys.modules; voli.llm import shouldn't trip on it.
     monkeypatch.setitem(__import__("sys").modules, "anthropic", None)
     monkeypatch.setitem(__import__("sys").modules, "openai", None)
-    importlib.reload(__import__("oqe.llm", fromlist=["*"]))
+    importlib.reload(__import__("voli.llm", fromlist=["*"]))
     # No exception => pass.

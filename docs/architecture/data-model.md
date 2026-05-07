@@ -1,6 +1,6 @@
 # Data model
 
-Pydantic models in `oqe.models` define the canonical shape every tool
+Pydantic models in `voli.models` define the canonical shape every tool
 returns and every analytics function consumes. They're frozen, validated,
 and `extra="forbid"` so an unexpected field is a loud error rather than
 a silent drift.
@@ -61,7 +61,7 @@ class OptionGreeks(StrictModel):
 
 ## Tool I/O models
 
-`oqe.tool_schemas` defines `Pydantic` input/output models per tool:
+`voli.tool_schemas` defines `Pydantic` input/output models per tool:
 
 | Input | Output |
 | --- | --- |
@@ -83,7 +83,7 @@ class ToolMeta(StrictModel):
 
 ## Analytics protocols
 
-`oqe.analytics.protocols` defines duck-typed Protocols that the analytics
+`voli.analytics.protocols` defines duck-typed Protocols that the analytics
 functions accept. This lets tests pass small dataclasses without inheriting
 from the Pydantic models:
 
@@ -123,9 +123,9 @@ class OptionQuoteLike(Protocol):
 Every `ts` field is timezone-aware UTC. Naive timestamps raise.
 `datetime.now(UTC)` is the canonical call inside the package; when reading
 nanosecond timestamps from Polygon we go via
-`oqe.polygon.helpers.ns_to_utc_iso`.
+`voli.polygon.helpers.ns_to_utc_iso`.
 
 ## See also
 
 - [Polygon tools](../python-api/tools.md) — how vendor responses become these models.
-- [`oqe.tool_schemas`](https://github.com/playforest/options-query-agent/blob/main/src/oqe/tool_schemas.py) for the full I/O surface.
+- [`voli.tool_schemas`](https://github.com/playforest/voli/blob/main/src/voli/tool_schemas.py) for the full I/O surface.

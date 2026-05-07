@@ -4,7 +4,7 @@ We can't drive a real Claude Desktop client from a unit test, so we
 exercise the parts that don't need stdio:
   * `_build_server` returns the registered tool catalogue.
   * the @list_tools handler returns one entry per tool with valid shape.
-  * the @call_tool handler dispatches to the right OQE function and
+  * the @call_tool handler dispatches to the right Voli function and
     forwards results back as MCP TextContent.
   * the lazy-import shim raises a clear ImportError when mcp is missing.
 
@@ -25,8 +25,8 @@ import pytest
 
 mcp = pytest.importorskip("mcp")  # skip cleanly if -E mcp not installed.
 
-from oqe.llm.types import ToolDef  # noqa: E402
-from oqe.mcp_server import _build_server, _to_mcp_tool, serve  # noqa: E402
+from voli.llm.types import ToolDef  # noqa: E402
+from voli.mcp_server import _build_server, _to_mcp_tool, serve  # noqa: E402
 
 # ---- _build_server ---------------------------------------------------------
 
@@ -61,7 +61,7 @@ def test_build_server_with_raw_only() -> None:
 
 
 def test_to_mcp_tool_preserves_schema_and_camelcases_input_schema() -> None:
-    """OQE uses input_schema (snake_case); MCP wants inputSchema (camel)."""
+    """Voli uses input_schema (snake_case); MCP wants inputSchema (camel)."""
 
     from mcp import types
 
@@ -121,8 +121,8 @@ def test_call_tool_dispatches_to_get_underlying_snapshot(monkeypatch) -> None:
 
     from datetime import UTC, datetime
 
-    from oqe.models import UnderlyingSnapshot
-    from oqe.tool_schemas import GetUnderlyingSnapshotInput, GetUnderlyingSnapshotOutput
+    from voli.models import UnderlyingSnapshot
+    from voli.tool_schemas import GetUnderlyingSnapshotInput, GetUnderlyingSnapshotOutput
 
     def _fake(inp: GetUnderlyingSnapshotInput):
         captured["ticker"] = inp.ticker
@@ -142,7 +142,7 @@ def test_call_tool_dispatches_to_get_underlying_snapshot(monkeypatch) -> None:
             snapshot=snap,
         )
 
-    monkeypatch.setattr("oqe.llm.tools.get_underlying_snapshot", _fake)
+    monkeypatch.setattr("voli.llm.tools.get_underlying_snapshot", _fake)
 
     server, _tools = _build_server()
     content = _drain_call_tool(server, "get_underlying_snapshot", {"ticker": "NVDA"})
@@ -164,7 +164,7 @@ def test_call_tool_unknown_tool_returns_error_payload() -> None:
 # ---- list_tools handler ----------------------------------------------------
 
 
-def test_list_tools_returns_one_mcp_tool_per_oqe_tool() -> None:
+def test_list_tools_returns_one_mcp_tool_per_voli_tool() -> None:
     server, tools = _build_server()
 
     from mcp.types import ListToolsRequest
@@ -187,7 +187,7 @@ def test_serve_raises_clear_error_when_mcp_missing(monkeypatch) -> None:
     monkeypatch.setitem(sys.modules, "mcp.server.stdio", None)
 
     # _require_sdk inside mcp_server is module-local; patch it directly.
-    import oqe.mcp_server as mcp_server
+    import voli.mcp_server as mcp_server
 
     with (
         patch.object(

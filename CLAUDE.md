@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Options Query Engine (OQE) - A Python library for querying options chain data from Polygon.io with built-in caching, reproducibility, and analytics metrics computation.
+Voli - A Python library for querying options chain data from Polygon.io with built-in caching, reproducibility, and analytics metrics computation.
 
 ## Commands
 
@@ -35,7 +35,7 @@ poetry run pre-commit run --all-files
 
 ## Architecture
 
-### Package Structure (`src/oqe/`)
+### Package Structure (`src/voli/`)
 
 **Domain Models** (`models.py`):
 - `UnderlyingSnapshot`, `OptionContract`, `OptionQuote`, `OptionGreeks` - Pydantic models with strict validation
@@ -50,7 +50,7 @@ poetry run pre-commit run --all-files
 **Caching System** (`cache.py`):
 - SQLite-based cache with TTL expiration
 - Deterministic cache keys from `(tool_name, canonicalized_inputs, asof)`
-- Default path: `~/.oqe/cache.sqlite` (override with `OQE_CACHE_PATH`)
+- Default path: `~/.voli/cache.sqlite` (override with `VOLI_CACHE_PATH`)
 - TTLs: 30s for quotes/greeks/underlying snapshots, 6h for contract lists
 
 **Analytics** (`analytics/`):
@@ -62,7 +62,7 @@ poetry run pre-commit run --all-files
 
 **Run Traces** (`run_trace.py`):
 - JSONL "flight recorder" for tool calls
-- Default path: `~/.oqe/traces/<trace_id>.jsonl` (override with `OQE_TRACE_DIR`)
+- Default path: `~/.voli/traces/<trace_id>.jsonl` (override with `VOLI_TRACE_DIR`)
 
 **Rule-based Agent** (`agent/`):
 - `planner.py` / `executor.py` / `writer.py` / `state.py` / `skeptic.py` / `batch.py`
@@ -78,7 +78,7 @@ poetry run pre-commit run --all-files
 **MCP Server** (`mcp_server.py`):
 - Exposes the same `build_default_tools()` over MCP stdio
 - Wired into Claude Desktop via `claude_desktop_config.json`
-- Lazy-imports `mcp` SDK; `oqe mcp-serve` is the CLI entrypoint
+- Lazy-imports `mcp` SDK; `voli mcp-serve` is the CLI entrypoint
 
 **CLI** (`cli.py` + `cli_render.py`):
 - Subcommands: `ask`, `ask-many`, `llm-ask`, `mcp-serve`, `replay`, `themes`
@@ -96,13 +96,13 @@ poetry run pre-commit run --all-files
 
 ```
 POLYGON_API_KEY=<your_key>      # Required for live Polygon data
-ANTHROPIC_API_KEY=<your_key>    # Required for `oqe llm-ask --provider anthropic` + MCP via Claude
-OPENAI_API_KEY=<your_key>       # Required for `oqe llm-ask --provider openai`
-OQE_LLM_PROVIDER=<name>         # Default LLM provider when --provider not passed
-OQE_LLM_MODEL=<name>            # Default model name when --model not passed
-OQE_CACHE_PATH=<path>           # Override default cache location
-OQE_TRACE_DIR=<path>            # Override default trace directory
-OQE_THEME=<name>                # Default colour theme (default: bloomberg)
+ANTHROPIC_API_KEY=<your_key>    # Required for `voli llm-ask --provider anthropic` + MCP via Claude
+OPENAI_API_KEY=<your_key>       # Required for `voli llm-ask --provider openai`
+VOLI_LLM_PROVIDER=<name>         # Default LLM provider when --provider not passed
+VOLI_LLM_MODEL=<name>            # Default model name when --model not passed
+VOLI_CACHE_PATH=<path>           # Override default cache location
+VOLI_TRACE_DIR=<path>            # Override default trace directory
+VOLI_THEME=<name>                # Default colour theme (default: bloomberg)
 ```
 
 ### Optional Extras
@@ -112,13 +112,13 @@ poetry install -E plot          # matplotlib for `--plot PATH`
 poetry install -E anthropic     # Claude provider for llm-ask + MCP
 poetry install -E openai        # GPT provider for llm-ask
 poetry install -E llm           # both LLM providers
-poetry install -E mcp           # `oqe mcp-serve`
+poetry install -E mcp           # `voli mcp-serve`
 poetry install --with docs      # mkdocs site
 ```
 
 ## Testing
 
-Tests use a repo-local cache (`.pytest_oqe_cache.sqlite`) via `conftest.py` - automatically cleaned on each pytest run. No live API calls needed for any tests; they use synthetic/mocked data. Current count: 253 tests.
+Tests use a repo-local cache (`.pytest_voli_cache.sqlite`) via `conftest.py` - automatically cleaned on each pytest run. No live API calls needed for any tests; they use synthetic/mocked data. Current count: 253 tests.
 
 ## Documentation Maintenance
 

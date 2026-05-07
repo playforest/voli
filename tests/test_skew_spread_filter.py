@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from oqe.analytics.skew import strike_iv_pairs
+from voli.analytics.skew import strike_iv_pairs
 
 
 @dataclass(frozen=True)

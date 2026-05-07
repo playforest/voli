@@ -16,13 +16,13 @@ from unittest.mock import patch
 
 import pytest
 
-from oqe.agent import answer_question
-from oqe.cli import main
-from oqe.eval.synth_market import make_registry
+from voli.agent import answer_question
+from voli.cli import main
+from voli.eval.synth_market import make_registry
 
 # Skip cleanly on systems without matplotlib (e.g. lean install with no -E plot).
 matplotlib = pytest.importorskip("matplotlib")
-plot_module = pytest.importorskip("oqe.plot")
+plot_module = pytest.importorskip("voli.plot")
 plot_response = plot_module.plot_response
 
 

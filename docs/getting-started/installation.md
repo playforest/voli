@@ -1,6 +1,6 @@
 # Installation
 
-OQE is a Python 3.11+ package managed by [Poetry](https://python-poetry.org/).
+Voli is a Python 3.11+ package managed by [Poetry](https://python-poetry.org/).
 
 ## Prerequisites
 
@@ -9,16 +9,16 @@ OQE is a Python 3.11+ package managed by [Poetry](https://python-poetry.org/).
 - A [Polygon.io](https://polygon.io/) API key for live queries (the eval
   harness and most tests work fully offline)
 - Optional: an Anthropic or OpenAI API key for the LLM-driven path
-  (`oqe llm-ask` and the MCP server)
+  (`voli llm-ask` and the MCP server)
 
 ## Install with Poetry
 
-The base install gets you the rule-based CLI (`oqe ask`), `oqe themes`,
+The base install gets you the rule-based CLI (`voli ask`), `voli themes`,
 the eval harness, and the Python API:
 
 ```bash
-git clone https://github.com/playforest/options-query-agent
-cd options-query-agent
+git clone https://github.com/playforest/voli
+cd voli
 poetry install
 ```
 
@@ -30,7 +30,7 @@ Optional extras enable specific features. Pick the ones you want:
 | `anthropic` | Claude provider for `llm-ask` | `poetry install -E anthropic` |
 | `openai` | GPT provider for `llm-ask` | `poetry install -E openai` |
 | `llm` | Both LLM providers | `poetry install -E llm` |
-| `mcp` | `oqe mcp-serve` (Claude Desktop / claude.ai web) | `poetry install -E mcp` |
+| `mcp` | `voli mcp-serve` (Claude Desktop / claude.ai web) | `poetry install -E mcp` |
 | `docs` | `mkdocs serve` for the doc site | `poetry install --with docs` |
 
 You can combine them, e.g. `poetry install -E llm -E mcp -E plot`.
@@ -65,11 +65,11 @@ Edit `.env`:
 # Required for any live Polygon query (rule-based or LLM)
 POLYGON_API_KEY=pk_your_polygon_key
 
-# Required for `oqe llm-ask --provider anthropic` and the MCP server when
+# Required for `voli llm-ask --provider anthropic` and the MCP server when
 # chatting via Claude Desktop / claude.ai web
 ANTHROPIC_API_KEY=sk-ant-your_anthropic_key
 
-# Required for `oqe llm-ask --provider openai`
+# Required for `voli llm-ask --provider openai`
 OPENAI_API_KEY=sk-your_openai_key
 ```
 
@@ -89,19 +89,19 @@ in your shell environment wins over `.env`, and `.env` wins over
 
 | Variable | Effect | Default |
 | --- | --- | --- |
-| `OQE_LLM_PROVIDER` | Default LLM provider when `--provider` isn't passed | auto-detect (`anthropic` if `ANTHROPIC_API_KEY` set, else `openai`) |
-| `OQE_LLM_MODEL` | Default model name when `--model` isn't passed | `claude-sonnet-4-6` (anthropic) / `gpt-4.1-mini` (openai) |
+| `VOLI_LLM_PROVIDER` | Default LLM provider when `--provider` isn't passed | auto-detect (`anthropic` if `ANTHROPIC_API_KEY` set, else `openai`) |
+| `VOLI_LLM_MODEL` | Default model name when `--model` isn't passed | `claude-sonnet-4-6` (anthropic) / `gpt-4.1-mini` (openai) |
 
 ### Other useful env vars
 
 | Variable | Effect | Default |
 | --- | --- | --- |
 | `POLYGON_HTTP_DEBUG` | Print every Polygon HTTP request on stderr | unset |
-| `OQE_CACHE_PATH` | SQLite cache file | `~/.oqe/cache.sqlite` |
-| `OQE_TRACE_DIR` | Where `--trace` writes JSONL + companion files | `~/.oqe/traces/` |
-| `OQE_THEME` | Default colour theme | `bloomberg` |
-| `OQE_LOG_LEVEL` | `DEBUG` / `INFO` / `WARNING` (default) / `ERROR` / `CRITICAL` | `WARNING` |
-| `OQE_LOG_FORMAT` | `text` (themed when stderr is TTY) or `json` | `text` |
+| `VOLI_CACHE_PATH` | SQLite cache file | `~/.voli/cache.sqlite` |
+| `VOLI_TRACE_DIR` | Where `--trace` writes JSONL + companion files | `~/.voli/traces/` |
+| `VOLI_THEME` | Default colour theme | `bloomberg` |
+| `VOLI_LOG_LEVEL` | `DEBUG` / `INFO` / `WARNING` (default) / `ERROR` / `CRITICAL` | `WARNING` |
+| `VOLI_LOG_FORMAT` | `text` (themed when stderr is TTY) or `json` | `text` |
 | `NO_COLOR` | Strip ANSI from all output | unset |
 
 ## Verify the install
@@ -109,20 +109,20 @@ in your shell environment wins over `.env`, and `.env` wins over
 === "CLI"
 
     ```bash
-    poetry run oqe --help
+    poetry run voli --help
     ```
 
     ```text
-    usage: oqe [-h] {ask,ask-many,llm-ask,mcp-serve,replay,themes} ...
+    usage: voli [-h] {ask,ask-many,llm-ask,mcp-serve,replay,themes} ...
 
-    Options Query Engine - ask grounded questions about an options chain.
+    Voli - ask grounded questions about an options chain.
 
     positional arguments:
       {ask,ask-many,llm-ask,mcp-serve,replay,themes}
         ask         Ask a single natural-language question.
         ask-many    Run the same prompt against multiple tickers and compare results.
-        llm-ask     Ask an LLM (Claude or GPT) using OQE tools as its data backend.
-        mcp-serve   Run the OQE Model Context Protocol server over stdio.
+        llm-ask     Ask an LLM (Claude or GPT) using Voli tools as its data backend.
+        mcp-serve   Run the Voli Model Context Protocol server over stdio.
         replay      Re-render a previously stored answer (companion JSON from --trace).
         themes      List or preview the colour themes.
 
@@ -133,8 +133,8 @@ in your shell environment wins over `.env`, and `.env` wins over
 === "Python"
 
     ```python
-    from oqe.agent import answer_question
-    print(answer_question.__module__)   # 'oqe.agent'
+    from voli.agent import answer_question
+    print(answer_question.__module__)   # 'voli.agent'
     ```
 
 === "Tests"
@@ -163,7 +163,7 @@ poetry run python eval/run_eval.py --no-color
 
 ```text
 ================================================================================
- OQE EVAL | 20 cases | 20 passed | 0 failed
+ Voli EVAL | 20 cases | 20 passed | 0 failed
 ================================================================================
 [ RESULTS ]
 PASS  tc_001    term_structure    NVDA ATM IV this week vs next week.

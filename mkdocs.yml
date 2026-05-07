@@ -1,8 +1,8 @@
-site_name: Options Query Engine
+site_name: Voli
 site_description: Natural-language Q&A over options chains, grounded in Polygon data.
 site_author: Playforest
-repo_url: https://github.com/playforest/options-query-agent
-repo_name: playforest/options-query-agent
+repo_url: https://github.com/playforest/voli
+repo_name: playforest/voli
 edit_uri: edit/main/docs/
 
 # Render docs from the existing docs/ directory.

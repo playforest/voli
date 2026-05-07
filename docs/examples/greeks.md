@@ -9,12 +9,12 @@ The agent picks the ATM contract for that expiry/right and returns its
 greeks.
 
 ```bash
-poetry run oqe ask "What are the greeks of the NVDA 2026-05-16 100C?"
+poetry run voli ask "What are the greeks of the NVDA 2026-05-16 100C?"
 ```
 
 ```text
 ================================================================================
- OQE | TICKER: NVDA | CATEGORY: GREEKS | OK
+ VOLI | TICKER: NVDA | CATEGORY: GREEKS | OK
 ================================================================================
 [ SUMMARY ]
 NVDA ATM greeks: strike=200.0 iv=0.3318 delta=0.5012 gamma=0.0214 theta=-0.1041
@@ -42,7 +42,7 @@ the ATM row appears.
 ## Programmatic ATM greeks
 
 ```python
-from oqe.agent import answer_question
+from voli.agent import answer_question
 
 resp = answer_question("What are the greeks of the NVDA 2026-05-16 100C?")
 ag = resp.facts["atm_contract"]
@@ -62,8 +62,8 @@ theta=-0.1041, vega=0.1183
 If you know the option symbol, hit the tool layer directly:
 
 ```python
-from oqe.tools.polygon_tools import get_option_greeks
-from oqe.tool_schemas import GetOptionGreeksInput
+from voli.tools.polygon_tools import get_option_greeks
+from voli.tool_schemas import GetOptionGreeksInput
 
 resp = get_option_greeks(GetOptionGreeksInput(option_symbols=[
     "O:NVDA260516C00200000",
@@ -84,7 +84,7 @@ O:NVDA260516C00210000  iv=0.3508  delta=+0.3601
 
 Polygon occasionally emits gamma `~ -3e-10` or vega `~ -8e-5` — artefacts
 of upstream Black-Scholes solvers. We clamp anything within `1e-3` of zero
-to exactly `0.0` in `oqe.polygon.normalise._clamp_nonneg`. Genuinely
+to exactly `0.0` in `voli.polygon.normalise._clamp_nonneg`. Genuinely
 negative values still raise (those would indicate a real upstream bug).
 
 If you're calling the tool layer directly, expect `gamma=0.0` for

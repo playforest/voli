@@ -9,13 +9,13 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from oqe.agent.skeptic import (
+from voli.agent.skeptic import (
     LOW_CONTRACT_COUNT_THRESHOLD,
     STALE_SNAPSHOT_MAX_AGE_MINUTES,
     SkepticConcern,
     review,
 )
-from oqe.agent.state import AnswerResponse
+from voli.agent.state import AnswerResponse
 
 
 def _resp(**facts) -> AnswerResponse:

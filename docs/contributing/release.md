@@ -1,6 +1,6 @@
 # Releasing
 
-There's no published release yet — OQE is at the "main branch is canonical"
+There's no published release yet — Voli is at the "main branch is canonical"
 stage. This page captures the intended flow for when that changes.
 
 ## Versioning
@@ -67,7 +67,7 @@ poetry build
 poetry publish        # uses PYPI_TOKEN env var
 ```
 
-Until then, `pip install git+https://github.com/playforest/options-query-agent@vX.Y.Z`
+Until then, `pip install git+https://github.com/playforest/voli@vX.Y.Z`
 works for downstream users.
 
 ## Docs deploy (deferred)

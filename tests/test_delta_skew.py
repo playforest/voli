@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from oqe.analytics.skew import delta_skew
+from voli.analytics.skew import delta_skew
 
 
 @dataclass(frozen=True)

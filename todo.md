@@ -109,8 +109,8 @@ Also: make the repo and docs **friendly for learning agents/LLMs**—briefly exp
 - Add a “trace id” per question run.
 
 **Deliverables**
-- [*] `src/oqe/cache.py`
-- [*] `src/oqe/run_trace.py` (stores tool calls + outputs summary)
+- [*] `src/voli/cache.py`
+- [*] `src/voli/run_trace.py` (stores tool calls + outputs summary)
 - [*] `docs/reproducibility.md`
 - [*] `docs/notebooks/part4_replay_and_trace_walkthrough.ipynb`
 
@@ -130,9 +130,9 @@ Also: make the repo and docs **friendly for learning agents/LLMs**—briefly exp
 - Decide how to handle missing bid/ask or wide spreads (filters).
 
 **Deliverables**
-- [*] `src/analytics/iv_metrics.py` (lives at `src/oqe/analytics/iv_metrics.py`)
-- [*] `src/analytics/skew.py` (lives at `src/oqe/analytics/skew.py`)
-- [*] `src/analytics/greeks.py` (lives at `src/oqe/analytics/greeks.py`)
+- [*] `src/analytics/iv_metrics.py` (lives at `src/voli/analytics/iv_metrics.py`)
+- [*] `src/analytics/skew.py` (lives at `src/voli/analytics/skew.py`)
+- [*] `src/analytics/greeks.py` (lives at `src/voli/analytics/greeks.py`)
 - [*] `docs/metrics_definitions.md`
 
 **Done when**
@@ -154,10 +154,10 @@ Also: make the repo and docs **friendly for learning agents/LLMs**—briefly exp
   - Require a “Numbers used” section
 
 **Deliverables**
-- [*] `src/agent/state.py` (lives at `src/oqe/agent/state.py`)
-- [*] `src/agent/planner.py` (lives at `src/oqe/agent/planner.py`)
-- [*] `src/agent/executor.py` (lives at `src/oqe/agent/executor.py`)
-- [*] `src/agent/writer.py` (lives at `src/oqe/agent/writer.py`)
+- [*] `src/agent/state.py` (lives at `src/voli/agent/state.py`)
+- [*] `src/agent/planner.py` (lives at `src/voli/agent/planner.py`)
+- [*] `src/agent/executor.py` (lives at `src/voli/agent/executor.py`)
+- [*] `src/agent/writer.py` (lives at `src/voli/agent/writer.py`)
 - [*] `docs/agent_flow.md`
 
 **Done when**
@@ -178,12 +178,12 @@ Also: make the repo and docs **friendly for learning agents/LLMs**—briefly exp
   - Facts section (raw values + timestamps)
 
 **Deliverables**
-- [*] `src/cli.py` (lives at `src/oqe/cli.py` + `src/oqe/cli_render.py`)
+- [*] `src/cli.py` (lives at `src/voli/cli.py` + `src/voli/cli_render.py`)
 - [*] `docs/usage.md`
 
 **Done when**
 - [*] You can run it end-to-end locally and understand any failure quickly.
-  (`poetry run oqe ask "<prompt>"` works for any v1 category; refusal path returns exit 3; Bloomberg-style ANSI theme with auto NO_COLOR detection; --json and --trace supported.)
+  (`poetry run voli ask "<prompt>"` works for any v1 category; refusal path returns exit 3; Bloomberg-style ANSI theme with auto NO_COLOR detection; --json and --trace supported.)
 
 ---
 
@@ -222,7 +222,7 @@ Also: make the repo and docs **friendly for learning agents/LLMs**—briefly exp
 - [*] `README.md` (polished landing page with quickstart, sample output, project structure)
 - [*] `config.example.yaml` (every supported key, documented inline)
 - [*] `docker/` (Dockerfile + docker-compose.yml + .devcontainer/devcontainer.json)
-- [*] Bonus: `src/oqe/config.py` (YAML loader with env-precedence), `src/oqe/logging.py` (themed/JSON structured logging)
+- [*] Bonus: `src/voli/config.py` (YAML loader with env-precedence), `src/voli/logging.py` (themed/JSON structured logging)
 - [*] Bonus: 27-page MkDocs Material doc site (`docs/`, `mkdocs.yml`)
 
 **Done when**
@@ -235,7 +235,94 @@ Also: make the repo and docs **friendly for learning agents/LLMs**—briefly exp
 ## Part 10 — Optional upgrades
 Pick one or two:
 - [ ] Simple web UI (FastAPI + minimal frontend)
-- [*] Plotting (IV term structure chart, skew chart, greeks bars, chain scatter; `oqe ask --plot PATH`, optional `matplotlib` extra)
-- [*] Multi-ticker batching (`oqe ask-many --tickers ...`, comparison table per category)
+- [*] Plotting (IV term structure chart, skew chart, greeks bars, chain scatter; `voli ask --plot PATH`, optional `matplotlib` extra)
+- [*] Multi-ticker batching (`voli ask-many --tickers ...`, comparison table per category)
 - [*] "Skeptic" sub-agent to sanity-check spreads, stale quotes, missing data (`--skeptic` flag, `[ SKEPTIC ]` block)
-- [*] Replay mode using stored traces (`oqe ask --trace` writes `<id>.response.json`; `oqe replay <id>` re-renders without a Polygon round-trip)
+- [*] Replay mode using stored traces (`voli ask --trace` writes `<id>.response.json`; `voli replay <id>` re-renders without a Polygon round-trip)
+
+
+
+
+evals:
+- are there more 'live' tests i can run after i've added my token where the test is something like: i make a       
+  direct call to polygon api to get some option related data, then i ask an llm (using my tool) to fetch similar   
+  data, and tehn have an llm grade to see if the llm result matches with direct api result? and repeat this test   
+  for like 30 other cases. does this type of test have a name? is it eval?                                         
+                                                                                                                   
+⏺ Yes — this is eval, and specifically LLM-as-judge eval (also called "model-graded eval" or "rubric-based eval"). 
+  It's the standard pattern for grading agentic / open-ended LLM outputs where strict string equality doesn't work.
+                                                                                                                   
+  What you're describing, broken down
+                                                                                                                   
+  There are three roles in the loop:                              
+
+  1. Reference / ground truth — fetched independently. In your case, calling Polygon directly with no LLM in the   
+  loop. Sometimes called the "oracle".
+  2. System under test (SUT) — your LLM agent answering the question via Voli tools.                                
+  3. Judge — a separate LLM call that compares the SUT's answer to the reference and emits a pass/fail + reasoning.
+                                                                                                                   
+  The aggregate metric is "pass rate" across N cases, often broken down by category. Industry-standard frameworks  
+  for this include Inspect (UK AISI), Promptfoo, Braintrust, LangSmith Evals, OpenAI Evals, and DeepEval.          
+                                                                                                                   
+  How it'd fit Voli                                                
+
+  You already have eval/run_eval.py that scores the rule-based agent against the synthetic registry with           
+  exact-match metrics. What you're asking for is a different axis on the same eval surface:
+                                                                                                                   
+  ┌──────────────────────┬──────────────────────────┬──────────────────────────────────────────────────┐           
+  │                      │ Rule-based agent (today) │                 LLM agent (new)                  │
+  ├──────────────────────┼──────────────────────────┼──────────────────────────────────────────────────┤           
+  │ Data source          │ Synthetic, deterministic │ Live Polygon                                     │
+  ├──────────────────────┼──────────────────────────┼──────────────────────────────────────────────────┤           
+  │ Grading              │ Exact metric match       │ LLM-as-judge rubric                              │           
+  ├──────────────────────┼──────────────────────────┼──────────────────────────────────────────────────┤           
+  │ Cost per run         │ ~0                       │ ~$0.50-$2.00 / 30 cases                          │           
+  ├──────────────────────┼──────────────────────────┼──────────────────────────────────────────────────┤           
+  │ Variance across runs │ None                     │ Some (LLM nondeterminism)                        │
+  ├──────────────────────┼──────────────────────────┼──────────────────────────────────────────────────┤           
+  │ What it catches      │ Code regressions         │ Behaviour drift, prompt regressions, model swaps │
+  └──────────────────────┴──────────────────────────┴──────────────────────────────────────────────────┘           
+                                                                  
+  So both eval styles complement each other — you keep the deterministic harness as the regression gate (every PR),
+   and you'd run the LLM eval less often (when changing the system prompt, tool descriptions, or model).
+                                                                                                                   
+  Concrete design for Voli                                         
+
+  A new eval/llm_run_eval.py that, for each row in eval/llm_prompts.jsonl:                                         
+  
+  1. Fetches reference data via direct Polygon calls (we'd reuse voli.tools.polygon_tools.* directly — no LLM).     
+  2. Runs the SUT via voli.llm.llm_ask against live Polygon.       
+  3. Asks the judge (a stronger model — defaulting to Claude Opus 4.7 or GPT-5) to grade with a rubric like:       
+  ▎ Given the reference data and the SUT's answer, did the answer correctly state every numeric value within       
+  reasonable rounding? Did it identify the right ATM strike / expiry / direction? Reply PASS or FAIL and one       
+  sentence of reasoning.                                                                                           
+  4. Aggregates pass rate, breaks down by category, surfaces failed cases with the judge's reasoning.              
+                                                                                                                   
+  eval/llm_prompts.jsonl shape:                                                                                    
+                                                                                                                   
+  {                                                                                                                
+    "id": "lc_001",                                               
+    "prompt": "What's NVDA's ATM IV for this Friday vs next?",
+    "category": "term_structure",                                                                                  
+    "reference_tool": "compute_atm_iv_term_structure",
+    "reference_args": {"ticker": "NVDA"},                                                                          
+    "rubric_hint": "Front IV, next IV, and ATM strike should match the reference within 0.5 vol points / $1."
+  }                                                                                                                
+                                                                  
+  Effort estimate                                                                                                  
+                                                                  
+  - ~150 LOC for the runner + judge prompt + rubric                                                                
+  - Reuses existing voli.llm.provider.make_provider for the judge call
+  - Reuses existing themed report renderer                                                                         
+  - Could ship in one commit                                      
+                                                                                                                   
+  My recommendation                                               
+                                                                                                                   
+  Start with 15-20 prompts across the 4 categories (chain, term structure, skew, greeks). Use Anthropic's Claude   
+  Sonnet 4.6 for the SUT (cheap, fast) and Claude Opus 4.7 for the judge (better at rubric grading). Run it
+  manually before merging behavioural changes; don't put it in CI (cost + variance would bake noise into the gate).
+                                                                  
+  Want me to build it? It's roughly the same scope as Stage A was. If yes, two quick choices:                      
+  
+  1. Provider for the judge: Claude Opus 4.7 (recommended), GPT-5, or whatever you prefer?                         
+  2. Initial prompt count: 15, 20, or 30?  

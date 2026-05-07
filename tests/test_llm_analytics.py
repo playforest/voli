@@ -1,7 +1,7 @@
 """Stage B: analytics-tool tests.
 
-The three analytics tools wrap `oqe.tools.polygon_tools.*` calls plus an
-`oqe.analytics.*` computation. To test them deterministically we monkey-
+The three analytics tools wrap `voli.tools.polygon_tools.*` calls plus an
+`voli.analytics.*` computation. To test them deterministically we monkey-
 patch the four polygon entrypoints with the synthetic registry's stubs.
 That way the analytics tool's internal fetch sees the same NVDA=100,
 SPY=500, IV=0.30/0.35 surface the eval harness uses, and we can assert
@@ -14,8 +14,8 @@ import json
 
 import pytest
 
-from oqe.eval.synth_market import make_registry
-from oqe.llm.analytics_tools import (
+from voli.eval.synth_market import make_registry
+from voli.llm.analytics_tools import (
     _tool_compute_atm_iv_term_structure,
     _tool_compute_skew_slope,
     _tool_get_atm_greeks,
@@ -49,7 +49,7 @@ def patched_polygon(monkeypatch):
         return dict(model)
 
     monkeypatch.setattr(
-        "oqe.llm.analytics_tools.get_underlying_snapshot",
+        "voli.llm.analytics_tools.get_underlying_snapshot",
         lambda inp: underlying(_to_dict(inp)),
     )
 
@@ -70,7 +70,7 @@ def patched_polygon(monkeypatch):
         contracts_resp = list_contracts(list_args)
         contracts = list(contracts_resp.contracts)
         if not contracts:
-            return [], {}, {}
+            return [], {}, {}, "polygon"
 
         symbols = [c.option_symbol for c in contracts]
         quotes_resp = quotes({"option_symbols": symbols})
@@ -79,9 +79,10 @@ def patched_polygon(monkeypatch):
             contracts,
             {q.option_symbol: q for q in quotes_resp.quotes},
             {g.option_symbol: g for g in greeks_resp.greeks},
+            "polygon",
         )
 
-    monkeypatch.setattr("oqe.llm.analytics_tools.get_option_chain_bulk", _fake_bulk)
+    monkeypatch.setattr("voli.llm.analytics_tools.get_option_chain_bulk", _fake_bulk)
     # ToolRegistry is frozen; expose the call log via a wrapper so tests
     # can assert on bulk-fetch counts.
     from types import SimpleNamespace

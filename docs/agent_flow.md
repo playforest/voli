@@ -23,15 +23,15 @@ prompt
 
 | Module | Responsibility |
 | --- | --- |
-| `oqe.agent.state` | `Intent`, `PlanStep`, `Plan`, `AgentState`, `AnswerResponse` dataclasses. |
-| `oqe.agent.planner` | Prompt -> `Intent` -> `Plan`. Uses regex/keyword rules. Categorizes prompts as one of: chain, term_structure, skew, greeks, not_supported. |
-| `oqe.agent.executor` | Runs plan steps via a `ToolRegistry`. Resolves late-bound inputs (e.g. quotes need the contract list). Calls analytics from `oqe.analytics.metrics_bundle`. |
-| `oqe.agent.writer` | Per-category renderer. Produces summary, table, facts. Enforces guardrails. |
+| `voli.agent.state` | `Intent`, `PlanStep`, `Plan`, `AgentState`, `AnswerResponse` dataclasses. |
+| `voli.agent.planner` | Prompt -> `Intent` -> `Plan`. Uses regex/keyword rules. Categorizes prompts as one of: chain, term_structure, skew, greeks, not_supported. |
+| `voli.agent.executor` | Runs plan steps via a `ToolRegistry`. Resolves late-bound inputs (e.g. quotes need the contract list). Calls analytics from `voli.analytics.metrics_bundle`. |
+| `voli.agent.writer` | Per-category renderer. Produces summary, table, facts. Enforces guardrails. |
 
 ## Tool registry
 
 `ToolRegistry` maps tool name -> callable. The default registry wires up the
-real Polygon-backed tools from `oqe.tools.polygon_tools`; tests inject stub
+real Polygon-backed tools from `voli.tools.polygon_tools`; tests inject stub
 callables that return synthetic objects matching the same attribute shape.
 This keeps the agent layer decoupled from network I/O.
 
@@ -53,14 +53,14 @@ The writer is the only stage that produces user-facing text. It enforces:
    emitting a misleading answer.
 2. **Facts section is mandatory.** Every supported response includes a
    `facts` dict listing the spot price (with timestamp + source), expiries
-   used, and the analytics flags from `oqe.analytics`.
+   used, and the analytics flags from `voli.analytics`.
 3. **Refusal shape.** Not-supported prompts return a labelled refusal plus
    1-3 suggested rewrites that map to supported v1 categories.
 
 ## Usage
 
 ```python
-from oqe.agent import answer_question
+from voli.agent import answer_question
 
 resp = answer_question("NVDA ATM IV this week vs next week.")
 print(resp.summary)
@@ -71,7 +71,7 @@ print(resp.facts)
 Tests can pass a stubbed registry:
 
 ```python
-from oqe.agent import answer_question, ToolRegistry
+from voli.agent import answer_question, ToolRegistry
 
 registry = ToolRegistry(tools={
     "get_underlying_snapshot": lambda inp: ...,

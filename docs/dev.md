@@ -80,12 +80,12 @@ git pccommit -m "your message"
 
 Tool results are cached in a SQLite database. Useful when debugging stale data, TTLs, or unexpected cache misses.
 
-**Default location:** `~/.oqe/cache.sqlite` (override with `OQE_CACHE_PATH`).
-**Test runs:** `.pytest_oqe_cache.sqlite` at the repo root, reset by `conftest.py` on every pytest run.
+**Default location:** `~/.voli/cache.sqlite` (override with `VOLI_CACHE_PATH`).
+**Test runs:** `.pytest_voli_cache.sqlite` at the repo root, reset by `conftest.py` on every pytest run.
 
 ### Schema
 
-Single table `cache_entries` (see `src/oqe/cache.py`):
+Single table `cache_entries` (see `src/voli/cache.py`):
 
 | column | type | meaning |
 |---|---|---|
@@ -104,11 +104,11 @@ Single table `cache_entries` (see `src/oqe/cache.py`):
 
 ```bash
 # count entries by tool
-sqlite3 -header -column ~/.oqe/cache.sqlite \
+sqlite3 -header -column ~/.voli/cache.sqlite \
   "SELECT tool, COUNT(*) AS n FROM cache_entries GROUP BY tool;"
 
 # list fresh entries with human-readable timestamps
-sqlite3 -header -column ~/.oqe/cache.sqlite \
+sqlite3 -header -column ~/.voli/cache.sqlite \
   "SELECT tool, asof,
           datetime(created_at,'unixepoch') AS created,
           ttl_seconds,
@@ -118,25 +118,25 @@ sqlite3 -header -column ~/.oqe/cache.sqlite \
    ORDER BY created_at DESC;"
 
 # show one entry's payload, pretty-printed
-sqlite3 ~/.oqe/cache.sqlite \
+sqlite3 ~/.voli/cache.sqlite \
   "SELECT response_json FROM cache_entries LIMIT 1;" \
   | python -m json.tool
 
 # inspect a specific tool's most recent entry
-sqlite3 -header -column ~/.oqe/cache.sqlite \
+sqlite3 -header -column ~/.voli/cache.sqlite \
   "SELECT key, asof, inputs_json, ttl_seconds
    FROM cache_entries
    WHERE tool='get_option_quotes'
    ORDER BY created_at DESC LIMIT 1;"
 
 # wipe the cache (no schema change)
-sqlite3 ~/.oqe/cache.sqlite "DELETE FROM cache_entries;"
+sqlite3 ~/.voli/cache.sqlite "DELETE FROM cache_entries;"
 ```
 
 ### Interactive REPL
 
 ```bash
-sqlite3 ~/.oqe/cache.sqlite
+sqlite3 ~/.voli/cache.sqlite
 ```
 
 Then inside the prompt:
@@ -149,4 +149,4 @@ SELECT tool, asof, ttl_seconds FROM cache_entries LIMIT 10;
 .quit
 ```
 
-> Note: never commit `~/.oqe/cache.sqlite` or `.pytest_oqe_cache.sqlite` — they're machine-local state, not source.
+> Note: never commit `~/.voli/cache.sqlite` or `.pytest_voli_cache.sqlite` — they're machine-local state, not source.

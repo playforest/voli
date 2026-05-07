@@ -11,9 +11,9 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime, timedelta
 
-from oqe.agent.skeptic import STALE_SNAPSHOT_MAX_AGE_MINUTES
-from oqe.llm.skeptic import review_llm_run
-from oqe.llm.types import ToolResult
+from voli.agent.skeptic import STALE_SNAPSHOT_MAX_AGE_MINUTES
+from voli.llm.skeptic import review_llm_run
+from voli.llm.types import ToolResult
 
 
 def _r(name: str, payload: dict) -> ToolResult:

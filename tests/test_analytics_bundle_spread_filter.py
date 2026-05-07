@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from oqe.analytics.metrics_bundle import compute_v1_metrics_bundle
+from voli.analytics.metrics_bundle import compute_v1_metrics_bundle
 
 
 @dataclass(frozen=True)

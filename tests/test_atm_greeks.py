@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from oqe.analytics.greeks import atm_greeks_for_expiry
+from voli.analytics.greeks import atm_greeks_for_expiry
 
 
 @dataclass(frozen=True)

@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import pytest
 
-from oqe.agent.planner import _build_plan, parse_intent, plan
-from oqe.agent.state import AgentState
+from voli.agent.planner import _build_plan, parse_intent, plan
+from voli.agent.state import AgentState
 
 
 @pytest.mark.parametrize(

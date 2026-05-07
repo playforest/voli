@@ -123,4 +123,4 @@ than returning a violating `AnswerResponse`.
 ## See also
 
 - [Orchestrator flow](orchestrator.md) — where the writer fits.
-- [v1 contract doc](https://github.com/playforest/options-query-agent/blob/main/docs/v1_contract.md) — the formal guarantees.
+- [v1 contract doc](https://github.com/playforest/voli/blob/main/docs/v1_contract.md) — the formal guarantees.

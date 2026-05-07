@@ -7,12 +7,12 @@ term-structure / skew / greeks paths).
 ## "Show NVDA options expiring this Friday"
 
 ```bash
-poetry run oqe ask "Show NVDA options expiring this Friday"
+poetry run voli ask "Show NVDA options expiring this Friday"
 ```
 
 ```text
 ================================================================================
- OQE | TICKER: NVDA | CATEGORY: CHAIN | OK
+ VOLI | TICKER: NVDA | CATEGORY: CHAIN | OK
 ================================================================================
 [ SUMMARY ]
 NVDA chain slice: 22 contracts returned. Spot 199.8450.
@@ -40,13 +40,13 @@ The planner extracts the ISO date and `calls`. Strike-window words
 broader, and you can filter client-side.
 
 ```bash
-poetry run oqe ask "List NVDA calls for 2026-05-09 between 90 and 110"
+poetry run voli ask "List NVDA calls for 2026-05-09 between 90 and 110"
 ```
 
 ## Programmatic chain access
 
 ```python
-from oqe.agent import answer_question
+from voli.agent import answer_question
 
 resp = answer_question("Show NVDA options expiring this Friday")
 for row in resp.table["rows"][:5]:
@@ -70,7 +70,7 @@ The most generic chain query — both rights, all listed expiries (subject to
 the 250-per-page Polygon limit per request).
 
 ```bash
-poetry run oqe ask "Show TSLA chain"
+poetry run voli ask "Show TSLA chain"
 ```
 
 ## Filtering for liquid contracts
@@ -78,8 +78,8 @@ poetry run oqe ask "Show TSLA chain"
 If you want to drop wide spreads, work at the analytics or quote layer:
 
 ```python
-from oqe.analytics.iv_metrics import is_quote_spread_too_wide
-from oqe.agent import answer_question
+from voli.analytics.iv_metrics import is_quote_spread_too_wide
+from voli.agent import answer_question
 
 resp = answer_question("Show NVDA options expiring this Friday")
 liquid = []

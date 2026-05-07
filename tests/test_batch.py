@@ -12,11 +12,11 @@ from __future__ import annotations
 import io
 import json
 
-from oqe.agent.batch import answer_many, comparison_rows
-from oqe.agent.executor import ToolRegistry
-from oqe.cli import main
-from oqe.cli_render import render_batch, render_batch_json
-from oqe.eval.synth_market import make_registry
+from voli.agent.batch import answer_many, comparison_rows
+from voli.agent.executor import ToolRegistry
+from voli.cli import main
+from voli.cli_render import render_batch, render_batch_json
+from voli.eval.synth_market import make_registry
 
 
 def test_answer_many_runs_one_per_ticker_in_order() -> None:
@@ -103,7 +103,7 @@ def test_render_batch_text_mode_has_comparison_table() -> None:
         registry=make_registry(),
     )
     text = render_batch(batch, color=False)
-    assert "OQE BATCH" in text
+    assert "VOLI BATCH" in text
     assert "TERM STRUCTURE COMPARISON" in text
     assert "NVDA" in text and "SPY" in text and "QQQ" in text
     assert "TICKER" in text

@@ -6,12 +6,12 @@ metric; risk reversal (25Δ put IV − 25Δ call IV) is on the roadmap.
 ## "Show NVDA IV skew for next Friday"
 
 ```bash
-poetry run oqe ask "Show NVDA IV skew for next Friday"
+poetry run voli ask "Show NVDA IV skew for next Friday"
 ```
 
 ```text
 ================================================================================
- OQE | TICKER: NVDA | CATEGORY: SKEW | OK
+ VOLI | TICKER: NVDA | CATEGORY: SKEW | OK
 ================================================================================
 [ SUMMARY ]
 NVDA skew slope: OLS slope -0.0021 (IV vs strike) at front expiry 2026-05-16.
@@ -46,13 +46,13 @@ strike grid (calls only by default).
 ## "What's the skew slope across strikes for TSLA next week?"
 
 ```bash
-poetry run oqe ask "What's the skew slope across strikes for TSLA next week?"
+poetry run voli ask "What's the skew slope across strikes for TSLA next week?"
 ```
 
 ## Programmatic batch
 
 ```python
-from oqe.agent import answer_question
+from voli.agent import answer_question
 
 for ticker in ["SPY", "QQQ", "NVDA", "TSLA"]:
     resp = answer_question(f"Show {ticker} IV skew next Friday")
@@ -76,8 +76,8 @@ The CLI uses defaults; if you call the analytics directly you can drop
 illiquid strikes via `max_relative_spread`:
 
 ```python
-from oqe.analytics.skew import skew_slope
-from oqe.analytics.metrics_bundle import compute_v1_metrics_bundle
+from voli.analytics.skew import skew_slope
+from voli.analytics.metrics_bundle import compute_v1_metrics_bundle
 
 bundle = compute_v1_metrics_bundle(
     spot=199.84,

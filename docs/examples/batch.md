@@ -1,6 +1,6 @@
 # Multi-ticker batching
 
-`oqe ask-many` runs the same prompt against a list of tickers and renders a
+`voli ask-many` runs the same prompt against a list of tickers and renders a
 single comparison table. Each ticker goes through the regular
 planner → executor → writer pipeline; the renderer just lays them out
 side-by-side.
@@ -8,13 +8,13 @@ side-by-side.
 ## "ATM IV across a watchlist"
 
 ```bash
-poetry run oqe ask-many --tickers NVDA,SPY,QQQ,AAPL,TSLA \
+poetry run voli ask-many --tickers NVDA,SPY,QQQ,AAPL,TSLA \
   "ATM IV this week vs next week"
 ```
 
 ```text
 ================================================================================
- OQE BATCH | CATEGORY: TERM_STRUCTURE | TICKERS: 5 | OK: 5
+ VOLI BATCH | CATEGORY: TERM_STRUCTURE | TICKERS: 5 | OK: 5
 ================================================================================
 [ PROMPT ]
 ATM IV this week vs next week
@@ -58,19 +58,19 @@ The renderer picks columns based on the dominant category across rows.
 === "Skew comparison"
 
     ```bash
-    poetry run oqe ask-many --tickers SPY,QQQ,IWM "Show IV skew next Friday"
+    poetry run voli ask-many --tickers SPY,QQQ,IWM "Show IV skew next Friday"
     ```
 
 === "Chain footprints"
 
     ```bash
-    poetry run oqe ask-many --tickers NVDA,TSLA,AAPL "Show options for 2026-05-16"
+    poetry run voli ask-many --tickers NVDA,TSLA,AAPL "Show options for 2026-05-16"
     ```
 
 === "JSON output"
 
     ```bash
-    poetry run oqe ask-many --json --tickers NVDA,SPY,QQQ \
+    poetry run voli ask-many --json --tickers NVDA,SPY,QQQ \
       "ATM IV this week vs next week"
     ```
 
@@ -94,7 +94,7 @@ The renderer picks columns based on the dominant category across rows.
 === "With skeptic"
 
     ```bash
-    poetry run oqe ask-many --skeptic --tickers NVDA,SPY \
+    poetry run voli ask-many --skeptic --tickers NVDA,SPY \
       "ATM IV this week vs next week"
     ```
 
@@ -121,7 +121,7 @@ Exit code is `0` when every row succeeded, `3` otherwise.
 ## Programmatic batch
 
 ```python
-from oqe.agent.batch import answer_many, comparison_rows
+from voli.agent.batch import answer_many, comparison_rows
 
 batch = answer_many(
     "ATM IV this week vs next week",
@@ -139,7 +139,7 @@ expect ~1-2 seconds per ticker against live Polygon (5-6 paginated HTTP
 requests each).
 
 A future opt-in threaded variant is possible — every per-ticker run is
-isolated. Track the [project roadmap](https://github.com/playforest/options-query-agent/blob/main/todo.md).
+isolated. Track the [project roadmap](https://github.com/playforest/voli/blob/main/todo.md).
 
 ## See also
 

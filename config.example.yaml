@@ -1,18 +1,18 @@
-# Options Query Engine — example config.
+# Voli — example config.
 #
 # Copy to `config.yaml` (gitignored) and uncomment the keys you want.
 #
-# Lookup order: $OQE_CONFIG -> ./config.yaml -> ~/.oqe/config.yaml
+# Lookup order: $VOLI_CONFIG -> ./config.yaml -> ~/.voli/config.yaml
 # Process env vars set BEFORE Python starts always override these values
-# (use `OQE_CONFIG=path` to point at an alternate file).
+# (use `VOLI_CONFIG=path` to point at an alternate file).
 
 # ----- caching ----------------------------------------------------------------
 
-# SQLite cache file. Default: ~/.oqe/cache.sqlite
-# cache_path: ~/.oqe/cache.sqlite
+# SQLite cache file. Default: ~/.voli/cache.sqlite
+# cache_path: ~/.voli/cache.sqlite
 
-# Run-trace JSONL directory. Default: ~/.oqe/traces/
-# trace_dir: ~/.oqe/traces
+# Run-trace JSONL directory. Default: ~/.voli/traces/
+# trace_dir: ~/.voli/traces
 
 # ----- CLI presentation -------------------------------------------------------
 
@@ -21,7 +21,7 @@
 # default_theme: bloomberg
 
 # Where the --cycle-theme cursor is persisted.
-# theme_cursor_path: ~/.oqe/theme_cursor
+# theme_cursor_path: ~/.voli/theme_cursor
 
 # ----- logging ----------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 """Theme palette tests.
 
 Covers the 10 bundled palettes, the --theme / --cycle-theme flags, the
-OQE_THEME env var, and the `oqe themes list / preview` subcommands.
+VOLI_THEME env var, and the `voli themes list / preview` subcommands.
 
 These tests never call render with an `AnswerResponse` produced by the
 real agent - we either build small synthetic responses or use the CLI's
@@ -14,9 +14,9 @@ import io
 
 import pytest
 
-from oqe.agent.state import AnswerResponse
-from oqe.cli import main
-from oqe.cli_render import (
+from voli.agent.state import AnswerResponse
+from voli.cli import main
+from voli.cli_render import (
     DEFAULT_THEME,
     ESC,
     THEMES,
@@ -75,17 +75,17 @@ def test_each_palette_has_distinct_primary_colour() -> None:
 
 
 def test_resolve_theme_falls_back_to_env(monkeypatch) -> None:
-    monkeypatch.setenv("OQE_THEME", "matrix")
+    monkeypatch.setenv("VOLI_THEME", "matrix")
     assert resolve_theme_name(None) == "matrix"
 
 
 def test_resolve_theme_explicit_overrides_env(monkeypatch) -> None:
-    monkeypatch.setenv("OQE_THEME", "matrix")
+    monkeypatch.setenv("VOLI_THEME", "matrix")
     assert resolve_theme_name("dracula") == "dracula"
 
 
 def test_resolve_theme_default_when_unset(monkeypatch) -> None:
-    monkeypatch.delenv("OQE_THEME", raising=False)
+    monkeypatch.delenv("VOLI_THEME", raising=False)
     assert resolve_theme_name(None) == DEFAULT_THEME
 
 
@@ -149,7 +149,7 @@ def test_two_themes_produce_visibly_different_output() -> None:
 
 def test_cycle_advances_through_all_themes(tmp_path, monkeypatch) -> None:
     cursor = tmp_path / "theme_cursor"
-    monkeypatch.setenv("OQE_THEME_CURSOR", str(cursor))
+    monkeypatch.setenv("VOLI_THEME_CURSOR", str(cursor))
     seen = [cycle_next_theme() for _ in range(len(THEMES))]
     assert seen == list(THEMES.keys()), seen
     # Cursor wraps back to the first theme on the next call.
@@ -158,7 +158,7 @@ def test_cycle_advances_through_all_themes(tmp_path, monkeypatch) -> None:
 
 def test_cycle_persists_state_across_runs(tmp_path, monkeypatch) -> None:
     cursor = tmp_path / "theme_cursor"
-    monkeypatch.setenv("OQE_THEME_CURSOR", str(cursor))
+    monkeypatch.setenv("VOLI_THEME_CURSOR", str(cursor))
 
     first = cycle_next_theme()
     # Simulate a second process: file has been written, cursor reads from it.
@@ -219,10 +219,10 @@ def test_ask_with_unknown_theme_argparse_rejects() -> None:
 
 def test_ask_cycle_theme_advances_cursor(tmp_path, monkeypatch) -> None:
     cursor = tmp_path / "theme_cursor"
-    monkeypatch.setenv("OQE_THEME_CURSOR", str(cursor))
+    monkeypatch.setenv("VOLI_THEME_CURSOR", str(cursor))
 
     # Use a stub registry - just need ask to reach _selected_theme().
-    from oqe.agent.executor import ToolRegistry
+    from voli.agent.executor import ToolRegistry
 
     bad = ToolRegistry(
         tools={

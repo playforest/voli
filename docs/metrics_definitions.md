@@ -1,6 +1,6 @@
 # Part 5 — Metrics definitions (v1)
 
-This document defines the **exact**, deterministic rules used by `oqe.analytics`.
+This document defines the **exact**, deterministic rules used by `voli.analytics`.
 
 ## Conventions
 

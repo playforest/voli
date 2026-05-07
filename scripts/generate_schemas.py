@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from oqe import tool_schemas as ts
+from voli import tool_schemas as ts
 
 OUT = Path("schemas/tools.v1.json")
 

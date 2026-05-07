@@ -1,6 +1,6 @@
 # Plotting
 
-`oqe ask --plot PATH` renders a category-specific PNG chart alongside the
+`voli ask --plot PATH` renders a category-specific PNG chart alongside the
 themed text answer. Charts use the Bloomberg-ish palette (orange primary,
 amber accents, dark background, dim gridlines) so they look like the CLI
 output.
@@ -22,7 +22,7 @@ command — the rest of the CLI is unaffected.
 === "Term structure"
 
     ```bash
-    poetry run oqe ask --plot /tmp/term.png "NVDA ATM IV this week vs next week"
+    poetry run voli ask --plot /tmp/term.png "NVDA ATM IV this week vs next week"
     ```
 
     Saves a line chart of expiry → ATM IV with each point labelled. Output
@@ -36,7 +36,7 @@ command — the rest of the CLI is unaffected.
 === "Skew"
 
     ```bash
-    poetry run oqe ask --plot /tmp/skew.png "Show NVDA IV skew next Friday"
+    poetry run voli ask --plot /tmp/skew.png "Show NVDA IV skew next Friday"
     ```
 
     Plots the OLS-fit slope through the ATM strike, with spot + ATM markers
@@ -45,7 +45,7 @@ command — the rest of the CLI is unaffected.
 === "Greeks"
 
     ```bash
-    poetry run oqe ask --plot /tmp/greeks.png "Show ATM greeks for NVDA"
+    poetry run voli ask --plot /tmp/greeks.png "Show ATM greeks for NVDA"
     ```
 
     Bar chart of delta / gamma / theta / vega — green bars for non-negative
@@ -54,7 +54,7 @@ command — the rest of the CLI is unaffected.
 === "Chain"
 
     ```bash
-    poetry run oqe ask --plot /tmp/chain.png "Show NVDA options for 2026-05-16"
+    poetry run voli ask --plot /tmp/chain.png "Show NVDA options for 2026-05-16"
     ```
 
     Scatter of strike → mid for calls + puts, with spot marked as a vertical
@@ -63,8 +63,8 @@ command — the rest of the CLI is unaffected.
 ## Programmatic
 
 ```python
-from oqe.agent import answer_question
-from oqe.plot import plot_response
+from voli.agent import answer_question
+from voli.plot import plot_response
 
 resp = answer_question("NVDA ATM IV this week vs next week")
 saved = plot_response(resp, "ts.png")
@@ -82,7 +82,7 @@ print(f"chart: {saved}")
 PNG charts always use the Bloomberg palette regardless of the CLI `--theme`
 flag — the reasoning is that a saved chart is meant to be shareable, and a
 themed terminal palette doesn't translate well to a static image. If you
-want a different palette in PNGs, fork `oqe.plot` and tweak the colour
+want a different palette in PNGs, fork `voli.plot` and tweak the colour
 constants at the top of the module.
 
 ## Failure handling

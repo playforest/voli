@@ -1,11 +1,11 @@
 # Concepts
 
-A short tour of what OQE does, what it refuses, and the few terms used
+A short tour of what Voli does, what it refuses, and the few terms used
 across the rest of these docs.
 
 ## What it answers (v1)
 
-OQE classifies every prompt into one of four supported categories or one
+Voli classifies every prompt into one of four supported categories or one
 refusal bucket.
 
 | Category | Example | Output table |
@@ -52,7 +52,7 @@ flowchart LR
 - **Executor** — runs each `PlanStep` against a `ToolRegistry` (Polygon in
   prod; synthetic in tests). Resolves late-bound inputs (e.g. quotes need
   the contracts list).
-- **Analytics** — pure functions in `oqe.analytics` compute metrics
+- **Analytics** — pure functions in `voli.analytics` compute metrics
   (term structure, skew slope, ATM greeks).
 - **Writer** — renders summary + table + Facts. Enforces the
   no-invented-numbers guardrail.
@@ -91,7 +91,7 @@ synthetic registry (default in tests + `eval/run_eval.py`).
 | **Mid** | `(bid + ask) / 2` when both are available; otherwise `last`; otherwise `null`. |
 | **Skew slope** | OLS slope of IV vs strike across the front expiry. |
 | **Refusal rewrite** | A `Supported (v1)` prompt the agent suggests after refusing the original. |
-| **Trace ID** | Unique ID for one CLI invocation; appears at the bottom of the output and in `~/.oqe/traces/<id>.jsonl` when `--trace` is set. |
+| **Trace ID** | Unique ID for one CLI invocation; appears at the bottom of the output and in `~/.voli/traces/<id>.jsonl` when `--trace` is set. |
 
 ## Next
 

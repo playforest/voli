@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from oqe.eval.runner import default_dataset_path, evaluate_case, load_cases
+from voli.eval.runner import default_dataset_path, evaluate_case, load_cases
 
 DATASET = default_dataset_path()
 

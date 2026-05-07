@@ -1,18 +1,18 @@
 # Your first query
 
-The CLI's main job is `oqe ask "..."`. This walkthrough sends a real
+The CLI's main job is `voli ask "..."`. This walkthrough sends a real
 question, explains every part of the output, and shows the JSON equivalent
 for scripting.
 
 ## Run it
 
 ```bash
-poetry run oqe ask "NVDA ATM IV this week vs next week"
+poetry run voli ask "NVDA ATM IV this week vs next week"
 ```
 
 ```text
 ================================================================================
- OQE | TICKER: NVDA | CATEGORY: TERM_STRUCTURE | OK
+ VOLI | TICKER: NVDA | CATEGORY: TERM_STRUCTURE | OK
 ================================================================================
 [ SUMMARY ]
 NVDA ATM IV term structure: front IV 0.3318 vs next IV 0.3457 at strike 200.0
@@ -60,13 +60,13 @@ FLAGS         (none)
 === "Themed text (default)"
 
     ```bash
-    poetry run oqe ask "NVDA ATM IV this week vs next week"
+    poetry run voli ask "NVDA ATM IV this week vs next week"
     ```
 
 === "JSON for scripting"
 
     ```bash
-    poetry run oqe ask --json "NVDA ATM IV this week vs next week"
+    poetry run voli ask --json "NVDA ATM IV this week vs next week"
     ```
 
     ```json
@@ -95,13 +95,13 @@ FLAGS         (none)
 === "Different theme"
 
     ```bash
-    poetry run oqe ask --theme matrix "NVDA ATM IV this week vs next week"
+    poetry run voli ask --theme matrix "NVDA ATM IV this week vs next week"
     ```
 
 === "Pipe-friendly"
 
     ```bash
-    poetry run oqe ask "NVDA ATM IV this week vs next week" | head -20
+    poetry run voli ask "NVDA ATM IV this week vs next week" | head -20
     ```
 
     Colour auto-disables when stdout isn't a TTY.
@@ -109,7 +109,7 @@ FLAGS         (none)
 ## Same query in Python
 
 ```python
-from oqe.agent import answer_question
+from voli.agent import answer_question
 
 resp = answer_question("NVDA ATM IV this week vs next week")
 print(f"Front IV: {resp.facts['front_iv']:.4f}")
@@ -135,7 +135,7 @@ Diff    : +0.0139
 Useful in shell scripts:
 
 ```bash
-if poetry run oqe ask --json "NVDA ATM IV this week" > /tmp/answer.json; then
+if poetry run voli ask --json "NVDA ATM IV this week" > /tmp/answer.json; then
   jq '.facts.front_iv' /tmp/answer.json
 else
   echo "ask failed: $?"

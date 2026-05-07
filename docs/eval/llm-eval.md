@@ -29,7 +29,7 @@ For each row in `eval/llm_prompts.jsonl`:
 ``` mermaid
 flowchart LR
     P[user prompt] --> A[reference fetch<br/>direct analytics call]
-    P --> B[SUT<br/>oqe.llm.llm_ask]
+    P --> B[SUT<br/>voli.llm.llm_ask]
     A --> J[judge LLM<br/>Claude Opus 4.7]
     B --> J
     J --> V{VERDICT<br/>PASS / FAIL}
@@ -38,9 +38,9 @@ flowchart LR
 1. **Reference** — call `compute_atm_iv_term_structure` /
    `compute_skew_slope` / `get_atm_greeks` directly (no LLM in the
    loop). Returns the ground-truth JSON.
-2. **System Under Test (SUT)** — run `oqe.llm.llm_ask(prompt)` with
+2. **System Under Test (SUT)** — run `voli.llm.llm_ask(prompt)` with
    the default Claude Sonnet 4.6 (or whatever you set) driving the
-   seven OQE tools. Capture the answer text.
+   seven Voli tools. Capture the answer text.
 3. **Judge** — give a stronger model (default Claude Opus 4.7) the
    prompt + reference + SUT answer + per-row tolerance hint, ask for
    `VERDICT: PASS` or `VERDICT: FAIL` with a one-sentence reason.
@@ -94,7 +94,7 @@ Per-case payloads include `verdict`, `reasoning`, `tool_calls`,
 
 ```text
 ================================================================================
- OQE LLM EVAL | 30 cases | 27 pass | 2 fail | 1 error
+ VOLI LLM EVAL | 30 cases | 27 pass | 2 fail | 1 error
 ================================================================================
 [ RESULTS ]
 PASS  ts_001    term_structure    4.2s  What's NVDA's ATM IV for this Friday vs ...

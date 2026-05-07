@@ -1,6 +1,6 @@
 """End-to-end CLI tests.
 
-We invoke `oqe.cli.main` directly with a stubbed ToolRegistry so the test
+We invoke `voli.cli.main` directly with a stubbed ToolRegistry so the test
 never touches Polygon. Output is captured via pytest's capsys.
 """
 
@@ -12,8 +12,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import Any
 
-from oqe.agent.executor import ToolRegistry
-from oqe.cli import main
+from voli.agent.executor import ToolRegistry
+from voli.cli import main
 
 # ---- minimal stub market (one ticker, two expiries, three strikes) ---------
 
@@ -133,7 +133,7 @@ def test_ask_text_mode_renders_bloomberg_layout() -> None:
     text = out.getvalue()
     assert rc == 0
     # Bloomberg-style sections present.
-    assert "OQE" in text
+    assert "Voli" in text
     assert "CATEGORY: TERM_STRUCTURE" in text
     assert "[ SUMMARY ]" in text
     assert "[ TERM STRUCTURE ]" in text
@@ -225,7 +225,7 @@ def test_ask_renders_upstream_error_in_bloomberg_layout() -> None:
     )
     text = out.getvalue()
     assert rc == 4
-    assert "OQE | ERROR: RuntimeError" in text
+    assert "VOLI | ERROR: RuntimeError" in text
     assert "Missing POLYGON_API_KEY" in text
 
 

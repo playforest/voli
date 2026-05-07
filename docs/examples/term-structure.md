@@ -9,12 +9,12 @@ The canonical use case.
 === "CLI"
 
     ```bash
-    poetry run oqe ask "NVDA ATM IV this week vs next week"
+    poetry run voli ask "NVDA ATM IV this week vs next week"
     ```
 
     ```text
     ================================================================================
-     OQE | TICKER: NVDA | CATEGORY: TERM_STRUCTURE | OK
+     VOLI | TICKER: NVDA | CATEGORY: TERM_STRUCTURE | OK
     ================================================================================
     [ SUMMARY ]
     NVDA ATM IV term structure: front IV 0.3318 vs next IV 0.3457 at strike 200.0
@@ -41,8 +41,8 @@ The canonical use case.
 === "Python"
 
     ```python
-    from oqe.agent import answer_function as _  # placeholder
-    from oqe.agent import answer_question
+    from voli.agent import answer_function as _  # placeholder
+    from voli.agent import answer_question
 
     resp = answer_question("NVDA ATM IV this week vs next week")
     print(f"diff = {resp.facts['next_iv'] - resp.facts['front_iv']:+.4f}")
@@ -51,7 +51,7 @@ The canonical use case.
 === "JSON"
 
     ```bash
-    poetry run oqe ask --json "NVDA ATM IV this week vs next week" \
+    poetry run voli ask --json "NVDA ATM IV this week vs next week" \
       | jq '{front: .facts.front_iv, next: .facts.next_iv,
              diff: (.facts.next_iv - .facts.front_iv)}'
     ```
@@ -69,7 +69,7 @@ The canonical use case.
 Same shape, different ticker. The planner extracts SPY from the prompt.
 
 ```bash
-poetry run oqe ask "Compare ATM IV for SPY front week vs next week"
+poetry run voli ask "Compare ATM IV for SPY front week vs next week"
 ```
 
 ## "Show IV term structure (ATM) for QQQ"
@@ -78,7 +78,7 @@ If you don't specify a comparison, the agent still emits the front-vs-next
 table — that's the v1 default.
 
 ```bash
-poetry run oqe ask "Show IV term structure (ATM) for QQQ"
+poetry run voli ask "Show IV term structure (ATM) for QQQ"
 ```
 
 ## Programmatic batch
@@ -86,7 +86,7 @@ poetry run oqe ask "Show IV term structure (ATM) for QQQ"
 Compare front vs next IV across multiple tickers in one script:
 
 ```python
-from oqe.agent import answer_question
+from voli.agent import answer_question
 
 tickers = ["NVDA", "SPY", "QQQ", "AAPL", "TSLA"]
 print(f"{'TICKER':6}  {'FRONT IV':>9}  {'NEXT IV':>9}  {'DIFF':>9}")
@@ -124,7 +124,7 @@ TSLA      0.4515     0.4620    +0.0105
 ## Common follow-ups
 
 - _"Which expiry has the highest ATM IV for NVDA in the next month?"_ → see
-  [requirements.md](https://github.com/playforest/options-query-agent/blob/main/docs/requirements.md) for the v1 scope on multi-expiry term structure.
+  [requirements.md](https://github.com/playforest/voli/blob/main/docs/requirements.md) for the v1 scope on multi-expiry term structure.
 - Term structure on **puts** instead of calls: include "puts" in the prompt.
 
 ## See also

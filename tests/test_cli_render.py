@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import json
 
-from oqe.agent.state import AnswerResponse
-from oqe.cli_render import ESC, render_json, render_response
+from voli.agent.state import AnswerResponse
+from voli.cli_render import ESC, render_json, render_response
 
 
 def _resp(**overrides) -> AnswerResponse:
@@ -58,7 +58,7 @@ def test_no_color_mode_is_pure_ascii() -> None:
 
 def test_status_bar_includes_category_and_ok_marker() -> None:
     text = render_response(_resp(), color=False)
-    assert "OQE" in text
+    assert "Voli" in text
     assert "CATEGORY: TERM_STRUCTURE" in text
     assert "OK" in text
 

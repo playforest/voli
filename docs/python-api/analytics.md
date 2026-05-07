@@ -1,27 +1,27 @@
 # Analytics
 
-Pure-function metric calculators in `oqe.analytics`. The agent calls these
+Pure-function metric calculators in `voli.analytics`. The agent calls these
 internally; you can also call them directly if you have your own chain
 snapshots.
 
 ## Modules
 
 ```python
-from oqe.analytics.iv_metrics import (
+from voli.analytics.iv_metrics import (
     atm_iv_term_structure,
     select_atm_strike,
     mid_price,
     relative_spread,
 )
-from oqe.analytics.skew import skew_slope, strike_iv_pairs, delta_skew
-from oqe.analytics.greeks import atm_greeks_for_expiry
-from oqe.analytics.metrics_bundle import compute_v1_metrics_bundle
+from voli.analytics.skew import skew_slope, strike_iv_pairs, delta_skew
+from voli.analytics.greeks import atm_greeks_for_expiry
+from voli.analytics.metrics_bundle import compute_v1_metrics_bundle
 ```
 
 ## ATM IV term structure
 
 ```python
-from oqe.analytics.iv_metrics import atm_iv_term_structure
+from voli.analytics.iv_metrics import atm_iv_term_structure
 
 result = atm_iv_term_structure(
     spot=100.0,
@@ -39,7 +39,7 @@ Returns a `TermStructureResult` with `.atm_strike`, `.front_expiry`,
 ## Skew slope
 
 ```python
-from oqe.analytics.skew import skew_slope
+from voli.analytics.skew import skew_slope
 from datetime import date
 
 slope = skew_slope(
@@ -73,7 +73,7 @@ slope = skew_slope(
 ## ATM greeks
 
 ```python
-from oqe.analytics.greeks import atm_greeks_for_expiry
+from voli.analytics.greeks import atm_greeks_for_expiry
 
 snap = atm_greeks_for_expiry(
     spot=100.0,
@@ -91,7 +91,7 @@ matching contract or no greeks available.
 ## One-shot bundle
 
 ```python
-from oqe.analytics.metrics_bundle import compute_v1_metrics_bundle
+from voli.analytics.metrics_bundle import compute_v1_metrics_bundle
 
 bundle = compute_v1_metrics_bundle(
     spot=100.0,
@@ -113,7 +113,7 @@ in mind and want one round trip through the data.
 ## ATM strike selection
 
 ```python
-from oqe.analytics.iv_metrics import select_atm_strike
+from voli.analytics.iv_metrics import select_atm_strike
 
 strike = select_atm_strike(
     spot=102.5,
@@ -129,7 +129,7 @@ break by configurable rule. Default `"lower"`.
 ## Mid price
 
 ```python
-from oqe.analytics.iv_metrics import mid_price
+from voli.analytics.iv_metrics import mid_price
 
 mid = mid_price(bid=10.0, ask=10.5, last=10.2)
 print(mid.value, mid.flags)             # 10.25, ()
@@ -147,5 +147,5 @@ to the user. Keeps the agent's "no invented numbers" rule auditable.
 
 ## See also
 
-- [`docs/metrics_definitions.md`](https://github.com/playforest/options-query-agent/blob/main/docs/metrics_definitions.md) for the formal definitions.
-- [`oqe.analytics.protocols`](https://github.com/playforest/options-query-agent/blob/main/src/oqe/analytics/protocols.py) for the duck-typed interfaces these functions accept.
+- [`docs/metrics_definitions.md`](https://github.com/playforest/voli/blob/main/docs/metrics_definitions.md) for the formal definitions.
+- [`voli.analytics.protocols`](https://github.com/playforest/voli/blob/main/src/voli/analytics/protocols.py) for the duck-typed interfaces these functions accept.

@@ -4,7 +4,7 @@ hide:
   - navigation
 ---
 
-# Options Query Engine
+# Voli
 
 A Python library and CLI that answers natural-language questions about an
 equity option chain — chain slices, IV term structure, skew, basic greeks —
@@ -37,7 +37,7 @@ Same tools, four entry points: rule-based CLI, LLM-driven CLI, MCP server
 
     ---
 
-    Plug in Claude or GPT and the LLM drives the same OQE tools, streaming
+    Plug in Claude or GPT and the LLM drives the same Voli tools, streaming
     its tool calls as it works.
 
     [:octicons-arrow-right-24: LLM-driven agent](examples/llm-ask.md)
@@ -47,7 +47,7 @@ Same tools, four entry points: rule-based CLI, LLM-driven CLI, MCP server
     ---
 
     Connect to Claude Desktop or claude.ai web in two minutes — Claude can
-    call your local OQE tools mid-conversation.
+    call your local Voli tools mid-conversation.
 
     [:octicons-arrow-right-24: MCP server](examples/mcp.md)
 
@@ -77,7 +77,7 @@ Same tools, four entry points: rule-based CLI, LLM-driven CLI, MCP server
     ```bash
     poetry install
     cp .env.example .env  # edit POLYGON_API_KEY=pk_...
-    poetry run oqe ask "NVDA ATM IV this week vs next week"
+    poetry run voli ask "NVDA ATM IV this week vs next week"
     ```
 
 === "LLM-driven CLI"
@@ -85,7 +85,7 @@ Same tools, four entry points: rule-based CLI, LLM-driven CLI, MCP server
     ```bash
     poetry install -E llm   # or -E anthropic / -E openai
     # add ANTHROPIC_API_KEY or OPENAI_API_KEY to .env
-    poetry run oqe llm-ask "How does NVDA's IV term structure compare to QQQ's?"
+    poetry run voli llm-ask "How does NVDA's IV term structure compare to QQQ's?"
     ```
 
 === "MCP server (Claude Desktop)"
@@ -93,14 +93,14 @@ Same tools, four entry points: rule-based CLI, LLM-driven CLI, MCP server
     ```bash
     poetry install -E mcp
     # then point Claude Desktop's claude_desktop_config.json at:
-    #   command: poetry, args: ["run", "oqe", "mcp-serve"]
+    #   command: poetry, args: ["run", "voli", "mcp-serve"]
     # see the MCP page below for the full snippet.
     ```
 
 === "Python"
 
     ```python
-    from oqe.agent import answer_question
+    from voli.agent import answer_question
 
     resp = answer_question("NVDA ATM IV this week vs next week")
     print(resp.summary)
@@ -111,7 +111,7 @@ Same tools, four entry points: rule-based CLI, LLM-driven CLI, MCP server
 
     ```bash
     docker compose -f docker/docker-compose.yml run --rm \
-      oqe ask "NVDA ATM IV this week vs next week"
+      voli ask "NVDA ATM IV this week vs next week"
     ```
 
 ## API keys
@@ -119,8 +119,8 @@ Same tools, four entry points: rule-based CLI, LLM-driven CLI, MCP server
 | Variable | What for | Where to get it |
 | --- | --- | --- |
 | `POLYGON_API_KEY` | All live data (required) | [polygon.io](https://polygon.io/) |
-| `ANTHROPIC_API_KEY` | `oqe llm-ask --provider anthropic` and the MCP server when chatting via Claude | [console.anthropic.com](https://console.anthropic.com) |
-| `OPENAI_API_KEY` | `oqe llm-ask --provider openai` | [platform.openai.com](https://platform.openai.com) |
+| `ANTHROPIC_API_KEY` | `voli llm-ask --provider anthropic` and the MCP server when chatting via Claude | [console.anthropic.com](https://console.anthropic.com) |
+| `OPENAI_API_KEY` | `voli llm-ask --provider openai` | [platform.openai.com](https://platform.openai.com) |
 
 Set them in `.env` (auto-loaded) or your shell. See
 [Installation](getting-started/installation.md) for the full env-var
@@ -130,7 +130,7 @@ reference.
 
 ```text
 ================================================================================
- OQE | TICKER: NVDA | CATEGORY: TERM_STRUCTURE | OK
+ VOLI | TICKER: NVDA | CATEGORY: TERM_STRUCTURE | OK
 ================================================================================
 [ SUMMARY ]
 NVDA ATM IV term structure: front IV 0.3318 vs next IV 0.3457 at strike 200.0
@@ -158,12 +158,12 @@ NEXT_IV       0.3457
 
 | Command | Purpose |
 | --- | --- |
-| [`oqe ask`](cli/overview.md) | Rule-based agent. Deterministic, fast, no LLM cost. |
-| [`oqe ask-many`](examples/batch.md) | Same prompt across multiple tickers, comparison table. |
-| [`oqe llm-ask`](examples/llm-ask.md) | LLM (Claude / GPT) drives the OQE tools. Streams chain-of-thought. |
-| [`oqe mcp-serve`](examples/mcp.md) | MCP server for Claude Desktop / claude.ai. |
-| [`oqe replay`](examples/replay.md) | Re-render a stored answer offline (rule-based or LLM). |
-| [`oqe themes`](cli/themes.md) | Browse / preview the 12 colour palettes. |
+| [`voli ask`](cli/overview.md) | Rule-based agent. Deterministic, fast, no LLM cost. |
+| [`voli ask-many`](examples/batch.md) | Same prompt across multiple tickers, comparison table. |
+| [`voli llm-ask`](examples/llm-ask.md) | LLM (Claude / GPT) drives the Voli tools. Streams chain-of-thought. |
+| [`voli mcp-serve`](examples/mcp.md) | MCP server for Claude Desktop / claude.ai. |
+| [`voli replay`](examples/replay.md) | Re-render a stored answer offline (rule-based or LLM). |
+| [`voli themes`](cli/themes.md) | Browse / preview the 12 colour palettes. |
 
 ## What it answers
 

@@ -9,13 +9,13 @@ should consider.
 === "CLI"
 
     ```bash
-    poetry run oqe ask --skeptic "NVDA ATM IV this week vs next week"
+    poetry run voli ask --skeptic "NVDA ATM IV this week vs next week"
     ```
 
 === "Python"
 
     ```python
-    from oqe.agent import answer_question
+    from voli.agent import answer_question
 
     resp = answer_question(
         "NVDA ATM IV this week vs next week",
@@ -28,7 +28,7 @@ should consider.
 === "Batch"
 
     ```bash
-    poetry run oqe ask-many --skeptic --tickers NVDA,SPY,QQQ \
+    poetry run voli ask-many --skeptic --tickers NVDA,SPY,QQQ \
       "ATM IV this week vs next week"
     ```
 
@@ -43,7 +43,7 @@ should consider.
 | Wide ATM spread | `WIDE_ATM_SPREAD` | warn | ATM contract bid-ask spread > 20% of mid. |
 | Forwarded warnings | `STALE_DATA` / `PARTIAL_DATA` / `NO_RESULTS` / ... | info / warn / critical | Whatever the tool layer flagged is promoted to a structured concern. |
 
-The thresholds live in `oqe/agent/skeptic.py` as module constants —
+The thresholds live in `voli/agent/skeptic.py` as module constants —
 `STALE_SNAPSHOT_MAX_AGE_MINUTES`, `WIDE_SPREAD_RELATIVE_THRESHOLD`,
 `LOW_CONTRACT_COUNT_THRESHOLD`, `ATM_GAP_RELATIVE_THRESHOLD`.
 
@@ -73,16 +73,16 @@ skeptic answers _"would I trust this number to trade off?"_.
 ## Programmatic access
 
 ```python
-from oqe.agent.skeptic import review
-from oqe.agent import answer_question
+from voli.agent.skeptic import review
+from voli.agent import answer_question
 
 resp = answer_question("NVDA ATM IV this week vs next week", skeptic=True)
 # resp.skeptic is a list of pre-rendered strings (None if --skeptic not used).
 
 # For structured concerns (with .severity, .code, .message), call review() directly:
-from oqe.eval.synth_market import make_registry
-from oqe.agent.executor import default_registry
-from oqe.agent import answer_question
+from voli.eval.synth_market import make_registry
+from voli.agent.executor import default_registry
+from voli.agent import answer_question
 
 # (rerun the pipeline yourself if you need the raw concerns)
 ```
@@ -90,14 +90,14 @@ from oqe.agent import answer_question
 ## Filter concerns by severity
 
 ```python
-from oqe.agent.skeptic import review, SkepticConcern
-from oqe.agent import answer_question
-from oqe.agent.executor import default_registry
+from voli.agent.skeptic import review, SkepticConcern
+from voli.agent import answer_question
+from voli.agent.executor import default_registry
 
 # answer_question doesn't expose tool_outputs, so to get raw concerns
 # rerun the pipeline manually:
-from oqe.agent import plan, execute, write
-from oqe.agent.state import AgentState
+from voli.agent import plan, execute, write
+from voli.agent.state import AgentState
 
 state = AgentState(prompt="NVDA ATM IV this week vs next week")
 state = plan(state)

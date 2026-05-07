@@ -6,7 +6,7 @@ from datetime import date
 
 import pytest
 
-from oqe.analytics.metrics_bundle import compute_v1_metrics_bundle
+from voli.analytics.metrics_bundle import compute_v1_metrics_bundle
 
 
 @dataclass(frozen=True)

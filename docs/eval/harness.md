@@ -2,7 +2,7 @@
 
 `eval/run_eval.py` runs every case in `eval/prompts.jsonl` through the
 agent and reports per-case pass/fail. The runner uses the same
-`oqe.eval.runner.evaluate_case` that the pytest version (`tests/test_end_to_end.py`)
+`voli.eval.runner.evaluate_case` that the pytest version (`tests/test_end_to_end.py`)
 calls — they can never disagree.
 
 ## Quickstart
@@ -13,7 +13,7 @@ poetry run python eval/run_eval.py
 
 ```text
 ================================================================================
- OQE EVAL | 20 cases | 20 passed | 0 failed
+ Voli EVAL | 20 cases | 20 passed | 0 failed
 ================================================================================
 [ RESULTS ]
 PASS  tc_001    term_structure    NVDA ATM IV this week vs next week.

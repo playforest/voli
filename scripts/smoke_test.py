@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
-from oqe.models import UnderlyingSnapshot
-from oqe.tool_schemas import GetOptionGreeksInput
+from voli.models import UnderlyingSnapshot
+from voli.tool_schemas import GetOptionGreeksInput
 
 
 def main() -> None:

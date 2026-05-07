@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from oqe.agent.writer import GuardrailViolation, _allowed_numbers_in, _finalize
+from voli.agent.writer import GuardrailViolation, _allowed_numbers_in, _finalize
 
 
 def test_finalize_passes_when_summary_only_uses_recorded_numbers() -> None:

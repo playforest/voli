@@ -37,7 +37,7 @@ COPY --from=builder /app/src /app/src
 COPY pyproject.toml poetry.lock ./
 
 # Cache + traces live under a mounted volume by default.
-RUN mkdir -p /root/.oqe
+RUN mkdir -p /root/.voli
 
-ENTRYPOINT ["oqe"]
+ENTRYPOINT ["voli"]
 CMD ["--help"]

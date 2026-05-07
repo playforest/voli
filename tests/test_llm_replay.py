@@ -1,8 +1,8 @@
 """Stage C: LLM replay companion tests.
 
 We don't drive a real LLM in these tests - we drop a companion JSON into
-the trace dir and verify the dump/load round trip plus the `oqe replay`
-re-render path. End-to-end through `oqe llm-ask --trace` is exercised in
+the trace dir and verify the dump/load round trip plus the `voli replay`
+re-render path. End-to-end through `voli llm-ask --trace` is exercised in
 test_llm_e2e_replay below using a stub provider.
 """
 
@@ -16,9 +16,9 @@ from typing import Any
 
 import pytest
 
-from oqe.cli import main
-from oqe.llm import LLMProvider, StepComplete, TextDelta, ToolCallStart, ToolResult
-from oqe.llm.replay import (
+from voli.cli import main
+from voli.llm import LLMProvider, StepComplete, TextDelta, ToolCallStart, ToolResult
+from voli.llm.replay import (
     LLMRunRecord,
     companion_path,
     dump_llm_run,
@@ -28,7 +28,7 @@ from oqe.llm.replay import (
 
 @pytest.fixture()
 def trace_dir(tmp_path, monkeypatch):
-    monkeypatch.setenv("OQE_TRACE_DIR", str(tmp_path))
+    monkeypatch.setenv("VOLI_TRACE_DIR", str(tmp_path))
     return tmp_path
 
 
@@ -80,10 +80,10 @@ def test_missing_target_raises(trace_dir: Path) -> None:
         load_llm_run("does_not_exist")
 
 
-# ---- oqe replay auto-detects LLM companion --------------------------------
+# ---- voli replay auto-detects LLM companion --------------------------------
 
 
-def test_oqe_replay_renders_llm_companion(trace_dir: Path) -> None:
+def test_voli_replay_renders_llm_companion(trace_dir: Path) -> None:
     dump_llm_run(
         "tc_replay",
         prompt="What is NVDA spot?",
@@ -109,7 +109,7 @@ def test_oqe_replay_renders_llm_companion(trace_dir: Path) -> None:
     text = out.getvalue()
     assert rc == 0
     # Themed status bar with REPLAY marker.
-    assert "OQE LLM | REPLAY" in text
+    assert "VOLI LLM | REPLAY" in text
     # Tool call + result blocks are reproduced.
     assert "[ TOOL CALL ]" in text
     assert "get_underlying_snapshot" in text
@@ -121,7 +121,7 @@ def test_oqe_replay_renders_llm_companion(trace_dir: Path) -> None:
     assert "trace_id: tc_replay" in text
 
 
-def test_oqe_replay_json_mode_for_llm_companion(trace_dir: Path) -> None:
+def test_voli_replay_json_mode_for_llm_companion(trace_dir: Path) -> None:
     import json as _json
 
     dump_llm_run(
@@ -167,12 +167,12 @@ class StubProvider(LLMProvider):
 
 def test_llm_ask_with_trace_writes_companion(trace_dir: Path, monkeypatch) -> None:
     """Patch make_provider so the CLI uses our stub instead of trying to
-    instantiate Anthropic. Then `oqe llm-ask --trace ...` should write a
+    instantiate Anthropic. Then `voli llm-ask --trace ...` should write a
     .llm.json file the trace dir.
     """
 
     monkeypatch.setattr(
-        "oqe.llm.provider.make_provider", lambda name=None, model=None: StubProvider()
+        "voli.llm.provider.make_provider", lambda name=None, model=None: StubProvider()
     )
 
     out = io.StringIO()
@@ -226,12 +226,12 @@ def test_llm_ask_with_skeptic_renders_block(trace_dir: Path, monkeypatch) -> Non
     # Provider yields ToolCallStart -> the agent dispatches the call from
     # the registered toolset. Patch make_provider where the CLI imports it.
     monkeypatch.setattr(
-        "oqe.llm.provider.make_provider", lambda name=None, model=None: StaleProvider()
+        "voli.llm.provider.make_provider", lambda name=None, model=None: StaleProvider()
     )
 
     # Patch build_default_tools so the agent loop dispatches against our
     # stale-payload stub instead of the real Polygon-backed tools.
-    from oqe.llm.types import ToolDef
+    from voli.llm.types import ToolDef
 
     def _patched_build(include_analytics: bool = True):
         return [
@@ -247,9 +247,9 @@ def test_llm_ask_with_skeptic_renders_block(trace_dir: Path, monkeypatch) -> Non
             ),
         ]
 
-    import oqe.llm
+    import voli.llm
 
-    monkeypatch.setattr(oqe.llm, "build_default_tools", _patched_build)
+    monkeypatch.setattr(voli.llm, "build_default_tools", _patched_build)
 
     out = io.StringIO()
     rc = main(["llm-ask", "--no-color", "--skeptic", "what is NVDA spot?"], out=out)

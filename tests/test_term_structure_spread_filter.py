@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from oqe.analytics.iv_metrics import atm_iv_term_structure
+from voli.analytics.iv_metrics import atm_iv_term_structure
 
 
 @dataclass(frozen=True)

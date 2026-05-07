@@ -24,9 +24,9 @@ from typing import Any
 
 import pytest
 
-from oqe.agent import answer_question
-from oqe.agent.executor import ToolRegistry
-from oqe.agent.state import AnswerResponse
+from voli.agent import answer_question
+from voli.agent.executor import ToolRegistry
+from voli.agent.state import AnswerResponse
 
 # ---------- synthetic data shapes ---------------------------------------------
 

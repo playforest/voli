@@ -13,7 +13,7 @@ prompt
 
 ## Stage 1 — planner
 
-`oqe.agent.planner` parses the prompt with regex / keyword rules — no LLM.
+`voli.agent.planner` parses the prompt with regex / keyword rules — no LLM.
 
 Outputs:
 
@@ -34,23 +34,23 @@ the same `Intent` / `Plan` shape; the rest of the pipeline doesn't change.
 
 ## Stage 2 — executor
 
-`oqe.agent.executor.execute()` runs each `PlanStep` against a `ToolRegistry`.
+`voli.agent.executor.execute()` runs each `PlanStep` against a `ToolRegistry`.
 
 - The default registry wires the real Polygon-backed tools.
 - Tests pass a stubbed registry (or the synthetic one from
-  `oqe.eval.synth_market`).
+  `voli.eval.synth_market`).
 - Late-bound inputs (e.g. quotes need the contracts list) are resolved
   before each step runs.
 
 If `Plan.compute` is set, the executor calls
-`oqe.analytics.compute_v1_metrics_bundle()` and stashes the result on
+`voli.analytics.compute_v1_metrics_bundle()` and stashes the result on
 `AgentState.metrics`. Centralising this means the writer never derives
 new numbers itself — the guardrail has nothing to enforce against if it
 did.
 
 ## Stage 3 — writer
 
-`oqe.agent.writer.write()` chooses a renderer per category and produces
+`voli.agent.writer.write()` chooses a renderer per category and produces
 an `AnswerResponse`.
 
 It enforces two contract guardrails on every supported response:
@@ -66,7 +66,7 @@ but include `suggested_rewrites`.
 
 ## Stage 4 — render
 
-`oqe.cli_render.render_response()` (themed text) or `render_json()`
+`voli.cli_render.render_response()` (themed text) or `render_json()`
 (machine-readable) emits the final string. The CLI handles stdout.
 
 ## Diagram
@@ -105,13 +105,13 @@ debug-printing the state at any boundary safe and informative.
 
 | Concern | Module |
 | --- | --- |
-| Prompt → category classification | `oqe/agent/planner.py` |
-| Tool dispatch + plan execution | `oqe/agent/executor.py` |
-| Per-category rendering + guardrails | `oqe/agent/writer.py` |
-| Dataclasses (Intent / Plan / AgentState) | `oqe/agent/state.py` |
-| Analytics (term structure / skew / greeks) | `oqe/analytics/` |
-| Polygon tool implementations | `oqe/tools/polygon_tools.py` |
-| Themed renderer | `oqe/cli_render.py` |
+| Prompt → category classification | `voli/agent/planner.py` |
+| Tool dispatch + plan execution | `voli/agent/executor.py` |
+| Per-category rendering + guardrails | `voli/agent/writer.py` |
+| Dataclasses (Intent / Plan / AgentState) | `voli/agent/state.py` |
+| Analytics (term structure / skew / greeks) | `voli/analytics/` |
+| Polygon tool implementations | `voli/tools/polygon_tools.py` |
+| Themed renderer | `voli/cli_render.py` |
 
 ## See also
 

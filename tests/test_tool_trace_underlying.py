@@ -4,17 +4,17 @@ import json
 
 import pytest
 
-from oqe.run_trace import end_trace, start_trace
-from oqe.tool_schemas import GetUnderlyingSnapshotInput
-from oqe.tools import polygon_tools as pt
+from voli.run_trace import end_trace, start_trace
+from voli.tool_schemas import GetUnderlyingSnapshotInput
+from voli.tools import polygon_tools as pt
 
 
 def test_underlying_trace_logs_polygon_then_cache(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ) -> None:
     # Isolate both cache + trace output
-    monkeypatch.setenv("OQE_CACHE_PATH", str(tmp_path / "cache.sqlite"))
-    monkeypatch.setenv("OQE_TRACE_DIR", str(tmp_path / "traces"))
+    monkeypatch.setenv("VOLI_CACHE_PATH", str(tmp_path / "cache.sqlite"))
+    monkeypatch.setenv("VOLI_TRACE_DIR", str(tmp_path / "traces"))
 
     pt._get_cache.cache_clear()
 

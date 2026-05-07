@@ -54,18 +54,18 @@ Each cache entry has:
 When reading:
 - if `now >= expires_at`, the entry is deleted and treated as a **cache miss**.
 
-Tool TTL defaults are defined in `src/oqe/cache.py` (and can be tuned).
+Tool TTL defaults are defined in `src/voli/cache.py` (and can be tuned).
 
 ### Cache location
 Default:
-- `~/.oqe/cache.sqlite`
+- `~/.voli/cache.sqlite`
 
 Override:
-- set `OQE_CACHE_PATH` to point to a different sqlite file
+- set `VOLI_CACHE_PATH` to point to a different sqlite file
 
 Example:
 ```bash
-export OQE_CACHE_PATH=/tmp/oqe-cache.sqlite
+export VOLI_CACHE_PATH=/tmp/voli-cache.sqlite
 ```
 
 ---
@@ -94,19 +94,19 @@ Traces are stored as **JSONL** (one JSON object per line), containing:
 
 ### Trace location
 Default:
-- `~/.oqe/traces/<trace_id>.jsonl`
+- `~/.voli/traces/<trace_id>.jsonl`
 
 Override:
-- set `OQE_TRACE_DIR`
+- set `VOLI_TRACE_DIR`
 
 Example:
 ```bash
-export OQE_TRACE_DIR=/tmp/oqe-traces
+export VOLI_TRACE_DIR=/tmp/voli-traces
 ```
 
 ### How to start/end a trace (minimal)
 ```python
-from oqe.run_trace import start_trace, end_trace
+from voli.run_trace import start_trace, end_trace
 
 t = start_trace()  # or start_trace("my_trace_id")
 # ... call tools ...
@@ -127,13 +127,13 @@ Because snapshot endpoints are *latest-only*, the key to reproducibility is pres
 
 ### Replay workflow (CLI-level)
 1) Identify the cache and trace from the original run:
-- Cache: `~/.oqe/cache.sqlite` (or `OQE_CACHE_PATH`)
-- Trace: `~/.oqe/traces/<trace_id>.jsonl` (or `OQE_TRACE_DIR`)
+- Cache: `~/.voli/cache.sqlite` (or `VOLI_CACHE_PATH`)
+- Trace: `~/.voli/traces/<trace_id>.jsonl` (or `VOLI_TRACE_DIR`)
 
 2) Freeze cache state by copying the SQLite DB:
 ```bash
-cp ~/.oqe/cache.sqlite /tmp/replay-cache.sqlite
-export OQE_CACHE_PATH=/tmp/replay-cache.sqlite
+cp ~/.voli/cache.sqlite /tmp/replay-cache.sqlite
+export VOLI_CACHE_PATH=/tmp/replay-cache.sqlite
 ```
 
 3) Re-run with the same tool inputs.
@@ -142,7 +142,7 @@ export OQE_CACHE_PATH=/tmp/replay-cache.sqlite
 
 4) Compare traces:
 ```bash
-diff -u ~/.oqe/traces/<old>.jsonl ~/.oqe/traces/<new>.jsonl
+diff -u ~/.voli/traces/<old>.jsonl ~/.voli/traces/<new>.jsonl
 ```
 
 ### Replay workflow (Notebook-level)

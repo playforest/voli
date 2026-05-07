@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import json
 
-from oqe.run_trace import end_trace, start_trace
+from voli.run_trace import end_trace, start_trace
 
 
 def test_run_trace_writes_jsonl(tmp_path, monkeypatch) -> None:
-    monkeypatch.setenv("OQE_TRACE_DIR", str(tmp_path))
+    monkeypatch.setenv("VOLI_TRACE_DIR", str(tmp_path))
 
     t = start_trace("test_trace")
     t.log({"event": "tool_call", "tool": "get_underlying_snapshot", "primary_source": "cache"})

@@ -5,11 +5,11 @@ For users who want to inspect or replace one stage of the pipeline.
 ## Modules
 
 ```python
-from oqe.agent import answer_question
-from oqe.agent.planner import plan, parse_intent
-from oqe.agent.executor import execute, default_registry, ToolRegistry
-from oqe.agent.writer import write, GuardrailViolation
-from oqe.agent.state import AgentState, Intent, Plan, PlanStep, AnswerResponse
+from voli.agent import answer_question
+from voli.agent.planner import plan, parse_intent
+from voli.agent.executor import execute, default_registry, ToolRegistry
+from voli.agent.writer import write, GuardrailViolation
+from voli.agent.state import AgentState, Intent, Plan, PlanStep, AnswerResponse
 ```
 
 ## State dataclasses
@@ -53,11 +53,11 @@ class Plan:
 ## Stepping through the pipeline manually
 
 ```python
-from oqe.agent.executor import default_registry
-from oqe.agent.planner import plan as plan_stage
-from oqe.agent.executor import execute as exec_stage
-from oqe.agent.writer import write as write_stage
-from oqe.agent.state import AgentState
+from voli.agent.executor import default_registry
+from voli.agent.planner import plan as plan_stage
+from voli.agent.executor import execute as exec_stage
+from voli.agent.writer import write as write_stage
+from voli.agent.state import AgentState
 
 state = AgentState(prompt="NVDA ATM IV this week vs next week")
 state = plan_stage(state)
@@ -77,7 +77,7 @@ The planner is rule-based — regex / keyword classification, no LLM. This
 keeps the same prompt → same plan invariant cheap to test.
 
 ```python
-from oqe.agent.planner import parse_intent
+from voli.agent.planner import parse_intent
 
 intent = parse_intent("Show NVDA IV skew next Friday")
 # Intent(category='skew', ticker='NVDA', right='BOTH', expiry_phrase='next_friday', ...)
@@ -92,7 +92,7 @@ The executor is tool-agnostic — it dispatches to a `ToolRegistry`. Tests
 inject stub registries; production uses `default_registry()`.
 
 ```python
-from oqe.agent.executor import ToolRegistry
+from voli.agent.executor import ToolRegistry
 
 # A registry is just a dict of tool name -> callable.
 reg = ToolRegistry(tools={
@@ -105,7 +105,7 @@ reg = ToolRegistry(tools={
 
 Each callable takes a dict of inputs and returns an object with whichever
 of `.snapshot`, `.contracts`, `.quotes`, `.greeks` it's responsible for.
-Mirror the shape of `oqe.tool_schemas.GetXOutput` types.
+Mirror the shape of `voli.tool_schemas.GetXOutput` types.
 
 ## Writer
 
@@ -113,7 +113,7 @@ The writer renders the final `AnswerResponse` and enforces guardrails:
 
 - Every numeric token in `summary` must match a value in `numbers_used`
   within `1e-4` tolerance (ISO dates and option symbols are stripped first).
-- Failure raises `oqe.agent.writer.GuardrailViolation` rather than emit a
+- Failure raises `voli.agent.writer.GuardrailViolation` rather than emit a
   misleading answer.
 
 You shouldn't normally interact with the writer directly — `answer_question`

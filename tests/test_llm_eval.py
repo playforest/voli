@@ -16,7 +16,7 @@ from typing import Any
 
 import pytest
 
-from oqe.eval.llm_runner import (
+from voli.eval.llm_runner import (
     LLMEvalCase,
     _parse_judge_response,
     default_dataset_path,
@@ -27,7 +27,7 @@ from oqe.eval.llm_runner import (
     render_report_json,
     run_eval,
 )
-from oqe.llm import LLMProvider, StepComplete, TextDelta, ToolCallStart, ToolResult
+from voli.llm import LLMProvider, StepComplete, TextDelta, ToolCallStart, ToolResult
 
 # ----------------------------------------------------------------------------
 # Stub providers
@@ -90,7 +90,7 @@ def patched_reference(monkeypatch):
     registry so reference fetches stay offline.
     """
 
-    from oqe.eval.synth_market import make_registry
+    from voli.eval.synth_market import make_registry
 
     reg = make_registry()
     list_contracts = reg.tools["list_option_contracts"]
@@ -104,7 +104,7 @@ def patched_reference(monkeypatch):
         return dict(model)
 
     monkeypatch.setattr(
-        "oqe.llm.analytics_tools.get_underlying_snapshot",
+        "voli.llm.analytics_tools.get_underlying_snapshot",
         lambda inp: underlying(_to_dict(inp)),
     )
 
@@ -117,7 +117,7 @@ def patched_reference(monkeypatch):
         contracts_resp = list_contracts(list_args)
         contracts = list(contracts_resp.contracts)
         if not contracts:
-            return [], {}, {}
+            return [], {}, {}, "polygon"
         symbols = [c.option_symbol for c in contracts]
         q_resp = quotes({"option_symbols": symbols})
         g_resp = greeks({"option_symbols": symbols})
@@ -125,9 +125,10 @@ def patched_reference(monkeypatch):
             contracts,
             {q.option_symbol: q for q in q_resp.quotes},
             {g.option_symbol: g for g in g_resp.greeks},
+            "polygon",
         )
 
-    monkeypatch.setattr("oqe.llm.analytics_tools.get_option_chain_bulk", _fake_bulk)
+    monkeypatch.setattr("voli.llm.analytics_tools.get_option_chain_bulk", _fake_bulk)
     return reg
 
 
@@ -153,7 +154,7 @@ def test_every_case_has_a_known_reference_tool() -> None:
     how to dispatch - otherwise that case will always ERROR.
     """
 
-    from oqe.eval.llm_runner import REFERENCE_FETCHERS
+    from voli.eval.llm_runner import REFERENCE_FETCHERS
 
     for case in load_cases(default_dataset_path()):
         assert case.reference_tool in REFERENCE_FETCHERS, (
@@ -319,11 +320,11 @@ def test_report_renders_with_pass_fail_split(patched_reference) -> None:
 
     judge = _AltJudge()
     results = [evaluate_case(c, sut_provider=_StubSUT(), judge_provider=judge) for c in cases]
-    from oqe.eval.llm_runner import LLMEvalReport, _group_by_category
+    from voli.eval.llm_runner import LLMEvalReport, _group_by_category
 
     report = LLMEvalReport(results=tuple(results), by_category=_group_by_category(results))
     text = render_report(report, color=False)
-    assert "OQE LLM EVAL" in text
+    assert "VOLI LLM EVAL" in text
     assert "PASS" in text
     assert "FAIL" in text
     assert "term_structure" in text
@@ -352,7 +353,7 @@ def test_cli_main_with_limit_and_no_color(monkeypatch, patched_reference) -> Non
     """
 
     monkeypatch.setattr(
-        "oqe.eval.llm_runner.make_provider",
+        "voli.eval.llm_runner.make_provider",
         lambda name=None, model=None: (
             _StubJudge(verdict="PASS", reasoning="ok")
             if (model or "").startswith("claude-opus")
@@ -363,14 +364,14 @@ def test_cli_main_with_limit_and_no_color(monkeypatch, patched_reference) -> Non
     rc = main(["--no-color", "--limit", "2"], out=out)
     text = out.getvalue()
     assert rc == 0
-    assert "OQE LLM EVAL" in text
+    assert "VOLI LLM EVAL" in text
     assert "2 cases" in text
     assert "2 pass" in text
 
 
 def test_cli_main_returns_1_when_a_case_fails(monkeypatch, patched_reference) -> None:
     monkeypatch.setattr(
-        "oqe.eval.llm_runner.make_provider",
+        "voli.eval.llm_runner.make_provider",
         lambda name=None, model=None: (
             _StubJudge(verdict="FAIL", reasoning="bad")
             if (model or "").startswith("claude-opus")

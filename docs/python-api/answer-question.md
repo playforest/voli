@@ -6,7 +6,7 @@ writer pipeline behind one function call.
 ## Signature
 
 ```python
-from oqe.agent import answer_question, ToolRegistry, AnswerResponse
+from voli.agent import answer_question, ToolRegistry, AnswerResponse
 
 def answer_question(
     prompt: str,
@@ -45,7 +45,7 @@ class AnswerResponse:
 ### Basic
 
 ```python
-from oqe.agent import answer_question
+from voli.agent import answer_question
 
 resp = answer_question("NVDA ATM IV this week vs next week")
 assert resp.supported
@@ -87,8 +87,8 @@ REFUSED: execution
 ### Programmatic batch (offline)
 
 ```python
-from oqe.agent import answer_question
-from oqe.eval.synth_market import make_registry
+from voli.agent import answer_question
+from voli.eval.synth_market import make_registry
 
 reg = make_registry()
 prompts = [
@@ -114,13 +114,13 @@ greeks              NVDA ATM greeks: strike=100.0 iv=0.3 delta=0.5 gamma=0.0
   block; library callers can `try/except` themselves.
 - **Refusals are not exceptions**: they return `AnswerResponse(supported=False, ...)`.
 - **Guardrail violations**: extremely rare (writer wouldn't ship them
-  silently) — the writer raises `oqe.agent.writer.GuardrailViolation`.
+  silently) — the writer raises `voli.agent.writer.GuardrailViolation`.
 
 ## Performance
 
 - First call against a ticker: 4-6 Polygon HTTP requests for the chain.
 - Subsequent calls within the cache TTL (30s for snapshots, 6h for
-  contract lists): zero HTTP, served from `~/.oqe/cache.sqlite`.
+  contract lists): zero HTTP, served from `~/.voli/cache.sqlite`.
 - Synthetic registry: pure Python, ~milliseconds.
 
 ## See also

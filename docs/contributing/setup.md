@@ -6,8 +6,8 @@ beyond Python 3.11.
 ## Bootstrap
 
 ```bash
-git clone https://github.com/playforest/options-query-agent
-cd options-query-agent
+git clone https://github.com/playforest/voli
+cd voli
 poetry install --with dev,docs
 ```
 
@@ -64,7 +64,7 @@ Optional but useful for chain / greeks development.
 ```bash
 cp .env.example .env
 # Edit .env so POLYGON_API_KEY=pk_...
-poetry run oqe ask "NVDA ATM IV this week vs next week"
+poetry run voli ask "NVDA ATM IV this week vs next week"
 ```
 
 `POLYGON_HTTP_DEBUG=1` prints every HTTP request on stderr — useful when
@@ -74,15 +74,15 @@ something hangs or returns unexpectedly.
 
 | Path | Purpose |
 | --- | --- |
-| `src/oqe/agent/` | planner / executor / writer / state |
-| `src/oqe/analytics/` | term structure, skew, greeks, metrics bundle |
-| `src/oqe/polygon/` | HTTP client + response normalisation |
-| `src/oqe/tools/` | high-level Polygon-backed tool functions |
-| `src/oqe/eval/` | synthetic registry + eval runner |
-| `src/oqe/cli.py` | CLI entrypoint |
-| `src/oqe/cli_render.py` | themed ANSI renderer + 10 palettes |
-| `src/oqe/config.py` | YAML config loader |
-| `src/oqe/logging.py` | structured logging setup |
+| `src/voli/agent/` | planner / executor / writer / state |
+| `src/voli/analytics/` | term structure, skew, greeks, metrics bundle |
+| `src/voli/polygon/` | HTTP client + response normalisation |
+| `src/voli/tools/` | high-level Polygon-backed tool functions |
+| `src/voli/eval/` | synthetic registry + eval runner |
+| `src/voli/cli.py` | CLI entrypoint |
+| `src/voli/cli_render.py` | themed ANSI renderer + 10 palettes |
+| `src/voli/config.py` | YAML config loader |
+| `src/voli/logging.py` | structured logging setup |
 | `tests/` | pytest suite |
 | `eval/prompts.jsonl` | regression dataset |
 | `eval/run_eval.py` | top-level eval shell |

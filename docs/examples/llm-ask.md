@@ -1,14 +1,14 @@
-# LLM-driven agent (`oqe llm-ask`)
+# LLM-driven agent (`voli llm-ask`)
 
-Where `oqe ask` uses a regex-based planner with a templated answer,
-`oqe llm-ask` puts a real LLM in the driver's seat. The LLM receives the
-prompt + a tool catalogue, decides which OQE tools to call, sees the
+Where `voli ask` uses a regex-based planner with a templated answer,
+`voli llm-ask` puts a real LLM in the driver's seat. The LLM receives the
+prompt + a tool catalogue, decides which Voli tools to call, sees the
 results, and writes the answer in its own words — grounded in the same
 Polygon data the rule-based path uses.
 
 ## Pick a provider
 
-OQE ships provider-agnostic. Install one (or both):
+Voli ships provider-agnostic. Install one (or both):
 
 ```bash
 poetry install -E anthropic   # Claude (Sonnet 4.6 by default)
@@ -24,33 +24,27 @@ export ANTHROPIC_API_KEY=sk-ant-...
 export OPENAI_API_KEY=sk-...
 ```
 
-If both keys are set and you don't pass `--provider`, OQE picks Anthropic.
-Override with `--provider openai` or `OQE_LLM_PROVIDER=openai`.
+If both keys are set and you don't pass `--provider`, Voli picks Anthropic.
+Override with `--provider openai` or `VOLI_LLM_PROVIDER=openai`.
 
 ## Run it
 
 ```bash
-poetry run oqe llm-ask "How does NVDA's IV term structure compare to QQQ's?"
+poetry run voli llm-ask "How does NVDA's IV term structure compare to QQQ's?"
 ```
 
 ```text
 ================================================================================
- OQE LLM | PROVIDER: anthropic | MODEL: claude-sonnet-4-6
+ VOLI LLM | PROVIDER: anthropic | MODEL: claude-sonnet-4-6
 ================================================================================
 [ PROMPT ]
 How does NVDA's IV term structure compare to QQQ's?
 
-[ TOOL CALL ] list_option_contracts(ticker=NVDA, right=C, limit=200)
-[ TOOL OK   ] {"meta": {...}, "contracts": [...]}
+[ TOOL CALL ] compute_atm_iv_term_structure(ticker=NVDA)
+[ TOOL OK   (polygon) ] {"ticker": "NVDA", "front_iv": 0.3318, ..., "primary_source": "polygon"}
 
-[ TOOL CALL ] get_option_greeks(option_symbols=[O:NVDA260509C00200000, ...])
-[ TOOL OK   ] {"meta": {...}, "greeks": [{"option_symbol": ...}]}
-
-[ TOOL CALL ] list_option_contracts(ticker=QQQ, right=C, limit=200)
-[ TOOL OK   ] {"meta": {...}, "contracts": [...]}
-
-[ TOOL CALL ] get_option_greeks(option_symbols=[O:QQQ260509C00400000, ...])
-[ TOOL OK   ] {"meta": {...}, "greeks": [{"option_symbol": ...}]}
+[ TOOL CALL ] compute_atm_iv_term_structure(ticker=QQQ)
+[ TOOL OK   (cache) ] {"ticker": "QQQ", "front_iv": 0.1820, ..., "primary_source": "cache"}
 
 [ ANSWER ]
 NVDA's near-term ATM IV is roughly twice QQQ's: 33.18% vs 18.20% for the
@@ -60,11 +54,28 @@ but as a percentage that's a smaller relative premium for NVDA (4.2%) than
 for QQQ (6.3%) - mild signal that NVDA's near-term event risk is not
 unusually elevated relative to its baseline level.
 --------------------------------------------------------------------------------
-stop_reason: end_turn  |  tool_calls: 4  |  tool_results: 4
+stop_reason: end_turn  |  tool_calls: 2  |  tool_results: 2
 ================================================================================
 ```
 
 You see each tool call as it happens (the live "chain of thought" log).
+
+### Cache vs polygon marker
+
+Each `[ TOOL OK ]` line is tagged with where the data came from:
+
+| Marker | Meaning |
+| --- | --- |
+| `[ TOOL OK   (cache) ]` | Served entirely from the on-disk SQLite TTL cache (`~/.voli/cache.sqlite`) — no Polygon HTTP call. |
+| `[ TOOL OK   (polygon) ]` | Fresh fetch from Polygon. |
+| `[ TOOL OK   (mixed) ]` | Analytics-tool only: the underlying-snapshot lookup and the chain pull came from different sources (one cache, one network). |
+| `[ TOOL OK   ]` | The tool result didn't carry a source field (custom tool, MCP-only, etc.). |
+
+The same label is also embedded in the JSON the LLM receives (analytics
+tools: `primary_source`; raw tools: `meta.primary_source`), so the model
+can refer to it when assessing freshness. To see Polygon HTTP traffic
+mid-run, set `POLYGON_HTTP_DEBUG=1` and watch stderr — every line that
+isn't there means cache.
 
 ## Tool surface
 
@@ -95,8 +106,8 @@ When using raw tools, call `list_option_contracts` first to get the
 To restrict the LLM to raw tools only (e.g. for testing chain reasoning):
 
 ```python
-from oqe.llm import build_default_tools, llm_ask
-from oqe.llm.provider import make_provider
+from voli.llm import build_default_tools, llm_ask
+from voli.llm.provider import make_provider
 
 tools = build_default_tools(include_analytics=False)   # raw only
 result = llm_ask("...", provider=make_provider(), tools=tools)
@@ -107,16 +118,16 @@ result = llm_ask("...", provider=make_provider(), tools=tools)
 | Flag | Effect |
 | --- | --- |
 | `--provider {anthropic,openai}` | Override auto-detection. |
-| `--model NAME` | Model name (overrides `$OQE_LLM_MODEL` and the default). |
+| `--model NAME` | Model name (overrides `$VOLI_LLM_MODEL` and the default). |
 | `--max-iterations N` | Cap on planner/tool/answer cycles (default 6). |
 | `--json` | Append a JSON object with the final answer + tool log. |
 | `--skeptic` | Run the skeptic on the LLM's tool results. Appends a `[ SKEPTIC ]` block. |
-| `--trace` | Open a JSONL run-trace **and** write a `<id>.llm.json` companion so `oqe replay` can re-render later. |
-| `--theme NAME` / `--no-color` / `--cycle-theme` | Same as `oqe ask`. |
+| `--trace` | Open a JSONL run-trace **and** write a `<id>.llm.json` companion so `voli replay` can re-render later. |
+| `--theme NAME` / `--no-color` / `--cycle-theme` | Same as `voli ask`. |
 
 ## Skeptic on LLM answers
 
-Same `[ SKEPTIC ]` block as `oqe ask --skeptic`. The reviewer walks the
+Same `[ SKEPTIC ]` block as `voli ask --skeptic`. The reviewer walks the
 LLM's tool results and surfaces:
 
 | Code | Trigger |
@@ -128,7 +139,7 @@ LLM's tool results and surfaces:
 | Analytics flags (e.g. `FILTERED_WIDE_SPREAD`) | Forwarded from analytics tool `flags` arrays. |
 
 ```bash
-poetry run oqe llm-ask --skeptic "What's NVDA's ATM IV term structure?"
+poetry run voli llm-ask --skeptic "What's NVDA's ATM IV term structure?"
 ```
 
 ```text
@@ -143,21 +154,21 @@ INFO      VENDOR_LIMIT              tool layer flagged VENDOR_LIMIT.
 
 ```bash
 # Capture
-poetry run oqe llm-ask --trace "What's NVDA's IV term structure?"
+poetry run voli llm-ask --trace "What's NVDA's IV term structure?"
 # ... output ...
-# replay companion: ~/.oqe/traces/<id>.llm.json
+# replay companion: ~/.voli/traces/<id>.llm.json
 
 # Replay later (no API call, no Polygon traffic)
-poetry run oqe replay <trace_id>
+poetry run voli replay <trace_id>
 ```
 
-`oqe replay` auto-detects the companion shape (`<id>.response.json` for
+`voli replay` auto-detects the companion shape (`<id>.response.json` for
 the rule-based path, `<id>.llm.json` for LLM mode) and re-renders through
 the same themed blocks. Pivot themes or output format on the replay:
 
 ```bash
-poetry run oqe replay --theme matrix <trace_id>
-poetry run oqe replay --json         <trace_id>
+poetry run voli replay --theme matrix <trace_id>
+poetry run voli replay --json         <trace_id>
 ```
 
 If `--skeptic` was set on the original run, the concerns are preserved in
@@ -166,9 +177,9 @@ the companion and re-rendered on replay.
 ## Programmatic
 
 ```python
-from oqe.llm import build_default_tools, llm_ask
-from oqe.llm.provider import make_provider
-from oqe.llm.agent import collect
+from voli.llm import build_default_tools, llm_ask
+from voli.llm.provider import make_provider
+from voli.llm.agent import collect
 
 provider = make_provider("anthropic", model="claude-sonnet-4-6")
 tools = build_default_tools()
@@ -183,17 +194,17 @@ callers; loop the iterator yourself if you want live events.
 
 ## Adding a third provider
 
-Implement `oqe.llm.provider.LLMProvider` (`start` / `step` /
+Implement `voli.llm.provider.LLMProvider` (`start` / `step` /
 `submit_tool_results`) yielding the neutral event types from
-`oqe.llm.types`, then wire it into `make_provider`. The agent loop and CLI
+`voli.llm.types`, then wire it into `make_provider`. The agent loop and CLI
 don't need to change.
 
 ## When to use which
 
 | Use case | Path |
 | --- | --- |
-| Deterministic, no API cost, fits an eval/regression test | `oqe ask` (rule-based) |
-| Free-form / ambiguous question, qualitative comparison, multi-step reasoning | `oqe llm-ask` |
+| Deterministic, no API cost, fits an eval/regression test | `voli ask` (rule-based) |
+| Free-form / ambiguous question, qualitative comparison, multi-step reasoning | `voli llm-ask` |
 | Compare both sides of the architecture | Run both — same Polygon data underneath. |
 
 ## See also

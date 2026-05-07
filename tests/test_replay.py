@@ -1,9 +1,9 @@
 """Replay tests.
 
-`oqe ask --trace` writes a `<trace_id>.response.json` companion alongside
-the JSONL trace. `oqe replay <trace_id>` reads it back and re-renders.
+`voli ask --trace` writes a `<trace_id>.response.json` companion alongside
+the JSONL trace. `voli replay <trace_id>` reads it back and re-renders.
 
-We override `OQE_TRACE_DIR` per test via tmp_path so traces don't leak
+We override `VOLI_TRACE_DIR` per test via tmp_path so traces don't leak
 between runs.
 """
 
@@ -15,10 +15,10 @@ from pathlib import Path
 
 import pytest
 
-from oqe.agent import answer_question
-from oqe.cli import main
-from oqe.eval.synth_market import make_registry
-from oqe.replay import (
+from voli.agent import answer_question
+from voli.cli import main
+from voli.eval.synth_market import make_registry
+from voli.replay import (
     companion_path,
     dump_response,
     load_replay,
@@ -28,7 +28,7 @@ from oqe.replay import (
 
 @pytest.fixture()
 def trace_dir(tmp_path, monkeypatch):
-    monkeypatch.setenv("OQE_TRACE_DIR", str(tmp_path))
+    monkeypatch.setenv("VOLI_TRACE_DIR", str(tmp_path))
     return tmp_path
 
 
@@ -128,10 +128,10 @@ def test_ask_trace_writes_replay_companion(trace_dir: Path, registry) -> None:
     assert payload["ticker_default"] == "NVDA"
 
 
-# ---- CLI: oqe replay --------------------------------------------------------
+# ---- CLI: voli replay --------------------------------------------------------
 
 
-def test_oqe_replay_renders_companion(trace_dir: Path, registry) -> None:
+def test_voli_replay_renders_companion(trace_dir: Path, registry) -> None:
     # First produce a companion by tracing an answer.
     out = io.StringIO()
     main(
@@ -152,7 +152,7 @@ def test_oqe_replay_renders_companion(trace_dir: Path, registry) -> None:
     assert "NVDA" in replayed
 
 
-def test_oqe_replay_supports_theme_override(trace_dir: Path, registry) -> None:
+def test_voli_replay_supports_theme_override(trace_dir: Path, registry) -> None:
     out = io.StringIO()
     main(
         ["ask", "--no-color", "--trace", "--ticker", "NVDA", "ATM IV this week vs next week"],
@@ -169,7 +169,7 @@ def test_oqe_replay_supports_theme_override(trace_dir: Path, registry) -> None:
     assert payload["category"] == "term_structure"
 
 
-def test_oqe_replay_missing_target_returns_4(trace_dir: Path) -> None:
+def test_voli_replay_missing_target_returns_4(trace_dir: Path) -> None:
     out = io.StringIO()
     rc = main(["replay", "--no-color", "does_not_exist"], out=out)
     assert rc == 4

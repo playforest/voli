@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, date
 
-from oqe.polygon.normalise import (
+from voli.polygon.normalise import (
     option_contract_from_snapshot_row,
     option_greeks_from_snapshot_row,
     option_quote_from_snapshot_row,
@@ -12,7 +12,7 @@ from oqe.polygon.normalise import (
 # export POLYGON_API_KEY=...
 # poetry run python - <<'PY'
 # import json
-# from oqe.polygon.client import PolygonClient, OptionChainQuery
+# from voli.polygon.client import PolygonClient, OptionChainQuery
 # pc = PolygonClient()
 # first, rows = pc.list_option_chain_snapshot("AAPL", OptionChainQuery(limit=1, max_pages=1))
 # print(json.dumps(rows[0], indent=2)[:4000])

@@ -6,13 +6,13 @@ agent and just fetch data.
 ## Modules
 
 ```python
-from oqe.tools.polygon_tools import (
+from voli.tools.polygon_tools import (
     get_underlying_snapshot,
     list_option_contracts,
     get_option_quotes,
     get_option_greeks,
 )
-from oqe.tool_schemas import (
+from voli.tool_schemas import (
     GetUnderlyingSnapshotInput,
     ListOptionContractsInput,
     GetOptionQuotesInput,
@@ -23,8 +23,8 @@ from oqe.tool_schemas import (
 ## Get a spot snapshot
 
 ```python
-from oqe.tools.polygon_tools import get_underlying_snapshot
-from oqe.tool_schemas import GetUnderlyingSnapshotInput
+from voli.tools.polygon_tools import get_underlying_snapshot
+from voli.tool_schemas import GetUnderlyingSnapshotInput
 
 resp = get_underlying_snapshot(GetUnderlyingSnapshotInput(ticker="NVDA"))
 print(resp.snapshot.spot, resp.snapshot.ts, resp.snapshot.source)
@@ -34,8 +34,8 @@ print(resp.meta.warnings)              # ['STALE_DATA', ...] possibly
 ## List contracts (with optional filters)
 
 ```python
-from oqe.tools.polygon_tools import list_option_contracts
-from oqe.tool_schemas import ListOptionContractsInput
+from voli.tools.polygon_tools import list_option_contracts
+from voli.tool_schemas import ListOptionContractsInput
 from datetime import date
 
 resp = list_option_contracts(ListOptionContractsInput(
@@ -53,8 +53,8 @@ for c in resp.contracts:
 ## Quotes for a list of symbols
 
 ```python
-from oqe.tools.polygon_tools import get_option_quotes
-from oqe.tool_schemas import GetOptionQuotesInput
+from voli.tools.polygon_tools import get_option_quotes
+from voli.tool_schemas import GetOptionQuotesInput
 
 resp = get_option_quotes(GetOptionQuotesInput(option_symbols=[
     "O:NVDA260516C00100000",
@@ -67,8 +67,8 @@ for q in resp.quotes:
 ## Greeks
 
 ```python
-from oqe.tools.polygon_tools import get_option_greeks
-from oqe.tool_schemas import GetOptionGreeksInput
+from voli.tools.polygon_tools import get_option_greeks
+from voli.tool_schemas import GetOptionGreeksInput
 
 resp = get_option_greeks(GetOptionGreeksInput(option_symbols=[
     "O:NVDA260516C00100000",
@@ -80,7 +80,7 @@ for g in resp.greeks:
 ## Caching
 
 Every tool above keys on `(tool_name, canonicalized_inputs, asof)` and
-caches the response in `~/.oqe/cache.sqlite`:
+caches the response in `~/.voli/cache.sqlite`:
 
 | Tool | TTL |
 | --- | --- |
@@ -91,13 +91,13 @@ caches the response in `~/.oqe/cache.sqlite`:
 
 So calling the same tool twice within the TTL is free (no HTTP).
 
-Override the cache path with `OQE_CACHE_PATH=/path/to/cache.sqlite`.
+Override the cache path with `VOLI_CACHE_PATH=/path/to/cache.sqlite`.
 
 ## Run-trace
 
-If a `TraceLogger` is active (start one with `oqe.run_trace.start_trace()`
+If a `TraceLogger` is active (start one with `voli.run_trace.start_trace()`
 or pass `--trace` on the CLI), every tool call appends a JSON line to
-`~/.oqe/traces/<trace_id>.jsonl`:
+`~/.voli/traces/<trace_id>.jsonl`:
 
 ```jsonl
 {"event": "tool_call", "tool": "get_option_greeks", "cache_key": "...", ...}
@@ -126,7 +126,7 @@ If you need to talk to Polygon endpoints we don't yet wrap, the raw HTTP
 layer is available:
 
 ```python
-from oqe.polygon.http import PolygonHTTP
+from voli.polygon.http import PolygonHTTP
 
 http = PolygonHTTP()
 data = http.get_json("/v3/reference/options/contracts/O:NVDA260516C00100000")
@@ -136,5 +136,5 @@ data = http.get_json("/v3/reference/options/contracts/O:NVDA260516C00100000")
 
 ## See also
 
-- [`oqe.tool_schemas`](https://github.com/playforest/options-query-agent/blob/main/src/oqe/tool_schemas.py) for full Pydantic input/output models.
+- [`voli.tool_schemas`](https://github.com/playforest/voli/blob/main/src/voli/tool_schemas.py) for full Pydantic input/output models.
 - [Architecture: caching](../architecture/caching.md) for how the cache key is constructed.

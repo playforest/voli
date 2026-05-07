@@ -16,10 +16,10 @@ default, and structured so failures point at exactly one thing.
 ## Conventions
 
 - **No live API calls** in any test. The synthetic registry from
-  `oqe.eval.synth_market` is the canonical fake. Older test files have
+  `voli.eval.synth_market` is the canonical fake. Older test files have
   inline stubs with the same shape — both are fine.
-- **`tests/conftest.py`** sets `OQE_CACHE_PATH` to a repo-local SQLite
-  file (`.pytest_oqe_cache.sqlite`) and deletes it at startup. Tests
+- **`tests/conftest.py`** sets `VOLI_CACHE_PATH` to a repo-local SQLite
+  file (`.pytest_voli_cache.sqlite`) and deletes it at startup. Tests
   never share a cache.
 - **No `print` debugging in committed tests.** Use `pytest -vv -s` if
   you need to see output during a one-off debug session.
@@ -61,7 +61,7 @@ new feature, prefer the smallest layer that proves it works:
 To convince yourself the eval is meaningful, sabotage something locally:
 
 ```python
-# In oqe/agent/writer.py, comment out a line that adds atm_strike to facts.
+# In voli/agent/writer.py, comment out a line that adds atm_strike to facts.
 poetry run python eval/run_eval.py
 # Expect: 4 failed cases with `facts.atm_strike: missing`.
 ```
@@ -71,7 +71,7 @@ Then revert. The harness should report 20 / 20 again.
 ## Coverage
 
 Not currently tracked. If you want a number: `poetry run python -m pytest
---cov=oqe`. The eval harness covers the agent end-to-end path; analytics
+--cov=voli`. The eval harness covers the agent end-to-end path; analytics
 and tools have their own targeted tests.
 
 ## CI

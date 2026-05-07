@@ -50,7 +50,7 @@ is skipped when absent.
 
 ## Synthetic surface (what to encode)
 
-The harness uses the registry from `oqe.eval.synth_market`. The IV
+The harness uses the registry from `voli.eval.synth_market`. The IV
 formula is:
 
 ```
@@ -98,7 +98,7 @@ For chain-count assertions:
 
 ## Comments
 
-Lines starting with `//` are stripped by `oqe.eval.runner.load_cases`.
+Lines starting with `//` are stripped by `voli.eval.runner.load_cases`.
 Use them to group cases or note regressions:
 
 ```jsonl

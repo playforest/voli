@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from oqe.cache import SQLiteCache, make_cache_key
+from voli.cache import SQLiteCache, make_cache_key
 
 
 def test_cache_key_order_insensitive_option_symbols(tmp_path: Path) -> None:

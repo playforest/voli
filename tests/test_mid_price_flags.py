@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from oqe.analytics.iv_metrics import mid_price
+from voli.analytics.iv_metrics import mid_price
 
 
 def test_mid_price_normal_no_flags():

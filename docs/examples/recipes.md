@@ -1,13 +1,13 @@
 # Recipes
 
-Patterns for using OQE in real workflows.
+Patterns for using Voli in real workflows.
 
 ## Compare ATM IV across a watchlist
 
 Print front-vs-next IV for a list of tickers in one pass.
 
 ```python
-from oqe.agent import answer_question
+from voli.agent import answer_question
 
 WATCHLIST = ["NVDA", "SPY", "QQQ", "AAPL", "TSLA"]
 
@@ -34,7 +34,7 @@ TSLA      0.4515    0.4620    +0.0105
 ## Save an audit trail per query
 
 ```bash
-poetry run oqe ask --trace "NVDA ATM IV this week vs next week"
+poetry run voli ask --trace "NVDA ATM IV this week vs next week"
 ```
 
 ```text
@@ -43,7 +43,7 @@ trace_id: 20260505T130904Z_a1b2c3d4
 ```
 
 ```bash
-cat ~/.oqe/traces/20260505T130904Z_a1b2c3d4.jsonl
+cat ~/.voli/traces/20260505T130904Z_a1b2c3d4.jsonl
 ```
 
 ```jsonl
@@ -62,9 +62,9 @@ In a cron job (default theme is bloomberg; we force JSON for parsing):
 
 ```bash
 */15 * 9-16 * 1-5 \
-  /usr/local/bin/poetry run --directory /opt/oqe \
-  oqe ask --json "NVDA ATM IV this week vs next week" \
-  >> /var/log/oqe-nvda-iv.jsonl
+  /usr/local/bin/poetry run --directory /opt/voli \
+  voli ask --json "NVDA ATM IV this week vs next week" \
+  >> /var/log/voli-nvda-iv.jsonl
 ```
 
 Each line is one JSON object with timestamp + IV — easy to load into
@@ -74,15 +74,15 @@ pandas / DuckDB / a TSDB later.
 
 ```bash
 # Just the front IV
-poetry run oqe ask --json "NVDA ATM IV this week vs next week" \
+poetry run voli ask --json "NVDA ATM IV this week vs next week" \
   | jq -r '.facts.front_iv'
 
 # All numbers used (auditable list)
-poetry run oqe ask --json "NVDA ATM IV this week vs next week" \
+poetry run voli ask --json "NVDA ATM IV this week vs next week" \
   | jq '.numbers_used'
 
 # Compact one-line summary
-poetry run oqe ask --json "NVDA ATM IV this week vs next week" \
+poetry run voli ask --json "NVDA ATM IV this week vs next week" \
   | jq -r '"\(.facts.ticker) front=\(.facts.front_iv) next=\(.facts.next_iv)"'
 ```
 
@@ -109,8 +109,8 @@ If all three are green, the agent's contract hasn't regressed.
 For internal tooling that wants reproducible outputs without Polygon:
 
 ```python
-from oqe.agent import answer_question
-from oqe.eval.synth_market import make_registry
+from voli.agent import answer_question
+from voli.eval.synth_market import make_registry
 
 reg = make_registry()
 resp = answer_question("NVDA ATM IV this week vs next week", registry=reg)
@@ -129,7 +129,7 @@ for prompt in \
   "What are the greeks of the NVDA 2026-05-16 100C?" \
   "Show NVDA options for 2026-05-16"
 do
-  poetry run oqe ask --cycle-theme "$prompt"
+  poetry run voli ask --cycle-theme "$prompt"
 done
 ```
 

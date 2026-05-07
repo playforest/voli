@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from datetime import UTC
 
-import oqe.tools.polygon_tools as pt
-from oqe.polygon.http import PolygonNotFoundError
-from oqe.tool_schemas import (
+import voli.tools.polygon_tools as pt
+from voli.polygon.http import PolygonNotFoundError
+from voli.tool_schemas import (
     GetOptionGreeksInput,
     GetOptionQuotesInput,
     GetUnderlyingSnapshotInput,

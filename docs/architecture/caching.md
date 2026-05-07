@@ -1,13 +1,13 @@
 # Caching
 
-OQE ships a SQLite-backed cache so `oqe ask "..."` for the same prompt
+Voli ships a SQLite-backed cache so `voli ask "..."` for the same prompt
 within a TTL window returns identical numbers without hitting Polygon.
 
 ## Where it lives
 
 | Item | Default path | Override |
 | --- | --- | --- |
-| SQLite cache | `~/.oqe/cache.sqlite` | `OQE_CACHE_PATH` env var |
+| SQLite cache | `~/.voli/cache.sqlite` | `VOLI_CACHE_PATH` env var |
 
 The path is created lazily on first write. Schema is initialized
 automatically by `SQLiteCache.__init__`.
@@ -22,7 +22,7 @@ automatically by `SQLiteCache.__init__`.
 | `list_option_contracts` | 6h |
 
 Quotes / greeks / spot move quickly; contract listings rarely change
-intra-session. TTLs are defined in `oqe.cache.TOOL_TTL_LATEST_SECONDS`.
+intra-session. TTLs are defined in `voli.cache.TOOL_TTL_LATEST_SECONDS`.
 
 ## Cache key construction
 
@@ -32,7 +32,7 @@ key = sha256("v1|tool=<name>|asof=<asof>|inputs=<canonical_json>")
 
 - `<name>` — the tool name (e.g. `get_option_quotes`).
 - `<asof>` — `latest` for live snapshots, or a normalised ISO/epoch string.
-- `<canonical_json>` — `oqe.cache.canonical_json(inputs)`:
+- `<canonical_json>` — `voli.cache.canonical_json(inputs)`:
   - dict keys sorted recursively
   - certain list fields (e.g. `option_symbols`) sorted so order doesn't matter
   - `None` values dropped
@@ -43,7 +43,7 @@ key → same response.
 ## Reading + writing
 
 ```python
-from oqe.cache import SQLiteCache, default_cache_path, make_cache_key, ttl_for
+from voli.cache import SQLiteCache, default_cache_path, make_cache_key, ttl_for
 
 cache = SQLiteCache(default_cache_path())
 key, asof_norm, inputs_json = make_cache_key(
@@ -64,7 +64,7 @@ if record is None:
     )
 ```
 
-`oqe.tools.polygon_tools` does this dance for you — you don't normally call
+`voli.tools.polygon_tools` does this dance for you — you don't normally call
 the cache directly.
 
 ## Reproducibility
@@ -80,13 +80,13 @@ For any single prompt:
 So: **same prompt + same TTL window = byte-identical answer.**
 
 For strictly reproducible eval runs (no TTL race), point at the synthetic
-registry from `oqe.eval.synth_market` — that returns the same numbers
+registry from `voli.eval.synth_market` — that returns the same numbers
 forever. The eval harness uses it by default.
 
 ## Trace files
 
 `--trace` (or `start_trace()` in code) creates one JSONL file per CLI run
-under `~/.oqe/traces/<trace_id>.jsonl`. Each line is a `tool_call` event
+under `~/.voli/traces/<trace_id>.jsonl`. Each line is a `tool_call` event
 with the cache key, inputs JSON, and warnings:
 
 ```jsonl
@@ -97,24 +97,24 @@ with the cache key, inputs JSON, and warnings:
 {"event": "trace_end", ...}
 ```
 
-Override the trace dir with `OQE_TRACE_DIR=/path/to/traces`.
+Override the trace dir with `VOLI_TRACE_DIR=/path/to/traces`.
 
 ## Invalidating the cache
 
-There's no `oqe cache clear` yet. Until there is:
+There's no `voli cache clear` yet. Until there is:
 
 ```bash
-rm ~/.oqe/cache.sqlite
+rm ~/.voli/cache.sqlite
 ```
 
 Or for tests / repeatable benchmarks:
 
 ```bash
-OQE_CACHE_PATH=/tmp/oqe-test-cache.sqlite poetry run oqe ask "..."
-rm /tmp/oqe-test-cache.sqlite
+VOLI_CACHE_PATH=/tmp/voli-test-cache.sqlite poetry run voli ask "..."
+rm /tmp/voli-test-cache.sqlite
 ```
 
 ## See also
 
-- [Reproducibility deep-dive](https://github.com/playforest/options-query-agent/blob/main/docs/reproducibility.md) — original Part 4 design notes.
+- [Reproducibility deep-dive](https://github.com/playforest/voli/blob/main/docs/reproducibility.md) — original Part 4 design notes.
 - [Polygon tools](../python-api/tools.md) — where caching is wired in.

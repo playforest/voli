@@ -1,18 +1,18 @@
 # Refusals & rewrites
 
-OQE refuses prompts that need advice, prediction, execution, news
+Voli refuses prompts that need advice, prediction, execution, news
 causality, or portfolio reasoning — and offers up to three **supported
 rewrites** so you can keep moving.
 
 ## Anatomy of a refusal
 
 ```bash
-poetry run oqe ask "Should I buy NVDA calls?"
+poetry run voli ask "Should I buy NVDA calls?"
 ```
 
 ```text
 ================================================================================
- OQE | TICKER: NVDA | CATEGORY: NOT_SUPPORTED | REFUSED
+ VOLI | TICKER: NVDA | CATEGORY: NOT_SUPPORTED | REFUSED
 ================================================================================
 [ SUMMARY ]
 Not supported in scope: this question falls under 'execution'. I can return
@@ -39,12 +39,12 @@ Exit code: `3`.
 | `strategy` | "best spread", "iron condor to trade", "credit spread" | Strategy recommendation = advice. |
 | `prediction` | "predict", "will IV ...", "going to", "price target" | We don't forecast. |
 
-The full keyword list lives in `oqe.agent.planner._NOT_SUPPORTED_KEYWORDS`.
+The full keyword list lives in `voli.agent.planner._NOT_SUPPORTED_KEYWORDS`.
 
 ## Handling refusals in code
 
 ```python
-from oqe.agent import answer_question
+from voli.agent import answer_question
 
 resp = answer_question("Should I buy NVDA calls?")
 if not resp.supported:
@@ -80,7 +80,7 @@ A different kind of soft-refusal: the planner couldn't extract a ticker
 and you didn't pass `--ticker`.
 
 ```bash
-poetry run oqe ask "Show ATM call and put this Friday"
+poetry run voli ask "Show ATM call and put this Friday"
 ```
 
 ```text
@@ -92,7 +92,7 @@ I need a ticker to answer this. Please re-ask with the underlying (e.g.,
 Exit code: `3`. Fix:
 
 ```bash
-poetry run oqe ask --ticker NVDA "Show ATM call and put this Friday"
+poetry run voli ask --ticker NVDA "Show ATM call and put this Friday"
 ```
 
 ## False positives
@@ -105,4 +105,4 @@ expected category.
 ## See also
 
 - [Concepts](../getting-started/concepts.md) — why we draw the line where we do.
-- [`docs/v1_contract.md`](https://github.com/playforest/options-query-agent/blob/main/docs/v1_contract.md) — the formal contract.
+- [`docs/v1_contract.md`](https://github.com/playforest/voli/blob/main/docs/v1_contract.md) — the formal contract.

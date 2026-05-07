@@ -1,13 +1,13 @@
 # Troubleshooting
 
 Real failure modes we've hit, with fixes. If you run into something else,
-file an issue on GitHub with the trace ID (`oqe ask --trace`).
+file an issue on GitHub with the trace ID (`voli ask --trace`).
 
 ## Missing API key
 
 ```text
 ================================================================================
- OQE | ERROR: PolygonAuthError
+ VOLI | ERROR: PolygonAuthError
 ================================================================================
 [ MESSAGE ]
 Missing POLYGON_API_KEY env var. Set it (or add to .env) before calling Polygon.
@@ -47,7 +47,7 @@ tickers that's typically 4-6 paginated requests, which can take 5-15s on a
 slow connection. To see what it's actually doing:
 
 ```bash
-POLYGON_HTTP_DEBUG=1 poetry run oqe ask "NVDA ATM IV this week"
+POLYGON_HTTP_DEBUG=1 poetry run voli ask "NVDA ATM IV this week"
 ```
 
 You'll see one log line per HTTP request:
@@ -70,7 +70,7 @@ for 'Limit' failed on the 'max' tag
 ```
 
 The chain snapshot endpoint caps `limit` at 250. We cap to 250 internally
-in `oqe.tools.polygon_tools`; if you see this error, you're probably on
+in `voli.tools.polygon_tools`; if you see this error, you're probably on
 an older revision. Pull `main`.
 
 ## Greeks validation error
@@ -84,7 +84,7 @@ gamma
 
 Polygon occasionally emits tiny negative noise (`-3e-10`, `-8e-5`) for
 gamma/vega — artefacts of an upstream Black-Scholes solver. We clamp
-anything within `1e-3` of zero in `oqe.polygon.normalise._clamp_nonneg`.
+anything within `1e-3` of zero in `voli.polygon.normalise._clamp_nonneg`.
 If you see this, you're on a revision before that fix; pull `main`.
 
 ## Output is monochrome / no colour
@@ -110,19 +110,19 @@ The planner couldn't extract a ticker from the prompt. Either include one in
 the prompt, or pass `--ticker NAME`:
 
 ```bash
-poetry run oqe ask --ticker NVDA "Show ATM call and put this Friday"
+poetry run voli ask --ticker NVDA "Show ATM call and put this Friday"
 ```
 
 ## Refusal: my prompt should be supported
 
-If `oqe ask "..."` returns `REFUSED` and you think the question is in
+If `voli ask "..."` returns `REFUSED` and you think the question is in
 scope, check the rewrites it suggested — they often re-frame the same
 intent as a supported query. If it's a true false-positive, the planner's
 keyword rules are too aggressive — open an issue with the prompt and we'll
 tighten the heuristics.
 
 The full taxonomy of supported vs not-supported lives in
-[`docs/requirements.md`](https://github.com/playforest/options-query-agent/blob/main/docs/requirements.md).
+[`docs/requirements.md`](https://github.com/playforest/voli/blob/main/docs/requirements.md).
 
 ## Stale data warning
 

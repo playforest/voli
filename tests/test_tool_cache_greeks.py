@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from oqe.tool_schemas import GetOptionGreeksInput
-from oqe.tools import polygon_tools as pt
+from voli.tool_schemas import GetOptionGreeksInput
+from voli.tools import polygon_tools as pt
 
 
 def test_get_option_greeks_cache_hit_second_call(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
     cache_path = tmp_path / "cache.sqlite"
-    monkeypatch.setenv("OQE_CACHE_PATH", str(cache_path))
+    monkeypatch.setenv("VOLI_CACHE_PATH", str(cache_path))
     pt._get_cache.cache_clear()
 
     calls: list[tuple[str, str]] = []

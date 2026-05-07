@@ -1,6 +1,6 @@
 # CLI usage
 
-The `oqe` CLI is the v1 user surface. It wraps `oqe.agent.answer_question`
+The `voli` CLI is the v1 user surface. It wraps `voli.agent.answer_question`
 and prints the result in either Bloomberg-style ANSI text (default) or JSON.
 
 ## Install
@@ -9,16 +9,16 @@ and prints the result in either Bloomberg-style ANSI text (default) or JSON.
 poetry install
 ```
 
-This registers the `oqe` script via `pyproject.toml`'s
+This registers the `voli` script via `pyproject.toml`'s
 `[tool.poetry.scripts]` entry. After install you can run it from the venv:
 
 ```
-poetry run oqe ask "NVDA ATM IV this week vs next week"
+poetry run voli ask "NVDA ATM IV this week vs next week"
 ```
 
 ## Commands
 
-### `oqe ask "<prompt>"`
+### `voli ask "<prompt>"`
 
 Ask a single natural-language question.
 
@@ -27,17 +27,17 @@ Ask a single natural-language question.
 | `--ticker NVDA` | Default ticker if the prompt doesn't contain one. |
 | `--asof 2026-05-05T15:00:00Z` | UTC as-of timestamp (best-effort, snapshot-dependent). Disclosed in the status bar and JSON payload. |
 | `--json` | Emit JSON instead of the text view. |
-| `--trace` | Open a JSONL run-trace under `$OQE_TRACE_DIR` (default `~/.oqe/traces/`). The trace ID is printed in the footer. |
+| `--trace` | Open a JSONL run-trace under `$VOLI_TRACE_DIR` (default `~/.voli/traces/`). The trace ID is printed in the footer. |
 | `--no-color` | Disable ANSI colour. Auto-disabled when stdout is not a TTY or when `NO_COLOR` is set in the environment. |
-| `--theme NAME` | Pick a colour theme. See `oqe themes list` for the names. Default is `bloomberg` (or `$OQE_THEME`). |
-| `--cycle-theme` | Pick the next theme in rotation each invocation. Cursor is stored at `~/.oqe/theme_cursor` (override with `$OQE_THEME_CURSOR`). |
+| `--theme NAME` | Pick a colour theme. See `voli themes list` for the names. Default is `bloomberg` (or `$VOLI_THEME`). |
+| `--cycle-theme` | Pick the next theme in rotation each invocation. Cursor is stored at `~/.voli/theme_cursor` (override with `$VOLI_THEME_CURSOR`). |
 
-### `oqe themes list`
+### `voli themes list`
 
 Print every bundled theme with its description, each row themed in its own
 palette so you can see what you're choosing.
 
-### `oqe themes preview [--theme NAME | --all]`
+### `voli themes preview [--theme NAME | --all]`
 
 Render a sample answer in the chosen theme. `--all` renders the same sample
 once per theme so you can compare them side-by-side.
@@ -54,16 +54,16 @@ Exit codes:
 
 ```bash
 # Term structure (default text view)
-poetry run oqe ask "NVDA ATM IV this week vs next week"
+poetry run voli ask "NVDA ATM IV this week vs next week"
 
 # Skew, JSON output, custom default ticker
-poetry run oqe ask --ticker SPY --json "Show IV skew next Friday"
+poetry run voli ask --ticker SPY --json "Show IV skew next Friday"
 
 # Greeks with run-trace
-poetry run oqe ask --trace "What are the greeks of the NVDA 2026-05-16 100C?"
+poetry run voli ask --trace "What are the greeks of the NVDA 2026-05-16 100C?"
 
 # Pipe-friendly: colour auto-disables when stdout isn't a TTY
-poetry run oqe ask "List NVDA calls for 2026-05-16" | head -40
+poetry run voli ask "List NVDA calls for 2026-05-16" | head -40
 ```
 
 ## Output sections
@@ -72,7 +72,7 @@ For supported questions:
 
 ```
 ================================================================================
- OQE | TICKER: NVDA | CATEGORY: TERM_STRUCTURE | OK
+ VOLI | TICKER: NVDA | CATEGORY: TERM_STRUCTURE | OK
 ================================================================================
 [ SUMMARY ]
 NVDA ATM IV term structure: front IV 0.4200 vs next IV 0.4500 ...
@@ -107,7 +107,7 @@ execution
 
 ## Themes
 
-Twelve bundled palettes (run `oqe themes list` to see them with live samples):
+Twelve bundled palettes (run `voli themes list` to see them with live samples):
 
 | Name | Vibe |
 | --- | --- |
@@ -124,13 +124,13 @@ Twelve bundled palettes (run `oqe themes list` to see them with live samples):
 | `sepia` | Aged photograph: warm browns + cream on near-black |
 | `material` | MkDocs Material dark code: pink keywords, purple modules, soft green strings on dark blue-grey |
 
-Selection precedence: `--cycle-theme` > `--theme NAME` > `$OQE_THEME` > `bloomberg`.
+Selection precedence: `--cycle-theme` > `--theme NAME` > `$VOLI_THEME` > `bloomberg`.
 
 ```bash
-poetry run oqe ask --theme matrix "NVDA ATM IV this week vs next week"
-OQE_THEME=dracula poetry run oqe ask "Show NVDA IV skew next Friday"
-poetry run oqe ask --cycle-theme "Show NVDA IV skew"   # rotates each call
-poetry run oqe themes preview --all                     # see every palette
+poetry run voli ask --theme matrix "NVDA ATM IV this week vs next week"
+VOLI_THEME=dracula poetry run voli ask "Show NVDA IV skew next Friday"
+poetry run voli ask --cycle-theme "Show NVDA IV skew"   # rotates each call
+poetry run voli themes preview --all                     # see every palette
 ```
 
 Set `NO_COLOR=1` or pass `--no-color` to strip ANSI sequences entirely.

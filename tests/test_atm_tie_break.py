@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from oqe.analytics.iv_metrics import select_atm_strike
+from voli.analytics.iv_metrics import select_atm_strike
 
 
 def test_default_tie_break_picks_lower():

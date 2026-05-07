@@ -18,11 +18,11 @@ line-length = 100
 target-version = ["py311"]
 
 [tool.poetry]
-name = "options-query-agent"
+name = "voli"
 version = "0.1.0"
-description = "Options Chain Q&A Agent"
+description = "Voli — grounded Q&A and analytics over equity option chains."
 authors = ["Your Name <you@example.com>"]
-packages = [{ include = "oqe", from = "src" }]
+packages = [{ include = "voli", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -37,10 +37,10 @@ mcp = {version = "^1.27.0", optional = true}
 
 [tool.poetry.extras]
 # Install with: poetry install -E plot
-# Enables `oqe ask --plot out.png` and the oqe.plot module.
+# Enables `voli ask --plot out.png` and the voli.plot module.
 plot = ["matplotlib"]
 
-# LLM-driven agent (oqe llm-ask). Pick one provider or both.
+# LLM-driven agent (voli llm-ask). Pick one provider or both.
 #   poetry install -E anthropic
 #   poetry install -E openai
 #   poetry install -E llm        # both
@@ -48,12 +48,12 @@ anthropic = ["anthropic"]
 openai = ["openai"]
 llm = ["anthropic", "openai"]
 
-# MCP server so Claude Desktop / claude.ai web can call OQE tools mid-conversation.
+# MCP server so Claude Desktop / claude.ai web can call Voli tools mid-conversation.
 #   poetry install -E mcp
 mcp = ["mcp"]
 
 [tool.poetry.scripts]
-oqe = "oqe.cli:main"
+voli = "voli.cli:main"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"

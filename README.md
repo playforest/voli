@@ -1,4 +1,4 @@
-# Options Query Engine (OQE)
+# Voli
 
 > A Python library + CLI that answers natural-language questions about an
 > equity option chain — chain slices, IV term structure, skew, greeks —
@@ -9,7 +9,7 @@
 
 ```text
 ================================================================================
- OQE | TICKER: NVDA | CATEGORY: TERM_STRUCTURE | OK
+ VOLI | TICKER: NVDA | CATEGORY: TERM_STRUCTURE | OK
 ================================================================================
 [ SUMMARY ]
 NVDA ATM IV term structure: front IV 0.3318 vs next IV 0.3457 at strike 200.0
@@ -33,7 +33,7 @@ NEXT_IV       0.3457
 ================================================================================
 ```
 
-## Why OQE?
+## Why Voli?
 
 - **Grounded.** Every numeric claim in the answer must come from a tool call
   or a centralised analytics function — the writer enforces a runtime
@@ -56,8 +56,8 @@ NEXT_IV       0.3457
 ### 1. Install
 
 ```bash
-git clone https://github.com/playforest/options-query-agent
-cd options-query-agent
+git clone https://github.com/playforest/voli
+cd voli
 poetry install
 ```
 
@@ -73,7 +73,7 @@ Edit `.env`:
 # Required for live Polygon queries
 POLYGON_API_KEY=pk_your_polygon_key
 
-# Optional - only needed for `oqe llm-ask` and the MCP server
+# Optional - only needed for `voli llm-ask` and the MCP server
 ANTHROPIC_API_KEY=sk-ant-your_anthropic_key   # for Claude
 OPENAI_API_KEY=sk-your_openai_key             # for GPT
 ```
@@ -88,7 +88,7 @@ environment wins over `.env`.
     Always available, no extra installs needed:
 
     ```bash
-    poetry run oqe ask "NVDA ATM IV this week vs next week"
+    poetry run voli ask "NVDA ATM IV this week vs next week"
     ```
 
 === "LLM-driven CLI"
@@ -100,7 +100,7 @@ environment wins over `.env`.
     poetry install -E openai      # GPT (gpt-4.1-mini by default)
     poetry install -E llm         # both
 
-    poetry run oqe llm-ask "How does NVDA's IV term structure compare to QQQ's?"
+    poetry run voli llm-ask "How does NVDA's IV term structure compare to QQQ's?"
     ```
 
     The LLM sees seven tools (term structure / skew / ATM greeks shortcuts
@@ -119,23 +119,23 @@ environment wins over `.env`.
     ```json
     {
       "mcpServers": {
-        "oqe": {
+        "voli": {
           "command": "poetry",
-          "args": ["run", "oqe", "mcp-serve"],
-          "cwd": "/absolute/path/to/options-query-agent",
+          "args": ["run", "voli", "mcp-serve"],
+          "cwd": "/absolute/path/to/voli",
           "env": {"POLYGON_API_KEY": "pk_your_key"}
         }
       }
     }
     ```
 
-    Restart Claude Desktop. The OQE tools now appear in the **Available
+    Restart Claude Desktop. The Voli tools now appear in the **Available
     Tools** panel and Claude can call them mid-conversation.
 
 === "Python"
 
     ```python
-    from oqe.agent import answer_question
+    from voli.agent import answer_question
 
     resp = answer_question("NVDA ATM IV this week vs next week")
     print(resp.summary)
@@ -146,12 +146,12 @@ environment wins over `.env`.
 
 | Command | Purpose |
 | --- | --- |
-| `oqe ask "..."` | Rule-based agent. Deterministic, fast, no LLM cost. |
-| `oqe ask-many --tickers NVDA,SPY,QQQ "..."` | Same prompt across multiple tickers, comparison table. |
-| `oqe llm-ask "..."` | LLM (Claude / GPT) drives the OQE tools. Streams chain-of-thought. |
-| `oqe mcp-serve` | MCP server (stdio) for Claude Desktop / claude.ai web. |
-| `oqe replay <trace_id>` | Re-render a previously stored answer (rule-based or LLM). |
-| `oqe themes list / preview` | Browse / preview the 12 colour palettes. |
+| `voli ask "..."` | Rule-based agent. Deterministic, fast, no LLM cost. |
+| `voli ask-many --tickers NVDA,SPY,QQQ "..."` | Same prompt across multiple tickers, comparison table. |
+| `voli llm-ask "..."` | LLM (Claude / GPT) drives the Voli tools. Streams chain-of-thought. |
+| `voli mcp-serve` | MCP server (stdio) for Claude Desktop / claude.ai web. |
+| `voli replay <trace_id>` | Re-render a previously stored answer (rule-based or LLM). |
+| `voli themes list / preview` | Browse / preview the 12 colour palettes. |
 
 Common flags across the answer commands:
 
@@ -173,7 +173,7 @@ Common flags across the answer commands:
 | `anthropic` | Claude provider for `llm-ask` | `poetry install -E anthropic` |
 | `openai` | GPT provider for `llm-ask` | `poetry install -E openai` |
 | `llm` | Both LLM providers | `poetry install -E llm` |
-| `mcp` | `oqe mcp-serve` (Claude Desktop / claude.ai) | `poetry install -E mcp` |
+| `mcp` | `voli mcp-serve` (Claude Desktop / claude.ai) | `poetry install -E mcp` |
 | `docs` | `mkdocs serve` for the doc site | `poetry install --with docs` |
 
 ## Daily commands
@@ -210,15 +210,15 @@ poetry run mkdocs serve
 
 | Path | Purpose |
 | --- | --- |
-| `src/oqe/agent/` | Rule-based planner → executor → writer. |
-| `src/oqe/analytics/` | Pure-function metrics: term structure, skew slope, ATM greeks. |
-| `src/oqe/polygon/` | HTTP client + response normalisation. |
-| `src/oqe/tools/` | High-level tool wrappers (Polygon-backed). |
-| `src/oqe/llm/` | Provider-agnostic LLM agent (Anthropic + OpenAI). |
-| `src/oqe/mcp_server.py` | MCP server (stdio) for Claude Desktop / claude.ai. |
-| `src/oqe/eval/` | Evaluation harness (synthetic registry + runner). |
-| `src/oqe/cli.py` | Command-line entrypoint. |
-| `src/oqe/cli_render.py` | Themed ANSI renderer + 10 palettes. |
+| `src/voli/agent/` | Rule-based planner → executor → writer. |
+| `src/voli/analytics/` | Pure-function metrics: term structure, skew slope, ATM greeks. |
+| `src/voli/polygon/` | HTTP client + response normalisation. |
+| `src/voli/tools/` | High-level tool wrappers (Polygon-backed). |
+| `src/voli/llm/` | Provider-agnostic LLM agent (Anthropic + OpenAI). |
+| `src/voli/mcp_server.py` | MCP server (stdio) for Claude Desktop / claude.ai. |
+| `src/voli/eval/` | Evaluation harness (synthetic registry + runner). |
+| `src/voli/cli.py` | Command-line entrypoint. |
+| `src/voli/cli_render.py` | Themed ANSI renderer + 10 palettes. |
 | `eval/prompts.jsonl` | 20-case regression dataset. |
 | `tests/` | pytest suite (253 tests, no live API needed). |
 | `docs/` | MkDocs Material doc site. |

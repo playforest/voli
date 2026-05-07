@@ -50,8 +50,8 @@ If you don't know what a metric should be, the synthetic registry makes
 it easy to find out:
 
 ```python
-from oqe.agent import answer_question
-from oqe.eval.synth_market import make_registry
+from voli.agent import answer_question
+from voli.eval.synth_market import make_registry
 
 reg = make_registry()
 resp = answer_question("MSFT ATM IV this week vs next week", registry=reg)
