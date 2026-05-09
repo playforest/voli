@@ -116,6 +116,9 @@ nav:
   - Extending Voli:
       - Data providers: extending/data-providers.md
       - LLM providers: extending/llm-providers.md
+  - Deploy:
+      - Serving Claude.ai and ChatGPT: deploy/serving-claude-and-chatgpt.md
+      - DigitalOcean walkthrough: deploy/digitalocean.md
   - Eval Harness:
       - Running the harness: eval/harness.md
       - Dataset format: eval/dataset-format.md

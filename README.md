@@ -240,7 +240,8 @@ print(resp.facts["front_iv"], resp.facts["next_iv"])
 | `voli ask "..."` | Rule-based agent. Deterministic, fast, no LLM cost. |
 | `voli ask-many --tickers NVDA,SPY,QQQ "..."` | Same prompt across multiple tickers, comparison table. |
 | `voli llm-ask "..."` | LLM (Claude / GPT) drives the Voli tools. Streams chain-of-thought. |
-| `voli mcp-serve` | MCP server (stdio) for Claude Desktop / claude.ai web. |
+| `voli mcp-serve` | MCP server over stdio. Used by Claude Desktop (which can spawn local processes). |
+| `voli serve` | HTTP server hosting MCP at `/mcp` and OpenAPI/REST at `/openapi.json` + `/tools/<name>`. Used by claude.ai web and ChatGPT Custom GPT Actions, after a public deploy. See [`docs/deploy/`](docs/deploy/). |
 | `voli replay <trace_id>` | Re-render a previously stored answer (rule-based or LLM). |
 | `voli themes list / preview` | Browse / preview the 12 colour palettes. |
 
