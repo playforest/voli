@@ -215,6 +215,44 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     _add_data_provider_flag(mcp_serve)
 
+    # ---- serve (HTTP) -----------------------------------------------------
+    serve = sub.add_parser(
+        "serve",
+        help="Run voli's HTTP server (MCP + OpenAPI/REST) for claude.ai and ChatGPT.",
+    )
+    serve.add_argument(
+        "--host",
+        default="0.0.0.0",
+        help="Host interface to bind. Default 0.0.0.0 (all interfaces); "
+        "use 127.0.0.1 to restrict to localhost.",
+    )
+    serve.add_argument(
+        "--port",
+        type=int,
+        default=8080,
+        help="Port to listen on (default 8080).",
+    )
+    serve.add_argument(
+        "--server-url",
+        default=None,
+        metavar="URL",
+        help="Public URL where this server is reachable (e.g. https://voli.example.com). "
+        "Embedded in the OpenAPI spec so ChatGPT can call back. "
+        "Required for ChatGPT integration; optional for local testing.",
+    )
+    serve.add_argument(
+        "--raw-only",
+        action="store_true",
+        help="Expose only the four raw chain tools (skip the analytics layer).",
+    )
+    serve.add_argument(
+        "--no-auth",
+        action="store_true",
+        help="Disable bearer-token auth. Local development only; refuse to "
+        "ever flip this on a public deploy.",
+    )
+    _add_data_provider_flag(serve)
+
     # ---- replay -----------------------------------------------------------
     replay = sub.add_parser(
         "replay",
@@ -276,6 +314,8 @@ def main(
         return _cmd_llm_ask(args, out=out)
     if args.command == "mcp-serve":
         return _cmd_mcp_serve(args, out=out)
+    if args.command == "serve":
+        return _cmd_serve(args, out=out)
     if args.command == "replay":
         return _cmd_replay(args, out=out)
     if args.command == "themes":
@@ -653,6 +693,62 @@ def _cmd_mcp_serve(args: argparse.Namespace, *, out) -> int:
     except KeyboardInterrupt:
         return 0
     except Exception as exc:  # pragma: no cover - hard to provoke without a client
+        return _render_error(args, exc, out=sys.stderr)
+    return 0
+
+
+# ---- serve (HTTP) -----------------------------------------------------------
+
+
+def _cmd_serve(args: argparse.Namespace, *, out) -> int:
+    """Run voli's umbrella HTTP server (MCP + OpenAPI/REST + auth).
+
+    Spoken protocols: streamable-HTTP MCP at /mcp (claude.ai), OpenAPI 3.1
+    at /openapi.json + REST at /tools/<name> (ChatGPT). One bearer token
+    protects both surfaces; /healthz is public.
+
+    Auth precedence: --no-auth flag > VOLI_AUTH_TOKEN env var > refuse to
+    start. The env var is read at startup; the token is never logged.
+    """
+
+    import os
+
+    auth_token: str | None
+    if args.no_auth:
+        auth_token = None
+        print(
+            "voli serve: WARNING --no-auth disables bearer-token check. "
+            "Do not expose this server to the public internet.",
+            file=sys.stderr,
+        )
+    else:
+        auth_token = os.environ.get("VOLI_AUTH_TOKEN")
+        if not auth_token:
+            print(
+                "voli serve: VOLI_AUTH_TOKEN is required for production runs.\n"
+                "  Either:\n"
+                "    export VOLI_AUTH_TOKEN=$(python -c 'import secrets; print(secrets.token_urlsafe(32))')\n"
+                "  Or pass --no-auth for local development.",
+                file=sys.stderr,
+            )
+            return 2
+
+    try:
+        from .server import serve as run_server
+    except ImportError as exc:
+        return _render_error(args, exc, out=sys.stderr)
+
+    try:
+        run_server(
+            host=args.host,
+            port=args.port,
+            auth_token=auth_token,
+            server_url=args.server_url,
+            include_analytics=not args.raw_only,
+        )
+    except KeyboardInterrupt:
+        return 0
+    except Exception as exc:  # pragma: no cover
         return _render_error(args, exc, out=sys.stderr)
     return 0
 
