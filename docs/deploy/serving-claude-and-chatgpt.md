@@ -107,6 +107,10 @@ requests with the old token receive a 401.
 
 ## See also
 
+- [Poking around the server](poking.html): a copy-paste cookbook of
+  `curl` and shell commands for inspecting every endpoint. Self-contained
+  HTML with a sepia theme and a dark-mode toggle; open it directly from
+  the repo or browse it on the deployed docs site.
 - [DigitalOcean deploy walkthrough](digitalocean.md): provisioning the
   droplet, getting an HTTPS URL, running the server as a systemd unit.
 - [Extending Voli: data providers](../extending/data-providers.md): how

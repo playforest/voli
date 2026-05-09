@@ -7,7 +7,9 @@ infrastructure-side recipe.
 For now, the protocol-level documentation lives in
 [Serving Claude.ai and ChatGPT](serving-claude-and-chatgpt.md), which
 covers running `voli serve`, the endpoint surface, and per-provider
-connector configuration.
+connector configuration. For inspecting a running server (local or
+deployed) with `curl`, see the standalone
+[poking cookbook](poking.html).
 
 ## What this page will cover when filled in
 

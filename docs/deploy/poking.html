@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poking around the voli server</title>
+
+<style>
+  /* ------------------------------------------------------------------
+     Sepia palette. Light is warm cream + dark brown ink. Dark is dark
+     coffee + cream ink. Both keep the same hue family so the toggle
+     feels like turning down a lamp, not switching to a different doc.
+  ------------------------------------------------------------------ */
+  :root[data-theme="light"] {
+    --bg:           #f4ecd8;
+    --bg-elevated:  #ebe1c8;
+    --ink:          #4a3829;
+    --ink-soft:     #6c5742;
+    --ink-faint:    #8c785f;
+    --rule:         #d9cba8;
+    --accent:       #8b6f47;
+    --accent-soft:  #b39468;
+    --code-bg:      #ebe1c8;
+    --code-border:  #d9cba8;
+    --code-ink:     #5b4636;
+    --code-comment: #94795b;
+    --code-string:  #88643f;
+    --shadow:       0 1px 2px rgba(74, 56, 41, 0.06);
+  }
+  :root[data-theme="dark"] {
+    --bg:           #2b2218;
+    --bg-elevated:  #34281c;
+    --ink:          #e6d4ac;
+    --ink-soft:     #c9b88f;
+    --ink-faint:    #9e8a68;
+    --rule:         #4a3a25;
+    --accent:       #d2ad75;
+    --accent-soft:  #a8845a;
+    --code-bg:      #1d1611;
+    --code-border:  #4a3a25;
+    --code-ink:     #d6c5a8;
+    --code-comment: #8a7355;
+    --code-string:  #c9a878;
+    --shadow:       0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    transition: background 200ms ease, color 200ms ease;
+  }
+
+  body {
+    font-family: "Iowan Old Style", "Hoefler Text", Georgia, "Times New Roman", serif;
+    font-size: 18px;
+    line-height: 1.7;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ------------------------------------------------------------------
+     Layout: single column, generous side margins, capped width.
+  ------------------------------------------------------------------ */
+  main {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 4rem 2rem 6rem;
+  }
+  @media (max-width: 600px) {
+    main { padding: 2.5rem 1.25rem 4rem; }
+    body { font-size: 17px; }
+  }
+
+  /* ------------------------------------------------------------------
+     Top bar with title + theme toggle.
+  ------------------------------------------------------------------ */
+  header.bar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    backdrop-filter: blur(6px);
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    border-bottom: 1px solid var(--rule);
+    transition: background 200ms ease, border-color 200ms ease;
+  }
+  header.bar .inner {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 0.85rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  header.bar .crumb {
+    font-size: 0.85rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  header.bar .crumb a { color: inherit; }
+
+  button.theme-toggle {
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--ink-soft);
+    padding: 0.4rem 0.6rem;
+    border-radius: 999px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: border-color 150ms, color 150ms, background 150ms;
+  }
+  button.theme-toggle:hover {
+    border-color: var(--accent-soft);
+    color: var(--ink);
+  }
+  button.theme-toggle svg { width: 14px; height: 14px; }
+  /* Show the icon for the OPPOSITE theme, since clicking switches. */
+  :root[data-theme="light"] button.theme-toggle .moon { display: inline; }
+  :root[data-theme="light"] button.theme-toggle .sun  { display: none; }
+  :root[data-theme="dark"]  button.theme-toggle .moon { display: none; }
+  :root[data-theme="dark"]  button.theme-toggle .sun  { display: inline; }
+
+  /* ------------------------------------------------------------------
+     Typography.
+  ------------------------------------------------------------------ */
+  h1, h2, h3, h4 {
+    font-family: inherit;
+    color: var(--ink);
+    line-height: 1.25;
+    letter-spacing: -0.005em;
+    margin-top: 2.5em;
+    margin-bottom: 0.6em;
+  }
+  h1 {
+    font-size: 2.4rem;
+    margin-top: 1.2rem;
+    margin-bottom: 0.3em;
+    letter-spacing: -0.015em;
+  }
+  h2 {
+    font-size: 1.55rem;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 0.3em;
+  }
+  h3 { font-size: 1.2rem; color: var(--ink-soft); }
+  h1 + p.lede {
+    color: var(--ink-soft);
+    font-style: italic;
+    font-size: 1.05rem;
+    margin-top: 0;
+  }
+
+  p { margin: 0 0 1.1em; }
+  p, li { hyphens: auto; }
+
+  a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--accent) 35%, transparent);
+    text-underline-offset: 3px;
+    transition: color 150ms, text-decoration-color 150ms;
+  }
+  a:hover {
+    color: var(--ink);
+    text-decoration-color: currentColor;
+  }
+
+  ul, ol { padding-left: 1.4em; }
+  li { margin: 0.25em 0; }
+
+  hr {
+    border: 0;
+    border-top: 1px solid var(--rule);
+    margin: 3em 0;
+  }
+
+  /* ------------------------------------------------------------------
+     Tables.
+  ------------------------------------------------------------------ */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5em 0;
+    font-size: 0.95rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.55em 0.75em;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  th {
+    font-weight: 600;
+    color: var(--ink-soft);
+    border-bottom: 1.5px solid var(--accent-soft);
+    letter-spacing: 0.02em;
+  }
+  tr:hover td { background: var(--bg-elevated); }
+
+  /* ------------------------------------------------------------------
+     Inline + block code. Mono for code; serif for everything else.
+  ------------------------------------------------------------------ */
+  code, pre, kbd, samp {
+    font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-feature-settings: "calt" 0, "liga" 0;
+  }
+
+  /* Inline code. */
+  p code, li code, td code, th code, h1 code, h2 code, h3 code {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 4px;
+    padding: 0.05em 0.35em;
+    font-size: 0.88em;
+    color: var(--code-ink);
+  }
+
+  /* Block code wrapper, with a copy button. */
+  .codeblock {
+    position: relative;
+    margin: 1.5em 0;
+  }
+  .codeblock pre {
+    margin: 0;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    border: 1px solid var(--code-border);
+    border-radius: 6px;
+    padding: 1em 1.1em;
+    overflow-x: auto;
+    font-size: 0.86rem;
+    line-height: 1.55;
+    box-shadow: var(--shadow);
+  }
+  .codeblock pre code { all: unset; font: inherit; }
+
+  /* Light syntax tinting for shell-style code. We don't run a real
+     highlighter; just tint comments + double-quoted strings via simple
+     <span> wrapping in the body, plus first-token recognition. */
+  .codeblock .c   { color: var(--code-comment); font-style: italic; }
+  .codeblock .s   { color: var(--code-string); }
+
+  /* Copy button. */
+  .codeblock button.copy {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: var(--bg);
+    border: 1px solid var(--code-border);
+    color: var(--ink-soft);
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    font: inherit;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 150ms, background 150ms, color 150ms;
+  }
+  .codeblock:hover button.copy,
+  .codeblock:focus-within button.copy {
+    opacity: 1;
+  }
+  .codeblock button.copy:hover {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+  .codeblock button.copy.copied {
+    background: var(--accent-soft);
+    color: var(--bg);
+    border-color: var(--accent-soft);
+    opacity: 1;
+  }
+
+  /* Anchor links on headings, subtle, only on hover. */
+  h2 .anchor, h3 .anchor {
+    opacity: 0;
+    margin-left: 0.4em;
+    color: var(--ink-faint);
+    text-decoration: none;
+    font-weight: normal;
+    transition: opacity 150ms, color 150ms;
+  }
+  h2:hover .anchor, h3:hover .anchor { opacity: 1; }
+  h2 .anchor:hover, h3 .anchor:hover { color: var(--accent); }
+
+  /* Footer. */
+  footer.colophon {
+    margin-top: 5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-faint);
+    font-size: 0.9rem;
+    font-style: italic;
+  }
+</style>
+</head>
+
+<body>
+
+<header class="bar">
+  <div class="inner">
+    <span class="crumb">voli &middot; deploy &middot; poking</span>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+      <svg class="moon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M11.6 9.5a4.5 4.5 0 0 1-5.1-5.1A5 5 0 1 0 11.6 9.5z"/>
+      </svg>
+      <svg class="sun" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <circle cx="8" cy="8" r="3"/>
+        <path d="M8 0v2M8 14v2M0 8h2M14 8h2M2.3 2.3l1.4 1.4M12.3 12.3l1.4 1.4M2.3 13.7l1.4-1.4M12.3 3.7l1.4-1.4"
+              stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+      </svg>
+      <span class="label">Toggle</span>
+    </button>
+  </div>
+</header>
+
+<main>
+
+<h1>Poking around the server</h1>
+<p class="lede">A cookbook of <code>curl</code> and shell commands for verifying that <code>voli serve</code> is up, exploring its endpoints, and chasing down "why isn't this working" moments.</p>
+
+<p>Everything here is provider-agnostic. Replace <code>$VOLI_URL</code> and <code>$VOLI_TOKEN</code> with your local or deployed values and the commands work the same.</p>
+
+<h2 id="setup">Setup variables<a class="anchor" href="#setup">#</a></h2>
+
+<p>Pick the right pair of values for the server you're poking:</p>
+
+<div class="codeblock"><pre><code><span class="c"># Local dev with --no-auth</span>
+export VOLI_URL=http://localhost:8080
+export VOLI_TOKEN=             <span class="c"># empty; --no-auth servers ignore it</span>
+
+<span class="c"># Local dev with auth on</span>
+export VOLI_URL=http://localhost:8080
+export VOLI_TOKEN=$(echo $VOLI_AUTH_TOKEN)   <span class="c"># whatever you set when starting</span>
+
+<span class="c"># Phase B: Docker container running locally</span>
+export VOLI_URL=http://localhost:8080
+export VOLI_TOKEN=$(grep ^VOLI_AUTH_TOKEN .env.deploy | cut -d= -f2)
+
+<span class="c"># Phase C: deployed on DigitalOcean</span>
+export VOLI_URL=<span class="s">https://voli.example.com</span>
+export VOLI_TOKEN=$(grep ^VOLI_AUTH_TOKEN .env.deploy | cut -d= -f2)
+</code></pre></div>
+
+<p>For a server with auth on, every protected request needs:</p>
+
+<div class="codeblock"><pre><code>-H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span>
+</code></pre></div>
+
+<p>Health and OpenAPI are different. <code>/healthz</code> is always public. <code>/openapi.json</code> is protected, so a public deploy doesn't leak the tool catalogue to crawlers.</p>
+
+<h2 id="liveness">Liveness check<a class="anchor" href="#liveness">#</a></h2>
+
+<div class="codeblock"><pre><code>curl -s $VOLI_URL/healthz
+<span class="c"># {"status":"ok"}</span>
+</code></pre></div>
+
+<p>Anything other than HTTP 200 here means the process isn't running, the port is wrong, or a reverse proxy is in front and misconfigured. Add <code>-v</code> to see the request and response headers when you need to debug.</p>
+
+<h2 id="openapi">Inspect the OpenAPI spec<a class="anchor" href="#openapi">#</a></h2>
+
+<p>The full spec describing every REST tool:</p>
+
+<div class="codeblock"><pre><code>curl -s $VOLI_URL/openapi.json -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> | jq .
+</code></pre></div>
+
+<p>Quick "what tools exist":</p>
+
+<div class="codeblock"><pre><code>curl -s $VOLI_URL/openapi.json -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> \
+  | jq -r <span class="s">'.paths | keys[] | sub("^/tools/"; "")'</span>
+<span class="c"># get_underlying_snapshot</span>
+<span class="c"># list_option_contracts</span>
+<span class="c"># get_option_quotes</span>
+<span class="c"># get_option_greeks</span>
+<span class="c"># compute_atm_iv_term_structure</span>
+<span class="c"># compute_skew_slope</span>
+<span class="c"># get_atm_greeks</span>
+</code></pre></div>
+
+<p>The exact request schema for one tool:</p>
+
+<div class="codeblock"><pre><code>curl -s $VOLI_URL/openapi.json -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> \
+  | jq <span class="s">'.paths["/tools/get_underlying_snapshot"].post.requestBody.content."application/json".schema'</span>
+</code></pre></div>
+
+<h2 id="rest-tools">Call individual tools via REST<a class="anchor" href="#rest-tools">#</a></h2>
+
+<p>This is exactly how ChatGPT Custom GPT Actions invoke voli. You can reproduce any GPT-driven call from the shell.</p>
+
+<h3>Spot snapshot</h3>
+
+<div class="codeblock"><pre><code>curl -s -X POST $VOLI_URL/tools/get_underlying_snapshot \
+  -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"ticker": "NVDA"}'</span> | jq .
+</code></pre></div>
+
+<h3>List option contracts</h3>
+
+<div class="codeblock"><pre><code>curl -s -X POST $VOLI_URL/tools/list_option_contracts \
+  -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"ticker": "NVDA", "expiry": "2026-05-16", "right": "C", "limit": 20}'</span> \
+  | jq <span class="s">'.contracts | length'</span>
+</code></pre></div>
+
+<h3>Get quotes for specific symbols</h3>
+
+<div class="codeblock"><pre><code>curl -s -X POST $VOLI_URL/tools/get_option_quotes \
+  -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"option_symbols": ["O:NVDA260516C00200000"]}'</span> | jq .
+</code></pre></div>
+
+<h3>Get greeks (vendor-published only)</h3>
+
+<div class="codeblock"><pre><code>curl -s -X POST $VOLI_URL/tools/get_option_greeks \
+  -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"option_symbols": ["O:NVDA260516C00200000"], "mode": "vendor_only"}'</span> \
+  | jq .
+</code></pre></div>
+
+<h3>Analytics shortcuts (one call each)</h3>
+
+<div class="codeblock"><pre><code><span class="c"># ATM IV term structure</span>
+curl -s -X POST $VOLI_URL/tools/compute_atm_iv_term_structure \
+  -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"ticker": "NVDA"}'</span> | jq .
+
+<span class="c"># Skew slope at the front expiry</span>
+curl -s -X POST $VOLI_URL/tools/compute_skew_slope \
+  -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"ticker": "NVDA"}'</span> | jq .
+
+<span class="c"># ATM greeks</span>
+curl -s -X POST $VOLI_URL/tools/get_atm_greeks \
+  -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"ticker": "NVDA"}'</span> | jq .
+</code></pre></div>
+
+<h2 id="mcp-curl">MCP over curl<a class="anchor" href="#mcp-curl">#</a></h2>
+
+<p>Claude.ai's MCP transport over HTTP is JSON-RPC 2.0 wrapped in SSE. Real clients (claude.ai, Claude Desktop, the MCP Inspector) handle the session handshake automatically; for spot-checks, you can drive it by hand. The minimum useful flow:</p>
+
+<div class="codeblock"><pre><code><span class="c"># 1. Initialize: opens a session, returns a session ID in the</span>
+<span class="c">#    `mcp-session-id` response header.</span>
+SESSION=$(curl -s -i -X POST $VOLI_URL/mcp \
+  -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -H <span class="s">"Accept: application/json, text/event-stream"</span> \
+  -d <span class="s">'{
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+          "protocolVersion": "2025-06-18",
+          "capabilities": {},
+          "clientInfo": {"name": "curl-poke", "version": "0.0.1"}
+        }
+      }'</span> | awk -F<span class="s">': '</span> <span class="s">'/^mcp-session-id/{print $2}'</span> | tr -d <span class="s">'\r\n'</span>)
+echo <span class="s">"session: $SESSION"</span>
+
+<span class="c"># 2. List tools.</span>
+curl -s -X POST $VOLI_URL/mcp \
+  -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -H <span class="s">"Accept: application/json, text/event-stream"</span> \
+  -H <span class="s">"mcp-session-id: $SESSION"</span> \
+  -d <span class="s">'{
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "tools/list",
+        "params": {}
+      }'</span>
+</code></pre></div>
+
+<p>If you need a friendlier MCP poking experience, use the <a href="https://github.com/modelcontextprotocol/inspector">MCP Inspector</a>. Point it at <code>$VOLI_URL/mcp</code> with the bearer token; it shows tools, arguments, and call results in a UI.</p>
+
+<h2 id="auth">Auth scenarios<a class="anchor" href="#auth">#</a></h2>
+
+<p>Verify the auth middleware is doing its job.</p>
+
+<div class="codeblock"><pre><code><span class="c"># No token: 401</span>
+curl -s -o /dev/null -w <span class="s">"%{http_code}\n"</span> \
+  $VOLI_URL/tools/get_underlying_snapshot \
+  -X POST -H <span class="s">"Content-Type: application/json"</span> -d <span class="s">'{"ticker":"NVDA"}'</span>
+<span class="c"># 401</span>
+
+<span class="c"># Wrong token: 401 (server gives the same generic message; can't tell)</span>
+curl -s -o /dev/null -w <span class="s">"%{http_code}\n"</span> \
+  $VOLI_URL/tools/get_underlying_snapshot \
+  -X POST -H <span class="s">"Content-Type: application/json"</span> \
+  -H <span class="s">"Authorization: Bearer wrong-token"</span> -d <span class="s">'{"ticker":"NVDA"}'</span>
+<span class="c"># 401</span>
+
+<span class="c"># Wrong scheme (Basic instead of Bearer): 401</span>
+curl -s -o /dev/null -w <span class="s">"%{http_code}\n"</span> \
+  $VOLI_URL/tools/get_underlying_snapshot \
+  -X POST -H <span class="s">"Content-Type: application/json"</span> \
+  -H <span class="s">"Authorization: Basic $(echo -n :$VOLI_TOKEN | base64)"</span> \
+  -d <span class="s">'{"ticker":"NVDA"}'</span>
+<span class="c"># 401</span>
+
+<span class="c"># Right token: 200</span>
+curl -s -o /dev/null -w <span class="s">"%{http_code}\n"</span> \
+  $VOLI_URL/tools/get_underlying_snapshot \
+  -X POST -H <span class="s">"Content-Type: application/json"</span> \
+  -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> -d <span class="s">'{"ticker":"NVDA"}'</span>
+<span class="c"># 200</span>
+
+<span class="c"># Public path (always works)</span>
+curl -s -o /dev/null -w <span class="s">"%{http_code}\n"</span> $VOLI_URL/healthz
+<span class="c"># 200</span>
+</code></pre></div>
+
+<h2 id="error-codes">What each error code means<a class="anchor" href="#error-codes">#</a></h2>
+
+<table>
+<thead><tr><th>Code</th><th>Meaning</th><th>Likely cause</th></tr></thead>
+<tbody>
+<tr><td><code>200</code></td><td>Tool ran, response is in the body</td><td>working</td></tr>
+<tr><td><code>400</code></td><td>Malformed JSON, or body is not an object</td><td>check the <code>-d</code> payload</td></tr>
+<tr><td><code>401</code></td><td>Missing / wrong / non-Bearer auth header</td><td>check <code>$VOLI_TOKEN</code> matches <code>$VOLI_AUTH_TOKEN</code> on the server</td></tr>
+<tr><td><code>404</code></td><td>Unknown tool name in the URL</td><td><code>curl ... /tools/&lt;typo&gt;</code>; cross-check with <code>/openapi.json</code></td></tr>
+<tr><td><code>406</code></td><td>(<code>/mcp</code> only) client didn't send <code>Accept: text/event-stream</code></td><td>only matters for MCP requests; REST tools don't need this</td></tr>
+<tr><td><code>500</code></td><td>Tool ran but raised; body has <code>{"error", "message"}</code></td><td>usually means Polygon failed: no key, bad ticker, rate limit</td></tr>
+<tr><td><code>502</code> / <code>504</code></td><td>Reverse proxy in front of voli is timing out or can't reach it</td><td>Caddy / Cloudflare / DO health-check misconfiguration</td></tr>
+</tbody>
+</table>
+
+<h2 id="watching">Watching the server<a class="anchor" href="#watching">#</a></h2>
+
+<p>In one terminal, run with verbose logging:</p>
+
+<div class="codeblock"><pre><code>poetry run voli serve --port 8080 --no-auth --server-url http://localhost:8080 \
+  2&gt;&amp;1 | tee /tmp/voli-serve.log
+</code></pre></div>
+
+<p>In another, hit the endpoints from this doc and watch the log scroll in real time. Useful for confirming requests actually reach the server when you suspect a TLS, proxy, or port issue.</p>
+
+<p>To see Polygon HTTP traffic specifically (e.g. to confirm the cache is serving repeats):</p>
+
+<div class="codeblock"><pre><code>POLYGON_HTTP_DEBUG=1 poetry run voli serve --port 8080 --no-auth
+</code></pre></div>
+
+<p>Every Polygon request prints a one-liner to stderr; cache hits are silent.</p>
+
+<h2 id="docker">Phase B: Docker variations<a class="anchor" href="#docker">#</a></h2>
+
+<p>Once the Dockerfile lands in Phase B, all the commands above work unchanged against the containerised server:</p>
+
+<div class="codeblock"><pre><code><span class="c"># Build, run with --no-auth (local dev)</span>
+docker build -t voli-server .
+docker run --rm -it --env-file .env.deploy -p 8080:8080 voli-server \
+  voli serve --port 8080 --server-url http://localhost:8080
+
+<span class="c"># Then in another terminal:</span>
+curl -s http://localhost:8080/healthz
+</code></pre></div>
+
+<p>Or with the bearer token enforced:</p>
+
+<div class="codeblock"><pre><code>docker run --rm -it -e VOLI_AUTH_TOKEN=$(python -c <span class="s">'import secrets; print(secrets.token_urlsafe(32))'</span>) \
+  -e POLYGON_API_KEY=$POLYGON_API_KEY \
+  -p 8080:8080 voli-server \
+  voli serve --port 8080
+</code></pre></div>
+
+<p>Container logs:</p>
+
+<div class="codeblock"><pre><code>docker logs -f &lt;container-id&gt;
+</code></pre></div>
+
+<h2 id="deployed">Phase C: deployed variations<a class="anchor" href="#deployed">#</a></h2>
+
+<p>Once the server is on a public URL behind HTTPS, the commands stay the same; only <code>$VOLI_URL</code> changes. Useful first checks:</p>
+
+<div class="codeblock"><pre><code><span class="c"># Server is reachable</span>
+curl -sS $VOLI_URL/healthz
+
+<span class="c"># TLS cert is valid (no -k anywhere; if you need -k, the cert is wrong)</span>
+curl -sSI $VOLI_URL/healthz | head -1
+
+<span class="c"># OpenAPI spec advertises the right `servers` URL (must match $VOLI_URL)</span>
+curl -s $VOLI_URL/openapi.json -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> \
+  | jq <span class="s">'.servers'</span>
+</code></pre></div>
+
+<p>If <code>/openapi.json</code> returns a <code>servers</code> URL that doesn't match the host ChatGPT is calling, ChatGPT will fail to call the tools. The server URL is set with <code>--server-url</code> when you start <code>voli serve</code>; rebuild or restart with the right value.</p>
+
+<footer class="colophon">
+  <p>See also: <a href="serving-claude-and-chatgpt/">Serving Claude.ai and ChatGPT</a> for the protocol surface and per-provider connector configuration; <a href="digitalocean/">DigitalOcean walkthrough</a> for provisioning the deployed environment.</p>
+</footer>
+
+</main>
+
+<script>
+  // ---------------- Theme persistence ----------------
+  (function () {
+    const saved = localStorage.getItem("voli-poking-theme");
+    if (saved === "dark" || saved === "light") {
+      document.documentElement.setAttribute("data-theme", saved);
+    } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+  })();
+
+  function toggleTheme() {
+    const cur = document.documentElement.getAttribute("data-theme");
+    const next = cur === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("voli-poking-theme", next); } catch (_) {}
+  }
+
+  // ---------------- Copy-to-clipboard buttons ----------------
+  document.querySelectorAll(".codeblock").forEach(function (block) {
+    const btn = document.createElement("button");
+    btn.className = "copy";
+    btn.type = "button";
+    btn.textContent = "Copy";
+    btn.setAttribute("aria-label", "Copy code to clipboard");
+    btn.addEventListener("click", async function () {
+      const code = block.querySelector("pre").innerText;
+      try {
+        await navigator.clipboard.writeText(code);
+        btn.textContent = "Copied";
+        btn.classList.add("copied");
+        setTimeout(function () {
+          btn.textContent = "Copy";
+          btn.classList.remove("copied");
+        }, 1400);
+      } catch (_) {
+        btn.textContent = "Failed";
+        setTimeout(function () { btn.textContent = "Copy"; }, 1400);
+      }
+    });
+    block.appendChild(btn);
+  });
+</script>
+
+</body>
+</html>
