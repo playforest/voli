@@ -1,0 +1,40 @@
+# Local-dev compose file for `voli serve`.
+#
+# Usage:
+#   1. Copy .env.deploy.example to .env.deploy and fill in real values
+#      (VOLI_AUTH_TOKEN, POLYGON_API_KEY, VOLI_SERVER_URL).
+#   2. docker compose up --build
+#   3. Curl the endpoints (see docs/deploy/poking.html).
+#
+# This file is fine for production on a single droplet too; bind-mount
+# the volume to a host path if you want host-visible cache state, or
+# leave the named volume in place for opaque persistence.
+
+services:
+  voli-server:
+    build:
+      context: .
+    image: voli-server:latest
+    container_name: voli-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.deploy
+    volumes:
+      # SQLite cache + JSONL traces persist across container restarts.
+      - voli-data:/var/voli
+    # Override the default CMD if you need different flags. Defaults
+    # come from the Dockerfile: --host 0.0.0.0 --port 8080.
+    # command: ["--host", "0.0.0.0", "--port", "8080", "--server-url", "https://voli.example.com"]
+    healthcheck:
+      # Belt-and-braces; the Dockerfile already declares one but compose
+      # surfaces it more visibly via `docker compose ps`.
+      test: ["CMD", "python", "-c", "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/healthz', timeout=2).status == 200 else 1)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  voli-data:

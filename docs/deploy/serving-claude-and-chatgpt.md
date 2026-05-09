@@ -18,12 +18,40 @@ in [DigitalOcean walkthrough](digitalocean.md).
 
 ## Run the server
 
+Two equivalent ways to start it: bare process during development, or
+container for repeatable deploys.
+
+### Bare process (Poetry)
+
 ```bash
 export VOLI_AUTH_TOKEN=$(python -c 'import secrets; print(secrets.token_urlsafe(32))')
 export POLYGON_API_KEY=pk_your_polygon_key
 
 poetry run voli serve --port 8080 --server-url https://voli.example.com
 ```
+
+### Docker container
+
+The repo ships a `Dockerfile` and a `docker-compose.yml` so the same
+process runs in a container with no host Python required.
+
+```bash
+# Copy the env-var template and fill in real values.
+cp .env.deploy.example .env.deploy
+
+# Build + run.
+docker compose up --build
+
+# Or, without compose:
+docker build -t voli-server .
+docker run --rm -it -p 8080:8080 --env-file .env.deploy voli-server
+```
+
+The image runs `voli serve --host 0.0.0.0 --port 8080` by default. Pass
+extra args to override (`docker run voli-server --no-auth ...`). The
+SQLite cache and JSONL traces persist under `/var/voli` inside the
+container; `docker-compose.yml` declares a named volume so that state
+survives restarts.
 
 Flags worth knowing:
 

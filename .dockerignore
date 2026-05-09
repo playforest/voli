@@ -1,0 +1,77 @@
+# What NOT to ship in the build context.
+#
+# Anything not strictly needed for `voli serve` to run. Cuts the image
+# size and prevents secrets from accidentally landing in a layer.
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# Python build artefacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Test / cache state
+.pytest_cache/
+.pytest_voli_cache.sqlite
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# mkdocs build output
+site/
+
+# Docs source (not needed inside the runtime image; users browse them
+# from the repo or the published docs site)
+docs/
+
+# Tests + examples (not needed at runtime)
+tests/
+examples/
+
+# Notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Editor / OS junk
+.idea/
+.vscode/
+.DS_Store
+*.swp
+*.swo
+
+# Secrets — should never make it into an image
+.env
+.env.*
+!.env.example
+!.env.deploy.example
+
+# Personal / scratch
+todo.md
+TODO.md
+*_SETUP.md
+*.local.md
+
+# Local config
+config.yaml
+~/.voli/
+
+# Docker artefacts
+Dockerfile.local
+docker-compose.override.yml
+
+# Misc generated
+*.log
+*.bak

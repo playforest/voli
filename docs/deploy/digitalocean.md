@@ -1,8 +1,10 @@
 # DigitalOcean walkthrough
 
 This page is a placeholder for the full deploy walkthrough that lands in
-Phase C. The runtime code is ready (Phase A); what's missing is the
-infrastructure-side recipe.
+Phase C. The runtime code (Phase A) and the container packaging
+(Phase B, `Dockerfile` + `docker-compose.yml`) are ready; what's missing
+is the infrastructure-side recipe (provisioning the droplet, getting
+HTTPS, running the container as a service).
 
 For now, the protocol-level documentation lives in
 [Serving Claude.ai and ChatGPT](serving-claude-and-chatgpt.md), which
@@ -20,9 +22,9 @@ deployed) with `curl`, see the standalone
    - Lock down SSH (key-only, fail2ban, ufw allow 22 / 80 / 443).
 
 2. **Get the code onto the box**
-   - `git clone https://github.com/playforest/voli` (or `pip install
-     voli` once it's on PyPI).
-   - Build the Docker image with the bundled Dockerfile.
+   - `git clone https://github.com/playforest/voli`.
+   - Build the Docker image with the bundled `Dockerfile`, or
+     `docker compose up --build` to use the bundled `docker-compose.yml`.
    - Configure secrets via `.env.deploy` (see [`.env.deploy.example`](https://github.com/playforest/voli/blob/main/.env.deploy.example)).
 
 3. **Public URL with HTTPS**
@@ -35,9 +37,13 @@ deployed) with `curl`, see the standalone
        included; nothing to configure on the droplet's network.
 
 4. **Run as a service**
-   - systemd unit example, or `docker compose` with restart policy.
-   - Log to journald or to a file rotated by logrotate.
-   - Set `--server-url` to the public HTTPS URL.
+   - Recommended: `docker compose up -d` from the repo root. The bundled
+     `docker-compose.yml` already sets `restart: unless-stopped` and
+     declares a named volume for `/var/voli`.
+   - Alternative: systemd unit running the container directly, with the
+     `--restart=unless-stopped` flag and journald for logs.
+   - Set `VOLI_SERVER_URL` (or pass `--server-url`) to the public HTTPS
+     URL so the OpenAPI spec advertises the right host.
 
 5. **Connect the providers**
    - Follow [Serving Claude.ai and ChatGPT](serving-claude-and-chatgpt.md).
