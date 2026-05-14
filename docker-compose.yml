@@ -17,8 +17,16 @@ services:
     image: voli-server:latest
     container_name: voli-server
     restart: unless-stopped
+    # Bind to loopback only. Docker on Linux inserts iptables rules that
+    # bypass UFW when binding to 0.0.0.0; on a public-facing droplet that
+    # means `ufw deny 8080` is silently ignored and the container is
+    # reachable on <public-ip>:8080. Binding to 127.0.0.1 keeps the
+    # public interface unreachable while still letting localhost-side
+    # proxies (cloudflared, Caddy, nginx) forward traffic in. If you
+    # genuinely want voli reachable on the public IP without a tunnel /
+    # reverse proxy, change this to "8080:8080" and accept the trap.
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     env_file:
       - .env.deploy
     volumes:

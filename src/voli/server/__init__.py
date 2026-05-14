@@ -134,6 +134,11 @@ def serve(
         # Try the env var as the canonical source. The CLI also surfaces
         # this so the user gets a clear "set VOLI_AUTH_TOKEN" message.
         auth_token = os.environ.get("VOLI_AUTH_TOKEN")
+    if server_url is None:
+        # Same pattern: if --server-url isn't passed, pick it up from the
+        # env. Containerised deploys typically set it via the env file
+        # rather than threading it through compose's `command:` line.
+        server_url = os.environ.get("VOLI_SERVER_URL")
 
     app = build_app(
         auth_token=auth_token,

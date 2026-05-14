@@ -359,7 +359,7 @@ export VOLI_TOKEN=$(grep ^VOLI_AUTH_TOKEN .env.deploy | cut -d= -f2)
 <div class="codeblock"><pre><code>-H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span>
 </code></pre></div>
 
-<p>Health and OpenAPI are different. <code>/healthz</code> is always public. <code>/openapi.json</code> is protected, so a public deploy doesn't leak the tool catalogue to crawlers.</p>
+<p>Both <code>/healthz</code> and <code>/openapi.json</code> are public (no bearer required). The OpenAPI spec is a discovery document: it describes which endpoints exist but doesn't reveal any secrets, and ChatGPT's Custom GPT Actions UI fetches it before the user has had a chance to configure auth. The actual tool routes (<code>/tools/&lt;name&gt;</code> and <code>/mcp</code>) still require the bearer token.</p>
 
 <h2 id="liveness">Liveness check<a class="anchor" href="#liveness">#</a></h2>
 
@@ -373,12 +373,12 @@ export VOLI_TOKEN=$(grep ^VOLI_AUTH_TOKEN .env.deploy | cut -d= -f2)
 
 <p>The full spec describing every REST tool:</p>
 
-<div class="codeblock"><pre><code>curl -s $VOLI_URL/openapi.json -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> | jq .
+<div class="codeblock"><pre><code>curl -s $VOLI_URL/openapi.json | jq .
 </code></pre></div>
 
 <p>Quick "what tools exist":</p>
 
-<div class="codeblock"><pre><code>curl -s $VOLI_URL/openapi.json -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> \
+<div class="codeblock"><pre><code>curl -s $VOLI_URL/openapi.json \
   | jq -r <span class="s">'.paths | keys[] | sub("^/tools/"; "")'</span>
 <span class="c"># get_underlying_snapshot</span>
 <span class="c"># list_option_contracts</span>
@@ -391,7 +391,7 @@ export VOLI_TOKEN=$(grep ^VOLI_AUTH_TOKEN .env.deploy | cut -d= -f2)
 
 <p>The exact request schema for one tool:</p>
 
-<div class="codeblock"><pre><code>curl -s $VOLI_URL/openapi.json -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> \
+<div class="codeblock"><pre><code>curl -s $VOLI_URL/openapi.json \
   | jq <span class="s">'.paths["/tools/get_underlying_snapshot"].post.requestBody.content."application/json".schema'</span>
 </code></pre></div>
 
@@ -598,8 +598,7 @@ curl -sS $VOLI_URL/healthz
 curl -sSI $VOLI_URL/healthz | head -1
 
 <span class="c"># OpenAPI spec advertises the right `servers` URL (must match $VOLI_URL)</span>
-curl -s $VOLI_URL/openapi.json -H <span class="s">"Authorization: Bearer $VOLI_TOKEN"</span> \
-  | jq <span class="s">'.servers'</span>
+curl -s $VOLI_URL/openapi.json | jq <span class="s">'.servers'</span>
 </code></pre></div>
 
 <p>If <code>/openapi.json</code> returns a <code>servers</code> URL that doesn't match the host ChatGPT is calling, ChatGPT will fail to call the tools. The server URL is set with <code>--server-url</code> when you start <code>voli serve</code>; rebuild or restart with the right value.</p>

@@ -72,7 +72,7 @@ deploy lets strangers run up your Polygon bill.
 | Path | Method | Auth | Purpose |
 | --- | --- | --- | --- |
 | `/healthz` | GET | public | Liveness probe for load balancers and uptime monitors. |
-| `/openapi.json` | GET | bearer | OpenAPI 3.1 spec describing every `/tools/<name>` route. |
+| `/openapi.json` | GET | public | OpenAPI 3.1 spec describing every `/tools/<name>` route. The spec is a discovery document, not a secret; ChatGPT fetches it before auth is configured. |
 | `/tools/<name>` | POST | bearer | Calls one tool with the JSON body as arguments; returns the tool's JSON output. |
 | `/mcp` | GET / POST | bearer | Streamable-HTTP MCP. Spec-compliant; clients negotiate session and stream over SSE. |
 

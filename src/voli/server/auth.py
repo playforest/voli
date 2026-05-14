@@ -21,9 +21,16 @@ from __future__ import annotations
 import hmac
 from collections.abc import Iterable
 
-# Routes that bypass auth. Health checks need to be reachable from load
-# balancers / Cloudflare / uptime monitors that don't carry credentials.
-DEFAULT_PUBLIC_PATHS: tuple[str, ...] = ("/healthz", "/")
+# Routes that bypass auth.
+#
+# Health checks need to be reachable from load balancers / Cloudflare /
+# uptime monitors that don't carry credentials. The OpenAPI spec is a
+# discovery document (it describes what endpoints exist; the endpoints
+# themselves stay auth-protected), so it needs to be fetchable by clients
+# that haven't authenticated yet. ChatGPT's Custom GPT Actions UI in
+# particular fetches /openapi.json *before* the user has finished
+# configuring auth, so requiring auth on the spec breaks that flow.
+DEFAULT_PUBLIC_PATHS: tuple[str, ...] = ("/healthz", "/openapi.json", "/")
 
 
 class BearerAuthMiddleware:

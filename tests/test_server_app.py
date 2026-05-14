@@ -104,15 +104,98 @@ def test_healthz_is_public(monkeypatch):
     assert resp.json() == {"status": "ok"}
 
 
-def test_openapi_endpoint_returns_spec(monkeypatch):
+def test_openapi_endpoint_is_public(monkeypatch):
+    """The OpenAPI spec is a discovery document — clients fetch it before
+    they have credentials configured. ChatGPT's Custom GPT Actions UI in
+    particular fetches the spec at import time. So it must be reachable
+    without auth, even though the routes it describes still require it."""
+
     client = _build_app_with_stub_tool(monkeypatch, auth_token="secret-token")
-    resp = client.get("/openapi.json", headers={"authorization": "Bearer secret-token"})
+
+    # No auth header at all.
+    resp = client.get("/openapi.json")
     assert resp.status_code == 200
     spec = resp.json()
     assert spec["openapi"] == "3.1.0"
     assert "/tools/echo" in spec["paths"]
     # Server URL passed at build time made it into the spec.
     assert spec["servers"] == [{"url": "https://example.com"}]
+
+    # The actual tool route still requires auth, even though the spec
+    # describing it is public.
+    resp = client.post("/tools/echo", json={"x": 1})
+    assert resp.status_code == 401
+
+
+# ---- Env-var fallbacks ---------------------------------------------------
+
+
+def test_serve_falls_back_to_env_for_server_url_and_token(monkeypatch):
+    """`voli.server.serve()` should read VOLI_SERVER_URL and VOLI_AUTH_TOKEN
+    from env when not passed explicitly. Containerised deploys typically
+    set them via the env file rather than threading them through the CLI
+    or compose `command:`."""
+
+    monkeypatch.setenv("VOLI_AUTH_TOKEN", "env-token")
+    monkeypatch.setenv("VOLI_SERVER_URL", "https://from-env.example.com")
+
+    # Capture what serve() passes to build_app + uvicorn.run instead of
+    # actually booting a server.
+    captured = {}
+
+    def fake_build_app(**kwargs):
+        captured["build_app"] = kwargs
+        return "FAKE_APP"
+
+    def fake_uvicorn_run(app, **kwargs):
+        captured["uvicorn"] = {"app": app, **kwargs}
+
+    monkeypatch.setattr("voli.server.build_app", fake_build_app)
+    # `uvicorn` is imported inside serve(); patch the module attribute
+    # via sys.modules so the import inside serve() returns our stub.
+    import sys
+    import types
+
+    fake_uvicorn = types.ModuleType("uvicorn")
+    fake_uvicorn.run = fake_uvicorn_run
+    monkeypatch.setitem(sys.modules, "uvicorn", fake_uvicorn)
+
+    from voli.server import serve
+
+    serve(host="127.0.0.1", port=9999)
+
+    assert captured["build_app"]["auth_token"] == "env-token"
+    assert captured["build_app"]["server_url"] == "https://from-env.example.com"
+    assert captured["uvicorn"]["host"] == "127.0.0.1"
+    assert captured["uvicorn"]["port"] == 9999
+
+
+def test_explicit_args_beat_env_vars(monkeypatch):
+    """An explicit --server-url / explicit auth_token must win over env."""
+
+    monkeypatch.setenv("VOLI_AUTH_TOKEN", "env-token")
+    monkeypatch.setenv("VOLI_SERVER_URL", "https://from-env.example.com")
+
+    captured = {}
+
+    def fake_build_app(**kwargs):
+        captured["build_app"] = kwargs
+        return "FAKE_APP"
+
+    monkeypatch.setattr("voli.server.build_app", fake_build_app)
+    import sys
+    import types
+
+    fake_uvicorn = types.ModuleType("uvicorn")
+    fake_uvicorn.run = lambda *a, **k: None
+    monkeypatch.setitem(sys.modules, "uvicorn", fake_uvicorn)
+
+    from voli.server import serve
+
+    serve(auth_token="cli-token", server_url="https://from-cli.example.com")
+
+    assert captured["build_app"]["auth_token"] == "cli-token"
+    assert captured["build_app"]["server_url"] == "https://from-cli.example.com"
 
 
 # ---- MCP route still mounted --------------------------------------------
