@@ -125,15 +125,16 @@ def test_components_schemas_exists_for_chatgpt_validator():
     assert spec["components"]["schemas"] == {}
 
 
-def test_response_schema_has_additional_properties():
-    """Every 200 response must declare additionalProperties so ChatGPT's
-    validator doesn't flag the bare {"type": "object"} as 'missing
-    properties'."""
+def test_response_schema_has_properties_and_additional_properties():
+    """ChatGPT's validator rejects an object schema unless it has BOTH a
+    `properties` key (even an empty {}) and `additionalProperties: true`.
+    Pin both."""
 
     spec = build_openapi_spec()
     for path, ops in spec["paths"].items():
         schema = ops["post"]["responses"]["200"]["content"]["application/json"]["schema"]
         assert schema.get("type") == "object", path
+        assert schema.get("properties") == {}, path
         assert schema.get("additionalProperties") is True, path
 
 

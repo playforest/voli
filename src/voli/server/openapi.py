@@ -63,11 +63,18 @@ def _operation(tool: ToolDef) -> dict[str, Any]:
                 "content": {
                     "application/json": {
                         # Permissive object schema. ChatGPT's validator
-                        # rejects bare {"type": "object"} as "missing
-                        # properties", so we set additionalProperties: true
-                        # to signal "any object" explicitly. The real
+                        # rejects bare {"type": "object"} as "object schema
+                        # missing properties" — it wants the `properties`
+                        # key present even when empty, plus
+                        # additionalProperties: true to signal "any other
+                        # field is allowed". Both together are the
+                        # shape that satisfies it. The real envelope
                         # shape is documented in voli.tool_schemas.
-                        "schema": {"type": "object", "additionalProperties": True},
+                        "schema": {
+                            "type": "object",
+                            "properties": {},
+                            "additionalProperties": True,
+                        },
                     }
                 },
             },
