@@ -138,6 +138,16 @@ def test_response_schema_has_properties_and_additional_properties():
         assert schema.get("additionalProperties") is True, path
 
 
+def test_operations_marked_non_consequential():
+    """ChatGPT defaults POSTs to consequential, which forces a Confirm
+    click on every call. Voli's tools are read-only, so we tag them
+    `x-openai-isConsequential: false` to unlock the Always Allow option."""
+
+    spec = build_openapi_spec()
+    for path, ops in spec["paths"].items():
+        assert ops["post"].get("x-openai-isConsequential") is False, path
+
+
 def test_no_tool_description_exceeds_300_chars():
     """ChatGPT's validator caps operation descriptions at 300 chars. Keep
     every tool description under that ceiling so the importer doesn't warn

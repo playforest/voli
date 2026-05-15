@@ -84,6 +84,13 @@ def _operation(tool: ToolDef) -> dict[str, Any]:
         },
         "security": [{"bearerAuth": []}],
         "tags": ["voli"],
+        # ChatGPT marks every POST as "consequential" by default, which
+        # forces a Confirm/Deny click on every single call (no Always
+        # Allow option). Voli's tools are read-only data fetches: no
+        # writes, no side effects, no money moves. Tag them
+        # non-consequential so users can opt into Always Allow per tool
+        # in the chat UI.
+        "x-openai-isConsequential": False,
     }
 
 
