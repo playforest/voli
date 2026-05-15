@@ -62,10 +62,12 @@ def _operation(tool: ToolDef) -> dict[str, Any]:
                 ),
                 "content": {
                     "application/json": {
-                        # Permissive schema. The contents are validated
-                        # upstream by Pydantic; ChatGPT only needs to know
-                        # the response is JSON.
-                        "schema": {"type": "object"},
+                        # Permissive object schema. ChatGPT's validator
+                        # rejects bare {"type": "object"} as "missing
+                        # properties", so we set additionalProperties: true
+                        # to signal "any object" explicitly. The real
+                        # shape is documented in voli.tool_schemas.
+                        "schema": {"type": "object", "additionalProperties": True},
                     }
                 },
             },
@@ -119,6 +121,10 @@ def build_openapi_spec(
         },
         "paths": paths,
         "components": {
+            # ChatGPT's spec validator expects `schemas` to exist as an
+            # object even when we have no reusable component schemas to
+            # declare. Leaving it empty is fine; presence is what matters.
+            "schemas": {},
             "securitySchemes": {
                 "bearerAuth": {
                     "type": "http",

@@ -144,11 +144,11 @@ def _build_raw_polygon_tools() -> list[ToolDef]:
             name="list_option_contracts",
             description=(
                 "List option contracts for an underlying. Optional filters: "
-                "expiry (YYYY-MM-DD), right ('C' for calls / 'P' for puts), "
-                "strike_min, strike_max, limit. Returns a list of OptionContract "
-                "objects with option_symbol, strike, expiry, right, multiplier. "
-                "Always call this before fetching quotes/greeks so you have the "
-                "option_symbol identifiers."
+                "expiry (YYYY-MM-DD), right ('C'/'P'), strike_min, "
+                "strike_max, limit. Returns OptionContract objects with "
+                "option_symbol, strike, expiry, right. Call before "
+                "get_option_quotes/get_option_greeks to get valid "
+                "option_symbols."
             ),
             input_schema=_schema(ListOptionContractsInput),
             fn=_tool_list_option_contracts,

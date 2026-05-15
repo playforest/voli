@@ -106,3 +106,45 @@ def test_input_schema_is_preserved_verbatim():
     # Sanity: the get_underlying_snapshot input has a required ticker field.
     assert schema["type"] == "object"
     assert "ticker" in schema["properties"]
+
+
+# ---- ChatGPT validator compatibility -------------------------------------
+#
+# ChatGPT's Custom GPT Actions importer runs a stricter validator than the
+# OpenAPI 3.1 spec strictly requires. These tests pin the three pieces of
+# shape it cares about so we don't regress and force a re-import diagnostic
+# session later.
+
+
+def test_components_schemas_exists_for_chatgpt_validator():
+    """ChatGPT rejects a spec where `components.schemas` is absent, even
+    though OpenAPI 3.1 allows it. Presence (empty object) is enough."""
+
+    spec = build_openapi_spec()
+    assert "schemas" in spec["components"]
+    assert spec["components"]["schemas"] == {}
+
+
+def test_response_schema_has_additional_properties():
+    """Every 200 response must declare additionalProperties so ChatGPT's
+    validator doesn't flag the bare {"type": "object"} as 'missing
+    properties'."""
+
+    spec = build_openapi_spec()
+    for path, ops in spec["paths"].items():
+        schema = ops["post"]["responses"]["200"]["content"]["application/json"]["schema"]
+        assert schema.get("type") == "object", path
+        assert schema.get("additionalProperties") is True, path
+
+
+def test_no_tool_description_exceeds_300_chars():
+    """ChatGPT's validator caps operation descriptions at 300 chars. Keep
+    every tool description under that ceiling so the importer doesn't warn
+    (and in some cases refuse to register the action)."""
+
+    from voli.llm.tools import build_default_tools
+
+    too_long = [
+        (t.name, len(t.description)) for t in build_default_tools() if len(t.description) > 300
+    ]
+    assert not too_long, f"descriptions over 300 chars: {too_long}"
