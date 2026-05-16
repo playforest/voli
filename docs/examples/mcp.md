@@ -94,6 +94,9 @@ Once connected, Claude has access to the same seven tools as `voli llm-ask`:
 - `list_option_contracts`
 - `get_option_quotes`
 - `get_option_greeks`
+- `get_ticker_news` — recent headlines tagged to a ticker, newest-first.
+  Useful when the model needs to explain *why* IV is elevated or what
+  catalysed a price move.
 
 Drop the analytics tools (`voli mcp-serve --raw-only`) if you want Claude
 to chain the primitives itself — useful for exploring how the model

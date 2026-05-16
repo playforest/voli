@@ -15,11 +15,12 @@ import re
 from collections import defaultdict
 from datetime import date, datetime
 
-from voli.models import OptionContract, OptionGreeks, OptionQuote
+from voli.models import NewsItem, OptionContract, OptionGreeks, OptionQuote
 from voli.polygon.client import OptionChainQuery, PolygonClient
 from voli.polygon.helpers import ns_to_utc_iso
 from voli.polygon.http import PolygonError, PolygonNotFoundError
 from voli.polygon.normalise import (
+    news_item_from_polygon_row,
     option_contract_from_snapshot_row,
     option_greeks_from_snapshot_row,
     option_quote_from_snapshot_row,
@@ -262,3 +263,31 @@ class PolygonProvider:
             return contracts, quotes_by_symbol, greeks_by_symbol
         finally:
             pc.close()
+
+    # ---------------------------------------------------------------- news
+    def fetch_news(
+        self,
+        ticker: str,
+        *,
+        limit: int = 10,
+    ) -> tuple[list[NewsItem], list[str]]:
+        warnings: list[str] = []
+        pc = PolygonClient()
+        try:
+            payload = pc.list_ticker_news(ticker, limit=limit)
+        finally:
+            pc.close()
+
+        rows = payload.get("results") or []
+        items: list[NewsItem] = []
+        for row in rows:
+            try:
+                items.append(news_item_from_polygon_row(row))
+            except (KeyError, ValueError, TypeError):
+                # Skip malformed rows rather than fail the whole fetch.
+                continue
+
+        if not items:
+            warnings.append("NO_RESULTS")
+
+        return items, warnings

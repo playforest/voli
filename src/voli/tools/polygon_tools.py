@@ -31,6 +31,8 @@ from voli.tool_schemas import (
     GetOptionGreeksOutput,
     GetOptionQuotesInput,
     GetOptionQuotesOutput,
+    GetTickerNewsInput,
+    GetTickerNewsOutput,
     GetUnderlyingSnapshotInput,
     GetUnderlyingSnapshotOutput,
     ListOptionContractsInput,
@@ -419,3 +421,91 @@ def get_option_chain_bulk(
     )
 
     return contracts, quotes_by_symbol, greeks_by_symbol, provider.name
+
+
+def get_ticker_news(inp: GetTickerNewsInput) -> GetTickerNewsOutput:
+    """Fetch recent news articles tagged to ``inp.ticker``.
+
+    Cached with the same SQLite-backed TTL as the other latest-only tools
+    (5 min by default for news, vs. 30s for prices). Run-trace is logged
+    on every call. Provider absence (a custom provider that doesn't ship a
+    news endpoint) surfaces as a clean ``VENDOR_LIMIT`` warning with an
+    empty list rather than a crash.
+    """
+
+    tool_name = "get_ticker_news"
+    effective_asof = None
+
+    tool_inputs = _dump_model(inp)
+    key, asof_norm, inputs_json = make_cache_key(tool_name, tool_inputs, asof=effective_asof)
+
+    cache = _get_cache()
+
+    rec = cache.get(key)
+    if rec is not None:
+        cached = json.loads(rec.response_json)
+        news = cached.get("news", [])
+        warnings: list[WarningCode] = cached.get("warnings", [])
+
+        _trace_tool_call(
+            tool=tool_name,
+            inputs_json=inputs_json,
+            cache_key=key,
+            primary_source="cache",
+            warnings=warnings,
+            asof_norm=asof_norm,
+        )
+
+        return GetTickerNewsOutput(
+            meta=_meta(tool_name, None, warnings, primary_source="cache"),
+            news=news,
+        )
+
+    provider = get_active()
+
+    try:
+        items, base_warnings = provider.fetch_news(inp.ticker, limit=inp.limit)
+    except NotImplementedError:
+        # Custom provider didn't implement news. Surface that cleanly to the
+        # caller rather than crashing the LLM mid-tool-call.
+        warnings = ["VENDOR_LIMIT"]
+        _trace_tool_call(
+            tool=tool_name,
+            inputs_json=inputs_json,
+            cache_key=key,
+            primary_source=provider.name,
+            warnings=warnings,
+            asof_norm=asof_norm,
+        )
+        return GetTickerNewsOutput(
+            meta=_meta(tool_name, None, warnings, primary_source=provider.name),
+            news=[],
+        )
+
+    cache.set(
+        key=key,
+        tool=tool_name,
+        asof=asof_norm,
+        inputs_json=inputs_json,
+        response_json=_stable_json_dumps(
+            {
+                "news": [_dump_model(n) for n in items],
+                "warnings": list(base_warnings),
+            }
+        ),
+        ttl_seconds=ttl_for(tool_name, asof_is_latest=True),
+    )
+
+    _trace_tool_call(
+        tool=tool_name,
+        inputs_json=inputs_json,
+        cache_key=key,
+        primary_source=provider.name,
+        warnings=base_warnings,
+        asof_norm=asof_norm,
+    )
+
+    return GetTickerNewsOutput(
+        meta=_meta(tool_name, None, list(base_warnings), primary_source=provider.name),
+        news=items,
+    )

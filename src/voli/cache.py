@@ -25,6 +25,10 @@ TOOL_TTL_LATEST_SECONDS: dict[str, int] = {
     "get_option_quotes": 30,
     "get_option_greeks": 30,
     "list_option_contracts": 6 * 60 * 60,
+    # News changes slower than prices; 5 minutes keeps the LLM seeing fresh
+    # headlines without re-hitting the vendor on every "what happened today"
+    # question.
+    "get_ticker_news": 5 * 60,
 }
 
 TOOL_TTL_HISTORICAL_SECONDS: dict[str, int] = {

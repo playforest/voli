@@ -8,6 +8,7 @@ from pydantic import Field, StringConstraints, conlist, model_validator
 
 from voli.models import (
     DataSource,
+    NewsItem,
     OptionContract,
     OptionGreeks,
     OptionQuote,
@@ -28,6 +29,7 @@ ToolName = Literal[
     "get_option_quotes",
     "get_option_greeks",
     "get_option_oi",
+    "get_ticker_news",
 ]
 
 WarningCode = Literal[
@@ -319,3 +321,52 @@ class PricingAssumptions(StrictModel):
         description="Which option price to use for IV solve when computing greeks.",
     )
     day_count: DayCount = Field(default="act365", description="Day count convention for T")
+
+
+# tool: get_ticker_news ----------
+class GetTickerNewsInput(StrictModel):
+    model_config = StrictModel.model_config | {
+        "json_schema_extra": {
+            "description": (
+                "Fetch recent news articles tagged to a ticker. Returns articles "
+                "newest-first with title, url, publisher, published timestamp, "
+                "and a short description when available."
+            ),
+            "examples": [{"ticker": "NVDA"}, {"ticker": "INTC", "limit": 20}],
+        }
+    }
+
+    ticker: str = Field(min_length=1, description="Underlying ticker, e.g. NVDA")
+    limit: int = Field(
+        default=10,
+        ge=1,
+        le=100,
+        description="Max number of articles to return. Vendor cap is 1000; "
+        "we cap at 100 to keep responses LLM-context-friendly.",
+    )
+
+
+class GetTickerNewsOutput(StrictModel):
+    model_config = StrictModel.model_config | {
+        "json_schema_extra": {
+            "description": "News items for the requested ticker, ordered newest-first.",
+            "examples": [
+                {
+                    "news": [
+                        {
+                            "id": "abc123",
+                            "published_utc": "2026-05-15T13:30:00Z",
+                            "title": "Intel announces foundry milestone",
+                            "article_url": "https://example.com/news/intel-foundry",
+                            "publisher": "Reuters",
+                            "tickers": ["INTC"],
+                            "description": "...",
+                            "source": "polygon",
+                        }
+                    ]
+                }
+            ],
+        }
+    }
+    meta: ToolMeta
+    news: list[NewsItem]

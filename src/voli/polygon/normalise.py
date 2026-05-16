@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
-from voli.models import OptionContract, OptionGreeks, OptionQuote
+from voli.models import NewsItem, OptionContract, OptionGreeks, OptionQuote
 
 from .helpers import ns_to_utc_iso
 
@@ -134,4 +135,43 @@ def option_greeks_from_snapshot_row(row: dict[str, Any]) -> OptionGreeks:
         ts=ns_to_utc_iso(ts_ns),
         source="polygon",
         model="vendor",
+    )
+
+
+def news_item_from_polygon_row(row: dict[str, Any]) -> NewsItem:
+    """Normalise one row from Polygon's ``/v2/reference/news`` response.
+
+    Polygon shape:
+      {
+        "id": "...",
+        "publisher": {"name": "...", "homepage_url": "...", ...},
+        "title": "...",
+        "author": "...",
+        "published_utc": "2024-01-15T13:30:00Z",
+        "article_url": "https://...",
+        "tickers": ["AAPL", "MSFT"],
+        "description": "..."
+      }
+    """
+
+    publisher = row.get("publisher") or {}
+    publisher_name = publisher.get("name") or "unknown"
+
+    published_raw = row["published_utc"]
+    if isinstance(published_raw, str):
+        # Polygon emits trailing "Z"; datetime.fromisoformat handles it in 3.11+
+        published = datetime.fromisoformat(published_raw.replace("Z", "+00:00"))
+    else:
+        published = published_raw
+
+    return NewsItem(
+        id=str(row["id"]),
+        published_utc=published,
+        title=row["title"],
+        article_url=row["article_url"],
+        publisher=publisher_name,
+        tickers=list(row.get("tickers") or []),
+        description=row.get("description"),
+        author=row.get("author"),
+        source="polygon",
     )

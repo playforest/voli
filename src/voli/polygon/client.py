@@ -67,6 +67,25 @@ class PolygonClient:
         path = url_override or f"/v3/snapshot/options/{underlying}"
         return self.http.get_json(path, params=params)
 
+    # ---- Reference data: news ----
+    def list_ticker_news(
+        self,
+        ticker: str,
+        *,
+        limit: int = 10,
+        order: str = "desc",
+    ) -> dict[str, Any]:
+        """GET /v2/reference/news?ticker=...
+
+        Polygon's news endpoint. Returns one page; we don't paginate because
+        ``limit`` is the caller's stated cap. ``order=desc`` returns
+        newest-first.
+        """
+        return self.http.get_json(
+            "/v2/reference/news",
+            params={"ticker": ticker, "limit": limit, "order": order},
+        )
+
     def list_option_chain_snapshot(
         self,
         underlying: str,

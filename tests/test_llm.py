@@ -188,6 +188,7 @@ def test_build_default_tools_returns_analytics_plus_raw() -> None:
         "list_option_contracts",
         "get_option_quotes",
         "get_option_greeks",
+        "get_ticker_news",
     }
     for t in tools:
         assert isinstance(t.input_schema, dict)
@@ -202,6 +203,7 @@ def test_build_default_tools_can_drop_analytics() -> None:
         "list_option_contracts",
         "get_option_quotes",
         "get_option_greeks",
+        "get_ticker_news",
     }
 
 
@@ -223,7 +225,9 @@ def test_default_tools_dispatch_against_synthetic_market(monkeypatch) -> None:
     # tools are exercised in tests/test_llm_analytics.py.
     tools = build_default_tools(include_analytics=False)
 
-    # Replace each tool's fn with the synthetic registry equivalent.
+    # Replace each tool's fn with the synthetic registry equivalent. News is
+    # excluded — the synthetic options-market registry doesn't model news,
+    # and this test is about options-data dispatch end-to-end.
     name_to_synth = {
         "get_underlying_snapshot": reg.tools["get_underlying_snapshot"],
         "list_option_contracts": reg.tools["list_option_contracts"],
@@ -232,6 +236,8 @@ def test_default_tools_dispatch_against_synthetic_market(monkeypatch) -> None:
     }
     wrapped = []
     for t in tools:
+        if t.name not in name_to_synth:
+            continue
         synth = name_to_synth[t.name]
         wrapped.append(
             ToolDef(

@@ -21,6 +21,8 @@ from voli.tool_schemas import (
     GetOptionGreeksOutput,
     GetOptionQuotesInput,
     GetOptionQuotesOutput,
+    GetTickerNewsInput,
+    GetTickerNewsOutput,
     GetUnderlyingSnapshotInput,
     GetUnderlyingSnapshotOutput,
     ListOptionContractsInput,
@@ -29,6 +31,7 @@ from voli.tool_schemas import (
 from voli.tools.polygon_tools import (
     get_option_greeks,
     get_option_quotes,
+    get_ticker_news,
     get_underlying_snapshot,
     list_option_contracts,
 )
@@ -96,6 +99,11 @@ def _tool_get_option_quotes(args: dict[str, Any]) -> str:
 
 def _tool_get_option_greeks(args: dict[str, Any]) -> str:
     out: GetOptionGreeksOutput = get_option_greeks(GetOptionGreeksInput(**args))
+    return _dump(out)
+
+
+def _tool_get_ticker_news(args: dict[str, Any]) -> str:
+    out: GetTickerNewsOutput = get_ticker_news(GetTickerNewsInput(**args))
     return _dump(out)
 
 
@@ -175,6 +183,17 @@ def _build_raw_polygon_tools() -> list[ToolDef]:
             ),
             input_schema=_schema(GetOptionGreeksInput),
             fn=_tool_get_option_greeks,
+        ),
+        ToolDef(
+            name="get_ticker_news",
+            description=(
+                "Fetch recent news articles tagged to a ticker. Returns title, "
+                "publisher, published timestamp, article URL, and a short "
+                "description newest-first. Use when explaining vol moves, IV "
+                "spikes, or 'what happened' questions about a name."
+            ),
+            input_schema=_schema(GetTickerNewsInput),
+            fn=_tool_get_ticker_news,
         ),
     ]
 

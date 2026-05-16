@@ -86,9 +86,10 @@ deploy lets strangers run up your Polygon bill.
 
 A successful connection means Claude can call the analytics tools
 (`compute_atm_iv_term_structure`, `compute_skew_slope`,
-`compute_atm_greeks`) and the four primitives (`get_underlying_snapshot`,
-`list_option_contracts`, `get_option_quotes`, `get_option_greeks`)
-mid-conversation.
+`compute_atm_greeks`), the four options primitives (`get_underlying_snapshot`,
+`list_option_contracts`, `get_option_quotes`, `get_option_greeks`), and
+the news lookup (`get_ticker_news`, recent headlines for a ticker — used
+to explain IV spikes and price moves) mid-conversation.
 
 ## Connect ChatGPT
 

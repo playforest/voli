@@ -43,6 +43,7 @@ def test_build_server_returns_full_tool_catalogue() -> None:
         "list_option_contracts",
         "get_option_quotes",
         "get_option_greeks",
+        "get_ticker_news",
     }
 
 
@@ -54,6 +55,7 @@ def test_build_server_with_raw_only() -> None:
         "list_option_contracts",
         "get_option_quotes",
         "get_option_greeks",
+        "get_ticker_news",
     }
 
 

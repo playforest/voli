@@ -21,7 +21,7 @@ import os
 from datetime import date, datetime
 from typing import Protocol, runtime_checkable
 
-from voli.models import OptionContract, OptionGreeks, OptionQuote
+from voli.models import NewsItem, OptionContract, OptionGreeks, OptionQuote
 
 
 @runtime_checkable
@@ -91,6 +91,21 @@ class DataProvider(Protocol):
         the difference between sub-second and 30-second analytics latency on
         liquid names like SPY.
         """
+
+    def fetch_news(
+        self,
+        ticker: str,
+        *,
+        limit: int = 10,
+    ) -> tuple[list[NewsItem], list[str]]:
+        """Optional: return recent news articles tagged to ``ticker``.
+
+        ``(items, warnings)``. Items are ordered newest-first. Providers
+        without a news endpoint should raise ``NotImplementedError``; the
+        wrapper tool will surface that as a clean ``VENDOR_LIMIT`` warning
+        rather than a crash.
+        """
+        raise NotImplementedError("This provider does not implement fetch_news.")
 
 
 # ---------------------------------------------------------------------------

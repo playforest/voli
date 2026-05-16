@@ -105,3 +105,36 @@ class OptionGreeks(StrictModel):
         if v.tzinfo is None:
             raise ValueError("ts must be timezone-aware (UTC)")
         return v.astimezone(UTC)
+
+
+class NewsItem(StrictModel):
+    """A news article tagged to one or more tickers.
+
+    Voli's news surface is intentionally minimal: identifier, when it was
+    published, what it says, who said it, where to read it, and which
+    tickers it's tagged with. Anything richer (sentiment, embeddings,
+    keywords) belongs in a downstream analytics layer, not in the data
+    model itself.
+    """
+
+    id: str = Field(min_length=1, description="Vendor-stable article ID")
+    published_utc: datetime = Field(description="Publish time (UTC)")
+    title: str = Field(min_length=1, description="Article headline")
+    article_url: str = Field(min_length=1, description="Canonical article URL")
+    publisher: str = Field(min_length=1, description="Publisher name (e.g. 'Bloomberg')")
+    tickers: list[str] = Field(
+        default_factory=list,
+        description="Tickers tagged on this article by the vendor",
+    )
+    description: str | None = Field(
+        default=None, description="Short summary or lede if vendor provides one"
+    )
+    author: str | None = Field(default=None, description="Byline if available")
+    source: DataSource
+
+    @field_validator("published_utc")
+    @classmethod
+    def _published_must_be_utc(cls, v: datetime) -> datetime:
+        if v.tzinfo is None:
+            raise ValueError("published_utc must be timezone-aware (UTC)")
+        return v.astimezone(UTC)
