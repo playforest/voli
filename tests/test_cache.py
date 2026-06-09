@@ -2,9 +2,39 @@
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from voli.cache import SQLiteCache, make_cache_key
+
+
+def test_cache_usable_from_a_different_thread(tmp_path: Path) -> None:
+    """The connection is created on the main thread but the HTTP/MCP server
+    touches it from an executor threadpool. Regression for the SQLite
+    'objects created in a thread can only be used in that same thread'
+    ProgrammingError that broke every /mcp tool call.
+    """
+    cache = SQLiteCache(tmp_path / "cache.sqlite")
+    key, asof, canon = make_cache_key("get_underlying_snapshot", {"ticker": "NVDA"}, asof=None)
+
+    def do_set_and_get() -> object:
+        cache.set(
+            key=key,
+            tool="get_underlying_snapshot",
+            asof=asof,
+            inputs_json=canon,
+            response_json='{"ok":true}',
+            ttl_seconds=60,
+        )
+        return cache.get(key)
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        rec = pool.submit(do_set_and_get).result()
+
+    assert rec is not None
+    assert rec.response_json == '{"ok":true}'
+    # And the main thread can still read what the worker thread wrote.
+    assert cache.get(key) is not None
 
 
 def test_cache_key_order_insensitive_option_symbols(tmp_path: Path) -> None:

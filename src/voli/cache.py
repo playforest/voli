@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import sqlite3
+import threading
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -125,7 +126,18 @@ class SQLiteCache:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._now = now_fn
 
-        self._conn = sqlite3.connect(self.path)
+        # ``check_same_thread=False`` lets the single cached connection be
+        # shared across threads. The HTTP server reaches this cache from two
+        # different thread contexts: REST handlers run the tool on the event
+        # loop thread, while the MCP transport dispatches tool calls onto an
+        # executor threadpool (see voli.mcp_server). Without this flag the
+        # second thread to touch the connection raises
+        # "SQLite objects created in a thread can only be used in that same
+        # thread". A single lock serialises every read/write so the relaxed
+        # threading check stays safe; SQLite access here is low-volume so the
+        # serialisation cost is negligible.
+        self._lock = threading.Lock()
+        self._conn = sqlite3.connect(self.path, check_same_thread=False)
         self._conn.execute("PRAGMA journal_mode=WAL;")
         self._conn.execute("PRAGMA synchronous=NORMAL;")
         self._init_db()
@@ -154,29 +166,31 @@ class SQLiteCache:
         self._conn.commit()
 
     def close(self) -> None:
-        self._conn.close()
+        with self._lock:
+            self._conn.close()
 
     def get(self, key: str) -> CacheRecord | None:
-        row = self._conn.execute(
-            """
-            SELECT key, tool, asof, inputs_json, response_json, created_at, ttl_seconds, expires_at
-            FROM cache_entries
-            WHERE key = ?
-            """,
-            (key,),
-        ).fetchone()
+        with self._lock:
+            row = self._conn.execute(
+                """
+                SELECT key, tool, asof, inputs_json, response_json, created_at, ttl_seconds, expires_at
+                FROM cache_entries
+                WHERE key = ?
+                """,
+                (key,),
+            ).fetchone()
 
-        if row is None:
-            return None
+            if row is None:
+                return None
 
-        rec = CacheRecord(*row)
-        if self._now() >= rec.expires_at:
-            # Expired: delete and treat as miss.
-            self._conn.execute("DELETE FROM cache_entries WHERE key = ?", (key,))
-            self._conn.commit()
-            return None
+            rec = CacheRecord(*row)
+            if self._now() >= rec.expires_at:
+                # Expired: delete and treat as miss.
+                self._conn.execute("DELETE FROM cache_entries WHERE key = ?", (key,))
+                self._conn.commit()
+                return None
 
-        return rec
+            return rec
 
     def set(
         self,
@@ -190,24 +204,25 @@ class SQLiteCache:
     ) -> CacheRecord:
         created_at = float(self._now())
         expires_at = created_at + int(ttl_seconds)
-        self._conn.execute(
-            """
-            INSERT OR REPLACE INTO cache_entries
-              (key, tool, asof, inputs_json, response_json, created_at, ttl_seconds, expires_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                key,
-                tool,
-                asof,
-                inputs_json,
-                response_json,
-                created_at,
-                int(ttl_seconds),
-                float(expires_at),
-            ),
-        )
-        self._conn.commit()
+        with self._lock:
+            self._conn.execute(
+                """
+                INSERT OR REPLACE INTO cache_entries
+                  (key, tool, asof, inputs_json, response_json, created_at, ttl_seconds, expires_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    key,
+                    tool,
+                    asof,
+                    inputs_json,
+                    response_json,
+                    created_at,
+                    int(ttl_seconds),
+                    float(expires_at),
+                ),
+            )
+            self._conn.commit()
         return CacheRecord(
             key,
             tool,

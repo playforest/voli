@@ -145,7 +145,27 @@ def serve(
         server_url=server_url,
         include_analytics=include_analytics,
     )
-    uvicorn.run(app, host=host, port=port, log_level=log_level)
+
+    # When voli runs behind a reverse proxy / tunnel (Caddy, nginx,
+    # cloudflared) the proxy terminates TLS and forwards plain HTTP plus an
+    # ``X-Forwarded-Proto: https`` header. uvicorn only honours that header
+    # for clients in ``forwarded_allow_ips`` (default ``127.0.0.1``). In a
+    # Docker deploy the proxy reaches the container over the bridge network,
+    # so its source IP is the Docker gateway (172.x), not loopback, and the
+    # header is dropped. uvicorn then thinks the request scheme is ``http``
+    # and Starlette builds the ``/mcp`` -> ``/mcp/`` redirect with ``http``,
+    # which downgrades https and makes MCP clients drop the Authorization
+    # header. Set ``VOLI_FORWARDED_ALLOW_IPS=*`` (safe behind a trusted
+    # proxy) so the forwarded scheme is honoured and redirects stay https.
+    forwarded_allow_ips = os.environ.get("VOLI_FORWARDED_ALLOW_IPS")
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        log_level=log_level,
+        proxy_headers=True,
+        forwarded_allow_ips=forwarded_allow_ips or "127.0.0.1",
+    )
 
 
 # ---------------------------------------------------------------------------
